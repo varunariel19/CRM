@@ -20,6 +20,7 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: RootComponent,
+
   },
   {
     path: "main",

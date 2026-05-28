@@ -1,0 +1,70 @@
+/* layout.component.css */
+
+.layout {
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: #f5f7fb;
+}
+
+/* ================= HEADER ================= */
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 72px;
+  z-index: 1000;
+}
+
+/* ================= MAIN AREA ================= */
+
+.main-container {
+  display: flex;
+  height: 100vh;
+  padding-top: 72px;
+}
+
+/* ================= SIDEBAR ================= */
+
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  height: calc(100vh - 72px);
+
+  position: fixed;
+  top: 72px;
+  left: 0;
+
+  background: white;
+  border-right: 1px solid #e5e7eb;
+
+  transition: all 0.3s ease;
+
+  overflow: hidden;
+}
+
+.sidebar.collapsed {
+  width: 80px;
+  min-width: 80px;
+}
+
+
+.main-content {
+  margin-left: 260px;
+  width: calc(100% - 260px);
+  height: calc(100vh - 72px);
+
+  overflow-y: auto;
+
+  padding: 24px;
+
+  transition: all 0.3s ease;
+}
+
+/* Expanded when sidebar collapsed */
+.main-content.expanded {
+  margin-left: 80px;
+  width: calc(100% - 80px);
+}

@@ -1,10 +1,26 @@
 <div class="layout">
 
- <app-sidebar></app-sidebar>
+  <!-- Fixed Header -->
+  <app-header class="header"></app-header>
 
-  <div class="content">
-  
+  <!-- Main Area -->
+  <div class="main-container">
+
+    <!-- Sidebar -->
+    <app-sidebar
+      class="sidebar"
+      [class.collapsed]="isSidebarCollapsed">
+    </app-sidebar>
+
+    <!-- Dashboard / Content -->
+    <main
+      class="main-content"
+      [class.expanded]="isSidebarCollapsed">
+
+      <app-dashboard></app-dashboard>
+
+    </main>
+
   </div>
-
 
 </div>

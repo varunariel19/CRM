@@ -3,16 +3,59 @@
     <p>Loading, please wait...</p>
 </div> -->
 
-<ng-template #dashboard>
-    <div class="dashboard-layout">
+<div class="dashboard-layout">
 
-        <app-header></app-header>
-        <div class="dashboard-content">
 
-            <!-- <ng-container [ngSwitch]="role()">
-      </ng-container> -->
+  <div class="dashboard-body">
+
+    <div class="workspace-wrapper">
+
+      <div class="workspace">
+
+        <div class="workspace-header">
+          <div>
+            <h2>Deals Dashboard</h2>
+            <p>Track deals, appointments and analytics</p>
+          </div>
+
+          <div class="workspace-actions">
+            <button class="primary-btn">+ Add Deal</button>
+          </div>
+        </div>
+
+        <div class="workspace-content">
+
+          <!-- CARD -->
+          <div class="deal-card">
+            <h4>CRM Migration</h4>
+            <p>Amount: ₹ 45,000</p>
+            <span>Appointment Scheduled</span>
+          </div>
+
+          <div class="deal-card">
+            <h4>Analytics Upgrade</h4>
+            <p>Amount: ₹ 64,500</p>
+            <span>Presentation Scheduled</span>
+          </div>
+
+          <div class="deal-card">
+            <h4>Inventory Management</h4>
+            <p>Amount: ₹ 12,000</p>
+            <span>Qualified To Buy</span>
+          </div>
+
+          <div class="deal-card">
+            <h4>Marketing Suite</h4>
+            <p>Amount: ₹ 32,000</p>
+            <span>Decision Maker Bought-In</span>
+          </div>
 
         </div>
 
+      </div>
+
     </div>
-</ng-template>
+
+  </div>
+
+</div>
