@@ -1,0 +1,6 @@
+{
+  "name": "ArielCRM",
+  "description": "A high-fidelity CRM system for a service-based IT company, including Lead management, Client profiles, Deal pipelines, Tasks, Support Tickets, and full PostgreSQL schema visualization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

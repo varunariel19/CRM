@@ -1,0 +1,123 @@
+# =========================
+# Build folders
+# =========================
+bin/
+obj/
+out/
+publish/
+
+# =========================
+# Visual Studio
+# =========================
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# =========================
+# Rider / JetBrains
+# =========================
+.idea/
+*.sln.iml
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# OS generated files
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Temp files
+# =========================
+tmp/
+temp/
+*.tmp
+*.cache
+
+# =========================
+# NuGet
+# =========================
+*.nupkg
+packages/
+
+# Keep package references
+!packages/build/
+
+# =========================
+# Test Results
+# =========================
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# =========================
+# ASP.NET / IIS
+# =========================
+*.dbmdl
+*.pdb
+*.mdb
+
+# =========================
+# Entity Framework
+# =========================
+*.mdf
+*.ldf
+
+# =========================
+# Node / Angular / React
+# =========================
+node_modules/
+dist/
+.angular/
+.next/
+build/
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Generated files
+# =========================
+Generated/
+wwwroot/lib/
+
+# =========================
+# Publish profiles
+# =========================
+Properties/PublishProfiles/
+
+# =========================
+# Resharper
+# =========================
+_ReSharper*/
+*.DotSettings.user
+
+# =========================
+# Azure / deployment
+# =========================
+.publishsettings
+
+# =========================
+# SQLite
+# =========================
+*.sqlite
+*.db
+
+# =========================
+# Backup files
+# =========================
+*.bak
+*.backup

@@ -1,0 +1,470 @@
+{
+  "users": [
+    {
+      "id": "u-1",
+      "name": "Varun Ariel",
+      "email": "varunariel@gmail.com",
+      "passwordHash": "admin123",
+      "role": "Admin",
+      "createdAt": "2026-05-28T10:29:13.932Z"
+    },
+    {
+      "id": "u-2",
+      "name": "Sarah Miller",
+      "email": "sarah@arielcrm.com",
+      "passwordHash": "manager123",
+      "role": "Manager",
+      "createdAt": "2026-05-28T10:29:13.932Z"
+    },
+    {
+      "id": "u-3",
+      "name": "David Carter",
+      "email": "david@arielcrm.com",
+      "passwordHash": "sales123",
+      "role": "Sales Executive",
+      "createdAt": "2026-05-28T10:29:13.932Z"
+    },
+    {
+      "id": "u-4",
+      "name": "Emily Watson",
+      "email": "emily@arielcrm.com",
+      "passwordHash": "support123",
+      "role": "Support Agent",
+      "createdAt": "2026-05-28T10:29:13.932Z"
+    }
+  ],
+  "leads": [
+    {
+      "id": "l-1",
+      "name": "John Doe",
+      "company": "Acme Corp",
+      "email": "john@acme.com",
+      "phone": "+1 555 123 4567",
+      "source": "Referral",
+      "status": "New",
+      "assignedTo": "David Carter",
+      "createdAt": "2026-05-23T10:29:13.932Z"
+    },
+    {
+      "id": "l-2",
+      "name": "Alice Smith",
+      "company": "Vertex Solutions",
+      "email": "alice@vertex.io",
+      "phone": "+1 555 987 6543",
+      "source": "Website",
+      "status": "Contacted",
+      "assignedTo": "David Carter",
+      "createdAt": "2026-05-24T10:29:13.932Z"
+    },
+    {
+      "id": "l-3",
+      "name": "Bob Johnson",
+      "company": "Nexus Tech",
+      "email": "bob@nexus.com",
+      "phone": "+1 555 456 7890",
+      "source": "Referral",
+      "status": "Qualified",
+      "assignedTo": "David Carter",
+      "createdAt": "2026-05-25T10:29:13.932Z"
+    },
+    {
+      "id": "l-4",
+      "name": "Carol Williams",
+      "company": "Hyperion Labs",
+      "email": "carol@hyperion.com",
+      "phone": "+1 555 222 3333",
+      "source": "Email Campaign",
+      "status": "Converted",
+      "assignedTo": "David Carter",
+      "createdAt": "2026-05-26T10:29:13.932Z"
+    },
+    {
+      "id": "l-5",
+      "name": "David Brown",
+      "company": "Initech Inc",
+      "email": "david@initech.com",
+      "phone": "+1 555 444 5555",
+      "source": "LinkedIn",
+      "status": "Lost",
+      "assignedTo": "David Carter",
+      "createdAt": "2026-05-27T10:29:13.932Z"
+    }
+  ],
+  "contacts": [
+    {
+      "id": "c-1",
+      "name": "John Doe",
+      "company": "Acme Corp",
+      "designation": "CTO",
+      "email": "john@acme.com",
+      "phone": "+1 555 123 4567",
+      "address": "123 Enterprise Way, Tech City, CA 94016",
+      "createdAt": "2026-05-23T10:29:13.932Z"
+    },
+    {
+      "id": "c-2",
+      "name": "Alice Smith",
+      "company": "Vertex Solutions",
+      "designation": "IT Director",
+      "email": "alice@vertex.io",
+      "phone": "+1 555 987 6543",
+      "address": "456 Innovation Blvd, Cloud City, WA 98101",
+      "createdAt": "2026-05-24T10:29:13.932Z"
+    },
+    {
+      "id": "c-3",
+      "name": "Bob Johnson",
+      "company": "Nexus Tech",
+      "designation": "Engineering Lead",
+      "email": "bob@nexus.com",
+      "phone": "+1 555 456 7890",
+      "address": "789 Paradigm Drive, Austin, TX 78701",
+      "createdAt": "2026-05-25T10:29:13.932Z"
+    },
+    {
+      "id": "c-4",
+      "name": "Carol Williams",
+      "company": "Hyperion Labs",
+      "designation": "CEO",
+      "email": "carol@hyperion.com",
+      "phone": "+1 555 222 3333",
+      "address": "101 Summit Ridge, Boston, MA 02108",
+      "createdAt": "2026-05-26T10:29:13.932Z"
+    }
+  ],
+  "deals": [
+    {
+      "id": "d-1",
+      "title": "Cloud Infrastructure Migration",
+      "value": 45000,
+      "stage": "Lost",
+      "closeDate": "2026-06-12",
+      "assignedTo": "David Carter",
+      "contactId": "c-1",
+      "createdAt": "2026-05-18T10:29:13.932Z"
+    },
+    {
+      "id": "d-2",
+      "title": "Custom CRM Development",
+      "value": 72000,
+      "stage": "Proposal",
+      "closeDate": "2026-05-27",
+      "assignedTo": "David Carter",
+      "contactId": "c-4",
+      "createdAt": "2026-05-20T10:29:13.932Z"
+    },
+    {
+      "id": "d-3",
+      "title": "Cybersecurity Threat Audit",
+      "value": 18000,
+      "stage": "Won",
+      "closeDate": "2026-06-22",
+      "assignedTo": "Varun Ariel",
+      "contactId": "c-2",
+      "createdAt": "2026-05-26T10:29:13.932Z"
+    },
+    {
+      "id": "d-4",
+      "title": "Managed Kubernetes Hosting",
+      "value": 34000,
+      "stage": "Won",
+      "closeDate": "2026-05-22",
+      "assignedTo": "Sarah Miller",
+      "contactId": "c-3",
+      "createdAt": "2026-05-16T10:29:13.932Z"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t-1",
+      "title": "Follow-up Call on Proposal",
+      "type": "Call",
+      "dueDate": "2026-05-29",
+      "status": "Completed",
+      "assignedTo": "David Carter",
+      "leadId": "l-1",
+      "createdAt": "2026-05-28T10:29:13.932Z"
+    },
+    {
+      "id": "t-2",
+      "title": "Prepare Technical Architecture Demo",
+      "type": "Demo",
+      "dueDate": "2026-05-31",
+      "status": "Completed",
+      "assignedTo": "David Carter",
+      "dealId": "d-1",
+      "createdAt": "2026-05-28T10:29:13.932Z"
+    },
+    {
+      "id": "t-3",
+      "title": "Send Introductory Email Campaign",
+      "type": "Email",
+      "dueDate": "2026-05-27",
+      "status": "Completed",
+      "assignedTo": "David Carter",
+      "leadId": "l-4",
+      "createdAt": "2026-05-25T10:29:13.933Z"
+    },
+    {
+      "id": "t-4",
+      "title": "Introductory Discovery Meeting",
+      "type": "Meeting",
+      "dueDate": "2026-05-30",
+      "status": "Completed",
+      "assignedTo": "Sarah Miller",
+      "leadId": "l-2",
+      "createdAt": "2026-05-28T10:29:13.933Z"
+    }
+  ],
+  "tickets": [
+    {
+      "id": "tk-2",
+      "title": "SSO Integration Request",
+      "description": "Client wants to explore Auth0 SSO setup for their external customer hub.",
+      "status": "Open",
+      "priority": "Medium",
+      "assignedTo": "Emily Watson",
+      "clientId": "c-4",
+      "createdAt": "2026-05-28T10:29:13.933Z"
+    },
+    {
+      "id": "tk-3",
+      "title": "Billing Discrepancy SLA",
+      "description": "SLA invoice lists extra developer hours that need to be refunded.",
+      "status": "In Progress",
+      "priority": "Low",
+      "assignedTo": "Sarah Miller",
+      "clientId": "c-2",
+      "createdAt": "2026-05-25T10:29:13.933Z"
+    }
+  ],
+  "meetings": [
+    {
+      "id": "m-1",
+      "title": "Architecture Review Session",
+      "client": "Acme Corp",
+      "date": "2026-05-30",
+      "time": "14:30",
+      "location": "Google Meet",
+      "notes": "Design reviews for cloud migration blueprint.",
+      "leadId": "l-1",
+      "createdAt": "2026-05-28T10:29:13.933Z"
+    },
+    {
+      "id": "m-2",
+      "title": "ArielCRM Portal Walkthrough",
+      "client": "Hyperion Labs",
+      "date": "2026-06-01",
+      "time": "10:00",
+      "location": "Zoom",
+      "notes": "Demonstrate custom features built this week.",
+      "leadId": "l-4",
+      "createdAt": "2026-05-28T10:29:13.933Z"
+    },
+    {
+      "id": "m-3",
+      "title": "Introductory Call with Vertex",
+      "client": "Vertex Solutions",
+      "date": "2026-05-27",
+      "time": "11:00",
+      "location": "Microsoft Teams",
+      "notes": "Understanding cybersecurity parameters.",
+      "leadId": "l-2",
+      "createdAt": "2026-05-26T10:29:13.933Z"
+    }
+  ],
+  "notes": [
+    {
+      "id": "n-1",
+      "content": "Client prefers highly customized service agreement. Value negotiation expected.",
+      "relatedTo": "deal",
+      "relatedId": "d-1",
+      "createdBy": "David Carter",
+      "createdAt": "2026-05-26T10:29:13.933Z"
+    },
+    {
+      "id": "n-2",
+      "content": "Met at LinkedIn network event. Very keen on IT staffing solutions.",
+      "relatedTo": "lead",
+      "relatedId": "l-1",
+      "createdBy": "David Carter",
+      "createdAt": "2026-05-23T10:29:13.933Z"
+    }
+  ],
+  "activity_log": [
+    {
+      "id": "a-1779964700140-559",
+      "action": "Moved Deal \"Custom CRM Development\" to \"Proposal\" stage",
+      "performedBy": "Sarah Miller",
+      "relatedTo": "deal",
+      "relatedId": "d-2",
+      "createdAt": "2026-05-28T10:38:20.140Z"
+    },
+    {
+      "id": "a-1779964698783-33",
+      "action": "Moved Deal \"Custom CRM Development\" to \"Negotiation\" stage",
+      "performedBy": "Sarah Miller",
+      "relatedTo": "deal",
+      "relatedId": "d-2",
+      "createdAt": "2026-05-28T10:38:18.783Z"
+    },
+    {
+      "id": "a-1779964646405-127",
+      "action": "Updated Lead for \"John Doe\"",
+      "performedBy": "Sarah Miller",
+      "relatedTo": "lead",
+      "relatedId": "l-1",
+      "createdAt": "2026-05-28T10:37:26.406Z"
+    },
+    {
+      "id": "a-1779964564848-732",
+      "action": "Deleted Support Ticket \"Database Outage on Staging\"",
+      "performedBy": "Emily Watson",
+      "createdAt": "2026-05-28T10:36:04.848Z"
+    },
+    {
+      "id": "a-1779964478412-428",
+      "action": "Marked Task \"Follow-up Call on Proposal\" as Completed",
+      "performedBy": "David Carter",
+      "relatedTo": "task",
+      "relatedId": "t-1",
+      "createdAt": "2026-05-28T10:34:38.412Z"
+    },
+    {
+      "id": "a-1779964471757-550",
+      "action": "Marked Task \"Follow-up Call on Proposal\" as Pending",
+      "performedBy": "David Carter",
+      "relatedTo": "task",
+      "relatedId": "t-1",
+      "createdAt": "2026-05-28T10:34:31.757Z"
+    },
+    {
+      "id": "a-1779964462828-793",
+      "action": "Marked Task \"Introductory Discovery Meeting\" as Completed",
+      "performedBy": "David Carter",
+      "relatedTo": "task",
+      "relatedId": "t-4",
+      "createdAt": "2026-05-28T10:34:22.828Z"
+    },
+    {
+      "id": "a-1779964462249-451",
+      "action": "Marked Task \"Prepare Technical Architecture Demo\" as Completed",
+      "performedBy": "David Carter",
+      "relatedTo": "task",
+      "relatedId": "t-2",
+      "createdAt": "2026-05-28T10:34:22.249Z"
+    },
+    {
+      "id": "a-1779964461271-549",
+      "action": "Marked Task \"Follow-up Call on Proposal\" as Completed",
+      "performedBy": "David Carter",
+      "relatedTo": "task",
+      "relatedId": "t-1",
+      "createdAt": "2026-05-28T10:34:21.271Z"
+    },
+    {
+      "id": "a-1779964364749-858",
+      "action": "Moved Deal \"Cloud Infrastructure Migration\" to \"Lost\" stage",
+      "performedBy": "David Carter",
+      "relatedTo": "deal",
+      "relatedId": "d-1",
+      "createdAt": "2026-05-28T10:32:44.749Z"
+    },
+    {
+      "id": "a-1779964362997-246",
+      "action": "Moved Deal \"Cloud Infrastructure Migration\" to \"Won\" stage",
+      "performedBy": "David Carter",
+      "relatedTo": "deal",
+      "relatedId": "d-1",
+      "createdAt": "2026-05-28T10:32:42.997Z"
+    },
+    {
+      "id": "a-1779964356936-853",
+      "action": "Moved Deal \"Cloud Infrastructure Migration\" to \"Negotiation\" stage",
+      "performedBy": "David Carter",
+      "relatedTo": "deal",
+      "relatedId": "d-1",
+      "createdAt": "2026-05-28T10:32:36.936Z"
+    },
+    {
+      "id": "a-1779964329503-235",
+      "action": "Moved Deal \"Cybersecurity Threat Audit\" to \"Won\" stage",
+      "performedBy": "David Carter",
+      "relatedTo": "deal",
+      "relatedId": "d-3",
+      "createdAt": "2026-05-28T10:32:09.503Z"
+    },
+    {
+      "id": "a-1779964328214-572",
+      "action": "Moved Deal \"Cloud Infrastructure Migration\" to \"Proposal\" stage",
+      "performedBy": "David Carter",
+      "relatedTo": "deal",
+      "relatedId": "d-1",
+      "createdAt": "2026-05-28T10:32:08.214Z"
+    },
+    {
+      "id": "a-1779964324772-325",
+      "action": "Moved Deal \"Cybersecurity Threat Audit\" to \"Negotiation\" stage",
+      "performedBy": "David Carter",
+      "relatedTo": "deal",
+      "relatedId": "d-3",
+      "createdAt": "2026-05-28T10:32:04.772Z"
+    },
+    {
+      "id": "a-1779964268795-596",
+      "action": "Changed Ticket status of \"Billing Discrepancy SLA\" to In Progress",
+      "performedBy": "Sarah Miller",
+      "relatedTo": "ticket",
+      "relatedId": "tk-3",
+      "createdAt": "2026-05-28T10:31:08.795Z"
+    },
+    {
+      "id": "a-1779964267299-952",
+      "action": "Changed Ticket status of \"Billing Discrepancy SLA\" to Closed",
+      "performedBy": "Sarah Miller",
+      "relatedTo": "ticket",
+      "relatedId": "tk-3",
+      "createdAt": "2026-05-28T10:31:07.299Z"
+    },
+    {
+      "id": "a-1779964264854-434",
+      "action": "Changed Ticket status of \"Billing Discrepancy SLA\" to Open",
+      "performedBy": "Sarah Miller",
+      "relatedTo": "ticket",
+      "relatedId": "tk-3",
+      "createdAt": "2026-05-28T10:31:04.854Z"
+    },
+    {
+      "id": "a-1",
+      "action": "Created Leads Acme Corp",
+      "performedBy": "David Carter",
+      "relatedTo": "lead",
+      "relatedId": "l-1",
+      "createdAt": "2026-05-23T10:29:13.933Z"
+    },
+    {
+      "id": "a-2",
+      "action": "Uploaded Deal \"Cloud Infrastructure Migration\"",
+      "performedBy": "David Carter",
+      "relatedTo": "deal",
+      "relatedId": "d-1",
+      "createdAt": "2026-05-24T10:29:13.933Z"
+    },
+    {
+      "id": "a-3",
+      "action": "Created Technical Audit Ticket",
+      "performedBy": "Emily Watson",
+      "relatedTo": "ticket",
+      "relatedId": "tk-1",
+      "createdAt": "2026-05-27T10:29:13.933Z"
+    },
+    {
+      "id": "a-4",
+      "action": "Marked \"Send Introductory Email\" as Completed",
+      "performedBy": "David Carter",
+      "relatedTo": "task",
+      "relatedId": "t-3",
+      "createdAt": "2026-05-28T10:17:13.933Z"
+    }
+  ]
+}
