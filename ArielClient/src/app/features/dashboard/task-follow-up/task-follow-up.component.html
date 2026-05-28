@@ -1,0 +1,120 @@
+<div class="tasks-wrapper">
+
+  <!-- TOPBAR -->
+  <div class="tasks-topbar">
+
+    <div class="tabs">
+
+      <button
+        [class.active]="activeTab === 'pending'"
+        (click)="activeTab = 'pending'">
+
+        Pending Reminders
+
+      </button>
+
+      <button
+        [class.active]="activeTab === 'completed'"
+        (click)="activeTab = 'completed'">
+
+        Completed tasks
+
+      </button>
+
+      <button
+        [class.active]="activeTab === 'all'"
+        (click)="activeTab = 'all'">
+
+        All Logs
+
+      </button>
+
+    </div>
+
+    <button
+      class="add-btn"
+      (click)="addTask()">
+
+      <i class="fas fa-plus"></i>
+      Add Task Action
+
+    </button>
+
+  </div>
+
+  <!-- TASKS -->
+  <div class="tasks-list">
+
+    <div
+      class="task-card"
+      *ngFor="let task of filteredTasks()">
+
+      <!-- LEFT -->
+      <div class="task-left">
+
+        <input
+          type="checkbox"
+          [checked]="task.completed"
+          (change)="toggleTask(task)"
+        />
+
+        <div>
+
+          <h3 [class.completed]="task.completed">
+            {{ task.title }}
+          </h3>
+
+          <div class="task-meta">
+
+            <span
+              class="tag"
+              [ngClass]="task.type.toLowerCase()">
+
+              {{ task.type }}
+
+            </span>
+
+            <span class="due-date">
+              <i class="fas fa-clock"></i>
+              Due: {{ task.dueDate }}
+            </span>
+
+            <span class="lead-pill">
+
+              <i class="fas fa-link"></i>
+
+              Lead:
+              {{ task.lead }}
+
+            </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- RIGHT -->
+      <div class="task-right">
+
+        <div class="representative">
+
+          <i class="fas fa-user"></i>
+
+          Representative:
+          {{ task.rep }}
+
+        </div>
+
+        <i
+          class="fas fa-trash delete-icon"
+          (click)="deleteTask(task.id)">
+        </i>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

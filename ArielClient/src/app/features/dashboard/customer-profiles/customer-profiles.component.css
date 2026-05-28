@@ -1,0 +1,332 @@
+.customer-wrapper {
+  padding: 22px;
+
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 24px;
+
+  background: #f4f7fb;
+  min-height: 100vh;
+}
+
+/* LEFT */
+
+.clients-sidebar {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+
+  padding: 16px;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 18px;
+}
+
+.sidebar-header h2 {
+  font-size: 16px;
+  color: var(--text-dark);
+}
+
+.add-btn {
+  width: 34px;
+  height: 34px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #edf4ff;
+  color: var(--active-bg);
+
+  cursor: pointer;
+}
+
+.search-box {
+  height: 42px;
+
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 14px;
+  gap: 10px;
+
+  color: #94a3b8;
+
+  margin-bottom: 16px;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  width: 100%;
+
+  background: transparent;
+}
+
+.client-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.client-card {
+  border: 1px solid #e7edf7;
+  border-radius: 14px;
+
+  padding: 14px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.client-card:hover {
+  background: #f8fbff;
+}
+
+.client-card.active {
+  border-color: #a7c4ff;
+  background: #f5f9ff;
+}
+
+.client-card h3 {
+  font-size: 16px;
+  color: var(--text-dark);
+
+  margin-bottom: 6px;
+}
+
+.client-card p {
+  font-size: 13px;
+  color: #64748b;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.client-card span {
+  font-size: 13px;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* RIGHT */
+
+.profile-section {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+
+  overflow: hidden;
+}
+
+.profile-header {
+  padding: 28px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  border-bottom: 1px solid #edf2f7;
+}
+
+.profile-user {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+
+  border-radius: 50%;
+
+  background: #edf4ff;
+  color: var(--active-bg);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.profile-user h2 {
+  font-size: 20px;
+  color: var(--text-dark);
+
+  margin-bottom: 6px;
+}
+
+.profile-user p {
+  color: #64748b;
+}
+
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.edit-btn,
+.delete-btn {
+  height: 40px;
+
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+
+  background: white;
+
+  padding: 0 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  cursor: pointer;
+}
+
+.delete-btn {
+  width: 40px;
+  justify-content: center;
+}
+
+/* DETAILS */
+
+.details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  border-bottom: 1px solid #edf2f7;
+}
+
+.detail-card {
+  padding: 24px;
+}
+
+.detail-card h4,
+.notes-section h4 {
+  font-size: 14px;
+  color: #8aa0c5;
+
+  margin-bottom: 18px;
+}
+
+.contact-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin-bottom: 14px;
+
+  color: #64748b;
+}
+
+.contact-line a {
+  color: var(--active-bg);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* NOTES */
+
+.notes-section {
+  padding: 24px;
+}
+
+.notes-box {
+  height: 220px;
+
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+
+  padding: 18px;
+
+  overflow-y: auto;
+
+  margin-bottom: 18px;
+}
+
+.empty-notes {
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #94a3b8;
+  text-align: center;
+}
+
+.note-item {
+  padding-bottom: 14px;
+  margin-bottom: 14px;
+
+  border-bottom: 1px solid #eef2f7;
+}
+
+.note-header {
+  display: flex;
+  justify-content: space-between;
+
+  margin-bottom: 8px;
+}
+
+.note-item p {
+  color: #475569;
+  line-height: 1.5;
+}
+
+.note-input {
+  display: flex;
+  gap: 14px;
+}
+
+.note-input input {
+  flex: 1;
+
+  height: 46px;
+
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+
+  padding: 0 16px;
+
+  outline: none;
+}
+
+.note-input button {
+  width: 46px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: var(--active-bg);
+  color: white;
+
+  cursor: pointer;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1200px) {
+
+  .customer-wrapper {
+    grid-template-columns: 1fr;
+  }
+
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+}

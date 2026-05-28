@@ -1,0 +1,139 @@
+<div class="lead-management-wrapper">
+
+  <!-- TOP BAR -->
+  <div class="top-toolbar">
+
+    <!-- SEARCH -->
+    <div class="search-box">
+      <i class="fas fa-magnifying-glass"></i>
+
+      <input
+        type="text"
+        placeholder="Search leads name, company, email..."
+      />
+    </div>
+
+    <!-- FILTERS -->
+    <div class="toolbar-actions">
+
+      <div class="filter-label">
+        <i class="fas fa-filter"></i>
+        <span>Filters:</span>
+      </div>
+
+      <select>
+        <option>All Statuses</option>
+      </select>
+
+      <select>
+        <option>All Sources</option>
+      </select>
+
+      <button class="create-btn">
+        <i class="fas fa-plus"></i>
+        Create Lead
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrapper">
+
+    <!-- HEADER -->
+    <div class="table-header">
+
+      <div>PROSPECT / COMPANY</div>
+      <div>CONTACT METHODS</div>
+      <div>SOURCE</div>
+      <div>CRM STATUS STATE</div>
+      <div>ASSIGNEE</div>
+      <div>ACTIONS</div>
+
+    </div>
+
+    <!-- ROW -->
+    <div class="table-row" *ngFor="let lead of leads">
+
+      <!-- USER -->
+      <div class="prospect-info">
+
+        <h3>{{ lead.name }}</h3>
+
+        <p>
+          <i class="fas fa-building"></i>
+          {{ lead.company }}
+        </p>
+
+      </div>
+
+      <!-- CONTACT -->
+      <div class="contact-info">
+
+        <p>
+          <i class="fas fa-envelope"></i>
+          {{ lead.email }}
+        </p>
+
+        <p>
+          <i class="fas fa-phone"></i>
+          {{ lead.phone }}
+        </p>
+
+      </div>
+
+      <!-- SOURCE -->
+      <div>
+        <span class="source-badge">
+          {{ lead.source }}
+        </span>
+      </div>
+
+      <!-- STATUS -->
+      <div>
+
+        <div
+          class="status-select"
+          [ngClass]="lead.status.toLowerCase()">
+
+          <div class="status-left">
+            <div class="status-dot"></div>
+
+            <span>
+              {{ lead.status }}
+            </span>
+          </div>
+
+          <i class="fas fa-chevron-down"></i>
+
+        </div>
+
+        <p class="date-text">
+          Date: {{ lead.date }}
+        </p>
+
+      </div>
+
+      <div class="assignee">
+
+        <i class="fas fa-user"></i>
+
+        <span>David Carter</span>
+
+        <i class="fas fa-chevron-down"></i>
+
+      </div>
+
+      <div class="actions">
+
+        <i class="fas fa-pen"></i>
+        <i class="fas fa-trash"></i>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

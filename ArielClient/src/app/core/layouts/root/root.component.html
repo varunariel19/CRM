@@ -1,0 +1,28 @@
+<div class="layout">
+
+  <header class="app-header">
+    <app-header
+      (toggleSidebar)="isSidebarCollapsed = !isSidebarCollapsed">
+    </app-header>
+  </header>
+
+  <div class="body">
+
+    <aside
+      class="sidebar"
+      [class.collapsed]="isSidebarCollapsed">
+
+      <app-sidebar
+        [collapsed]="isSidebarCollapsed">
+      </app-sidebar>
+
+    </aside>
+
+    <main class="content">
+      <div class="inner-content">
+        <app-dashboard></app-dashboard>
+      </div>
+    </main>
+
+  </div>
+</div>

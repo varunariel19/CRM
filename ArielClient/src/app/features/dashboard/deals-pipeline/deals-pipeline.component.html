@@ -1,0 +1,153 @@
+<div class="pipeline-wrapper">
+
+  <!-- HEADER -->
+  <div class="pipeline-header">
+
+    <div>
+
+      <h2>
+        <i class="fas fa-arrow-trend-up"></i>
+        Active Sales Value Pipeline
+      </h2>
+
+      <p>
+        Reflects current technical services contract pipeline values.
+      </p>
+
+    </div>
+
+    <button
+      class="new-deal-btn"
+      (click)="createDeal()">
+
+      <i class="fas fa-plus"></i>
+      New Opportunity Deal
+
+    </button>
+
+  </div>
+
+  <!-- BOARD -->
+  <div class="pipeline-board">
+
+    <!-- COLUMN -->
+    <div
+      class="pipeline-column"
+      *ngFor="let column of columns">
+
+      <!-- COLUMN HEADER -->
+      <div class="column-header">
+
+        <div class="column-title">
+
+          <div
+            class="column-dot"
+            [style.background]="column.color">
+          </div>
+
+          <h3>{{ column.title }}</h3>
+
+          <span>{{ column.deals.length }}</span>
+
+        </div>
+
+        <strong>
+          {{ getTotal(column.deals) | currency }}
+        </strong>
+
+      </div>
+
+      <!-- DROP AREA -->
+      <div
+        class="deal-list"
+        (dragover)="allowDrop($event)"
+        (drop)="dropDeal($event, column.key)">
+
+        <!-- EMPTY -->
+        <div
+          *ngIf="column.deals.length === 0"
+          class="empty-state">
+
+          No deals here.
+
+        </div>
+
+        <!-- DEAL -->
+        <div
+          class="deal-card"
+          *ngFor="let deal of column.deals"
+          draggable="true"
+          (dragstart)="dragDeal($event, deal, column.key)">
+
+          <h3>{{ deal.title }}</h3>
+
+          <p class="company">
+            <i class="fas fa-building"></i>
+            {{ deal.company }}
+          </p>
+
+          <div class="deal-info">
+
+            <div>
+
+              <span>CONTRACT WORTH</span>
+
+              <h2>
+                {{ deal.value | currency }}
+              </h2>
+
+            </div>
+
+            <div>
+
+              <span>Target Close</span>
+
+              <p>
+                <i class="fas fa-calendar"></i>
+                {{ deal.closeDate }}
+              </p>
+
+            </div>
+
+          </div>
+
+          <div class="deal-footer">
+
+            <div class="owner">
+
+              <i class="fas fa-user"></i>
+
+              {{ deal.owner }}
+
+            </div>
+
+            <div class="deal-actions">
+
+              <i
+                class="fas fa-pen"
+                (click)="editDeal(deal)">
+              </i>
+
+              <i
+                class="fas fa-chevron-left"
+                (click)="moveLeft(column.key, deal)">
+              </i>
+
+              <i
+                class="fas fa-chevron-right"
+                (click)="moveRight(column.key, deal)">
+              </i>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,324 @@
+.lead-management-wrapper {
+  padding: 22px;
+  background: #f4f7fb;
+  min-height: 100vh;
+}
+
+/* TOP TOOLBAR */
+
+.top-toolbar {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+
+  padding: 16px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 24px;
+}
+
+.search-box {
+  width: 450px;
+  height: 48px;
+
+  border: 1px solid #d7dfeb;
+  border-radius: 12px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 16px;
+  gap: 12px;
+
+  color: #94a3b8;
+}
+
+.search-box input {
+  border: none;
+  outline: none;
+  width: 100%;
+
+  font-size: 15px;
+  background: transparent;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.filter-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #64748b;
+  font-weight: 600;
+}
+
+.toolbar-actions select {
+  height: 42px;
+
+  border-radius: 10px;
+  border: 1px solid #d7dfeb;
+
+  padding: 0 14px;
+
+  background: white;
+
+  color: #334155;
+  font-weight: 600;
+}
+
+.create-btn {
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+
+  background: var(--active-bg);
+  color: white;
+
+  padding: 0 18px;
+
+  font-weight: 600;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  cursor: pointer;
+}
+
+/* TABLE */
+
+.table-wrapper {
+  background: white;
+
+  border-radius: 18px;
+  border: 1px solid var(--border-color);
+
+  overflow: hidden;
+}
+
+.table-header,
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 2fr 1.2fr 1.8fr 1.3fr 0.7fr;
+
+  align-items: center;
+}
+
+.table-header {
+  height: 64px;
+
+  padding: 0 18px;
+
+  border-bottom: 1px solid #edf2f7;
+
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+
+  letter-spacing: 0.5px;
+}
+
+.table-row {
+  min-height: 74px;
+
+  padding: 18px;
+
+  border-bottom: 1px solid #edf2f7;
+}
+
+/* PROSPECT */
+
+.prospect-info h3 {
+  font-size: 16px;
+  color: var(--text-dark);
+  margin-bottom: 8px;
+}
+
+.prospect-info p {
+  color: #94a3b8;
+  font-size: 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* CONTACT */
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contact-info p {
+  color: #475569;
+  font-size: 14px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* SOURCE */
+
+.source-badge {
+  background: #f1f5f9;
+
+  padding: 6px 10px;
+
+  border-radius: 8px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #475569;
+}
+
+/* STATUS */
+
+.status-select {
+  width: fit-content;
+
+  min-width: 115px;
+  height: 34px;
+
+  border-radius: 10px;
+
+  padding: 0 10px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* STATUS COLORS */
+
+.status-select.new {
+  background: #e7f0ff;
+  color: #2563eb;
+}
+
+.status-select.new .status-dot {
+  background: #2563eb;
+}
+
+.status-select.contacted {
+  background: #fff4d6;
+  color: #d97706;
+}
+
+.status-select.contacted .status-dot {
+  background: #fbbf24;
+}
+
+.status-select.qualified {
+  background: #f2e8ff;
+  color: #7c3aed;
+}
+
+.status-select.qualified .status-dot {
+  background: #a855f7;
+}
+
+.status-select.converted {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.status-select.converted .status-dot {
+  background: #84cc16;
+}
+
+.status-select.lost {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.status-select.lost .status-dot {
+  background: #ef4444;
+}
+
+.date-text {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ASSIGNEE */
+
+.assignee {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: #334155;
+  font-weight: 600;
+}
+
+/* ACTIONS */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+
+  color: #94a3b8;
+
+  cursor: pointer;
+}
+
+.actions i:hover {
+  color: var(--active-bg);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1200px) {
+
+  .top-toolbar {
+    flex-direction: column;
+    gap: 18px;
+    align-items: stretch;
+  }
+
+  .search-box {
+    width: 100%;
+  }
+
+  .toolbar-actions {
+    flex-wrap: wrap;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .table-header,
+  .table-row {
+    min-width: 1200px;
+  }
+}

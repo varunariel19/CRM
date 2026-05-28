@@ -1,0 +1,107 @@
+<div class="tickets-wrapper">
+
+  <!-- TOPBAR -->
+  <div class="tickets-topbar">
+
+    <div class="search-box">
+      <i class="fas fa-question-circle search-icon"></i>
+      <input
+        type="text"
+        placeholder="Search tickets text..."
+        [(ngModel)]="searchText"
+      />
+    </div>
+
+    <div class="topbar-right">
+
+      <select [(ngModel)]="selectedStatus" class="filter-select">
+        <option *ngFor="let s of statusOptions">{{ s }}</option>
+      </select>
+
+      <select [(ngModel)]="selectedPriority" class="filter-select">
+        <option *ngFor="let p of priorityOptions">{{ p }}</option>
+      </select>
+
+      <button class="raise-btn" (click)="raiseTicket()">
+        <i class="fas fa-plus"></i>
+        Raise Support Ticket
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- TICKET CARDS -->
+  <div class="tickets-list">
+
+    <div
+      class="ticket-card"
+      *ngFor="let ticket of filteredTickets">
+
+      <!-- CARD HEADER -->
+      <div class="card-header">
+
+        <div class="header-left">
+          <span class="ticket-code">TICKET STAFF ID: {{ ticket.ticketCode }}</span>
+          <span class="priority-badge" [ngClass]="getPriorityClass(ticket.priority)">
+            {{ ticket.priority }}
+          </span>
+        </div>
+
+        <div class="header-right">
+          <select
+            class="status-select"
+            [ngClass]="getStatusClass(ticket.status)"
+            [value]="ticket.status"
+            (change)="changeStatus(ticket, $event)">
+            <option *ngFor="let s of statusOptions.slice(1)">{{ s }}</option>
+          </select>
+          <i class="fas fa-trash delete-icon" (click)="deleteTicket(ticket.id)"></i>
+        </div>
+
+      </div>
+
+      <!-- CARD BODY -->
+      <div class="card-body">
+        <h3 class="ticket-title">{{ ticket.title }}</h3>
+        <p class="ticket-desc">{{ ticket.description }}</p>
+      </div>
+
+      <!-- CARD FOOTER -->
+      <div class="card-footer">
+
+        <div class="requester-box">
+          <span class="footer-label">REQUESTER</span>
+          <span class="requester-name">{{ ticket.requester.name }}</span>
+          <span class="requester-meta">
+            at {{ ticket.requester.company }} | {{ ticket.requester.email }}
+          </span>
+        </div>
+
+        <div class="engineer-box">
+          <span class="footer-label">RESPONSIBLE ENGINEER</span>
+          <div class="engineer-row">
+            <i class="fas fa-user engineer-icon"></i>
+            <span class="engineer-name">{{ ticket.engineer }}</span>
+            <select
+              class="engineer-select"
+              [value]="ticket.engineer"
+              (change)="changeEngineer(ticket, $event)">
+              <option *ngFor="let e of engineerOptions">{{ e }}</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state" *ngIf="filteredTickets.length === 0">
+      <i class="fas fa-ticket-alt"></i>
+      <p>No tickets match your filters.</p>
+    </div>
+
+  </div>
+
+</div>

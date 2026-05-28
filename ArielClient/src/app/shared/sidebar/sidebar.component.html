@@ -1,56 +1,39 @@
-<!-- sidebar.component.html -->
-
-<aside class="sidebar">
+<div class="sidebar-wrapper">
 
   <!-- LOGO -->
   <div class="logo-section">
+
     <div class="logo-box">
-      <i class="fas fa-chart-pie"></i>
+      <i [class]="selectedMenu().icon"></i>
     </div>
 
-    <div class="logo-text">
-      <h2>Analytics Dashboard</h2>
+    <div
+      class="logo-text"
+      *ngIf="!collapsed">
+
+      <h2>{{ selectedMenu().label }}</h2>
+
     </div>
+
   </div>
 
   <!-- MENU -->
   <nav class="menu-list">
 
-    <a class="menu-item active">
-      <i class="fas fa-table-cells-large"></i>
-      <span>Analytics Dashboard</span>
-    </a>
+    <a
+      *ngFor="let item of sidebarMenus(); let i = index"
+      class="menu-item"
+      [class.active]="activeIndex() === i"
+      (click)="setActiveMenu(i)">
 
-    <a class="menu-item">
-      <i class="fas fa-users"></i>
-      <span>Leads Management</span>
-    </a>
+      <i [class]="item.icon"></i>
 
-    <a class="menu-item">
-      <i class="fas fa-user-plus"></i>
-      <span>Customer profiles</span>
-    </a>
+      <span *ngIf="!collapsed">
+        {{ item.label }}
+      </span>
 
-    <a class="menu-item">
-      <i class="fas fa-arrow-trend-up"></i>
-      <span>Deals Pipeline</span>
-    </a>
-
-    <a class="menu-item">
-      <i class="fas fa-square-check"></i>
-      <span>Tasks & Follow-ups</span>
-    </a>
-
-    <a class="menu-item">
-      <i class="fas fa-life-ring"></i>
-      <span>Customer Tickets</span>
-    </a>
-
-    <a class="menu-item">
-      <i class="fas fa-calendar-days"></i>
-      <span>Appointment Scheduler</span>
     </a>
 
   </nav>
 
-</aside>
+</div>

@@ -1,4 +1,62 @@
+<header class="header">
 
-<div>
-    header
-</div>
+  <div class="left-section">
+
+    <div class="logo">
+      CRM
+    </div>
+
+    <div class="brand">
+      Ariel CRM
+    </div>
+
+
+    <button class="toggle-btn" (click)="toggleSidebar.emit()">
+      <i class="fas fa-bars"></i>
+    </button>
+
+  </div>
+
+
+  <div class="center-section">
+
+
+    <div class="search-box">
+      <input type="text" placeholder="Search customers, leads, invoices..." />
+    </div>
+  </div>
+
+  <div class="right-section">
+
+
+    <button class="icon-btn">
+      <i class="fa-regular fa-bell"></i>
+    </button>
+
+
+    <button class="icon-btn">
+      <i class="fa-regular fa-moon"></i>
+    </button>
+
+
+    <button class="icon-btn">
+      <i class="fa-solid fa-gear"></i>
+    </button>
+
+
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="profile" />
+
+      <div class="profile-info">
+        <h4>Varun</h4>
+        <p>Admin</p>
+      </div>
+    </div>
+
+    <button class="logout-btn">
+      Logout
+    </button>
+
+  </div>
+
+</header>

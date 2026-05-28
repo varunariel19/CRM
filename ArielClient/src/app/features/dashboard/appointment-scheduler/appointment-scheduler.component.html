@@ -1,0 +1,152 @@
+<div class="agenda-wrapper">
+
+  <div class="calendar-panel">
+
+    <div class="cal-header">
+      <div class="cal-title">
+        <i class="fas fa-calendar-alt cal-icon"></i>
+        Agenda Grid Calendar
+      </div>
+      <button class="book-btn" (click)="openModal()">
+        <i class="fas fa-plus"></i> Book
+      </button>
+    </div>
+
+    <p class="cal-subtitle">
+      Select a target date slot to filter scheduled conference sessions below:
+    </p>
+
+    <div class="date-grid">
+      <div
+        class="date-cell"
+        *ngFor="let day of calendarDays"
+        [class.selected]="day.fullDate === selectedDate"
+        (click)="selectDay(day)">
+
+        <div class="day-top">
+          <span class="day-label">{{ day.dayLabel }}, {{ day.monthLabel }}</span>
+          <span class="event-dot" *ngIf="day.hasEvent && day.fullDate !== selectedDate"></span>
+        </div>
+        <span class="day-number">{{ day.date }}</span>
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="meetings-panel">
+
+    <div class="meetings-header">
+      <p class="meetings-title">
+        Meetings slated for:
+        <span class="date-highlight">{{ selectedDateLabel }}</span>
+      </p>
+      <p class="meetings-count">
+        {{ meetingsForSelected.length }} session{{ meetingsForSelected.length !== 1 ? 's' : '' }} booked on this date.
+      </p>
+    </div>
+
+    <div class="meeting-list" *ngIf="meetingsForSelected.length > 0">
+      <div class="meeting-card" *ngFor="let m of meetingsForSelected">
+
+        <div class="meeting-card-left">
+          <span class="location-dot" [ngClass]="getLocationDotClass(m.location)"></span>
+          <div class="meeting-info">
+            <h4 class="meeting-subject">{{ m.subject }}</h4>
+            <span class="meeting-company">{{ m.company }}</span>
+            <div class="meeting-meta">
+              <span><i class="fas fa-clock"></i> {{ formatTime(m.time) }}</span>
+              <span><i class="fas fa-video"></i> {{ m.location }}</span>
+            </div>
+            <p class="meeting-notes" *ngIf="m.notes">{{ m.notes }}</p>
+          </div>
+        </div>
+
+        <i class="fas fa-trash meeting-delete" (click)="deleteMeeting(m.id)"></i>
+
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="meetingsForSelected.length === 0">
+      <i class="fas fa-calendar empty-icon"></i>
+      <p class="empty-text">No scheduled meetings logged for {{ selectedDate }}.</p>
+      <button class="schedule-link" (click)="openModal()">Schedule an appointment slot</button>
+    </div>
+
+  </div>
+
+</div>
+
+
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <h3 class="modal-title">Schedule Client Conference</h3>
+      <button class="modal-close" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label>Proposed Target Subject <span class="req">*</span></label>
+        <input
+          type="text"
+          [(ngModel)]="newMeeting.subject"
+          placeholder="e.g. Service SLA Kickoff Session"
+        />
+      </div>
+
+      <div class="form-group">
+        <label>Company / client Target <span class="req">*</span></label>
+        <input
+          type="text"
+          [(ngModel)]="newMeeting.company"
+          placeholder="e.g. Acme Corporation"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date <span class="req">*</span></label>
+          <input type="date" [(ngModel)]="newMeeting.date" />
+        </div>
+        <div class="form-group">
+          <label>Time <span class="req">*</span></label>
+          <input type="time" [(ngModel)]="newMeeting.time" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Session Target Location</label>
+        <div class="location-select-wrap">
+          <span class="location-dot dot-blue"></span>
+          <select [(ngModel)]="newMeeting.location">
+            <option *ngFor="let loc of locationOptions">{{ loc }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Corporate Agenda / Notes</label>
+        <textarea
+          [(ngModel)]="newMeeting.notes"
+          placeholder="Draft introductory guidelines or core coordinates of this appointment..."
+          rows="4">
+        </textarea>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+      <button class="btn-schedule" (click)="scheduleMeeting()">
+        <i class="fas fa-calendar-check"></i> Schedule Meet
+      </button>
+    </div>
+
+  </div>
+</div>

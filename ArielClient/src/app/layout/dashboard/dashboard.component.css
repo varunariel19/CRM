@@ -56,11 +56,10 @@
   font-size: 14px;
 }
 
-/* BUTTON */
 .primary-btn {
   border: none;
   outline: none;
-  background: #0f766e;
+  background: var(--button-color);
   color: white;
   padding: 12px 18px;
   border-radius: 12px;
