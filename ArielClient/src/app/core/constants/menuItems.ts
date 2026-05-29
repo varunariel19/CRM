@@ -35,4 +35,10 @@ export const menuItems = [
     label: 'Appointment Scheduler',
     route: 'appointments',
   },
+
+  {
+    icon: 'fas fa-users',
+    label: 'Team Members',
+    route: 'team-members',
+  }
 ];

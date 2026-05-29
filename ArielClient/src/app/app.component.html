@@ -1,1 +1,6 @@
+<div class="auth-loader" *ngIf="authState.isValidating()">
+  <div class="auth-loader__spinner"></div>
+  <span>Validating session...</span>
+</div>
+
 <router-outlet></router-outlet>

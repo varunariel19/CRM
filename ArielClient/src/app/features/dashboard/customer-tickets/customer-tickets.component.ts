@@ -23,12 +23,15 @@ export interface SupportTicket {
   selector: 'app-customer-tickets',
   imports: [CommonModule, FormsModule],
 
+  
   templateUrl: './customer-tickets.component.html',
   styleUrl: './customer-tickets.component.css',
 })
 
 export class CustomerTicketsComponent {
-
+  
+  clients : any[] = [];
+  teamMembers : any[] = [];
   searchText = '';
   selectedStatus = 'All Statuses';
   selectedPriority = 'All Priorities';
@@ -96,6 +99,21 @@ export class CustomerTicketsComponent {
       engineer: 'John Reed',
     },
   ];
+
+
+  showCreateModal = false;
+newTicket: any = {};
+
+closeModal(event: MouseEvent): void {
+  if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+    this.showCreateModal = false;
+  }
+}
+
+submitTicket(): void {
+  this.showCreateModal = false;
+  this.newTicket = {};
+}
 
   get filteredTickets(): SupportTicket[] {
     return this.tickets.filter((t) => {

@@ -2,7 +2,6 @@
   display: grid;
   grid-template-columns: 1fr 420px;
   min-height: 100vh;
-  font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 
@@ -123,7 +122,6 @@
 .stat-lbl {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.55);
-  letter-spacing: 0.04em;
 }
 
 .stat-trend {
@@ -157,7 +155,6 @@
   font-size: 22px;
   font-weight: 800;
   color: #fff;
-  letter-spacing: -0.02em;
 }
 
 .tagline-text {
@@ -165,7 +162,6 @@
   font-weight: 800;
   color: #fff;
   line-height: 1.25;
-  letter-spacing: -0.02em;
   margin-bottom: 12px;
 }
 
@@ -252,7 +248,6 @@
   color: var(--text-dark);
   outline: none;
   transition: border-color 0.15s;
-  font-family: inherit;
 }
 
 .form-group input:focus {
@@ -343,7 +338,6 @@
 .captcha-char {
   font-size: 20px;
   font-weight: 800;
-  font-family: 'Courier New', monospace;
   display: inline-block;
   text-shadow: 1px 1px 0 rgba(0,0,0,0.1);
 }
@@ -378,7 +372,6 @@
   cursor: pointer;
   transition: opacity 0.15s, transform 0.1s;
   margin-bottom: 20px;
-  letter-spacing: 0.01em;
 }
 
 .btn-primary:hover {
@@ -427,7 +420,6 @@
   gap: 12px;
   padding: 0 18px;
   transition: border-color 0.15s, background 0.15s;
-  font-family: inherit;
 }
 
 .social-btn:hover {
@@ -465,7 +457,6 @@
   padding: 0;
   text-align: left;
   margin-top: 4px;
-  font-family: inherit;
 }
 
 .forgot-link:hover {
@@ -513,7 +504,6 @@
 .badge small {
   font-size: 9px;
   color: rgba(255,255,255,0.65);
-  letter-spacing: 0.04em;
 }
 
 .badge span {

@@ -2,6 +2,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterOutlet } from '@angular/router';
+import { AuthState } from './state/auth.state';
 
 @Component({
   selector: 'app-root',
@@ -12,5 +13,7 @@ import { RouterOutlet } from '@angular/router';
 })
 
 export class App {
-  
+
+  constructor(public authState: AuthState) { }
+
 }

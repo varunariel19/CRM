@@ -1,4 +1,5 @@
 :root {
+  --font-sans: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
   --remaining-bg: #06122b;
   --menu-text: #d6deff;
   --hover-bg: #0d1f45;
@@ -14,12 +15,64 @@
     --purple: #6b21a8;
   --crm-purple: #5b21b6;
   --crm-violet: #7c3aed;
+
+   --success-bg: #dcfce7;
+  --success-text: #16a34a;
+  --warning-bg: #fef9c3;
+  --warning-text: #a16207;
+  --danger-bg: #fee2e2;
+  --danger-text: #dc2626;
+  --info-bg: #e0f2fe;
+  --info-text: #0369a1;
   
 }
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-dark);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  letter-spacing: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+a,
+label,
+small,
+li,
+td,
+th {
+  font-family: inherit;
+  letter-spacing: 0;
 }
 
 ::-webkit-scrollbar-button {

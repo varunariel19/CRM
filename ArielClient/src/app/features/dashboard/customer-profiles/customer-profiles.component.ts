@@ -1,143 +1,140 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-
-interface ClientNote {
-  author: string;
-  message: string;
-  time: string;
-}
-
-interface Client {
-  id: number;
-  name: string;
-  role: string;
-  company: string;
-  email: string;
-  phone: string;
-  address: string;
-  notes: ClientNote[];
-}
+import { Contact, CreateContactPayload, UpdateContactPayload } from '../../../core/types/contact.type';
+import { ContactService } from '../../../services/contact.service';
 
 @Component({
   selector: 'app-customer-profiles',
+  standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './customer-profiles.component.html',
   styleUrl: './customer-profiles.component.css',
 })
-
 export class CustomerProfilesComponent {
+ 
+ @Input() clients: Contact[] = [];
 
   searchText = '';
   newNote = '';
-  editMode = false;
+  selectedClient: Contact | null = null;
 
-  clients = [
-    {
-      id: 1,
-      name: 'John Doe',
-      role: 'CTO',
-      company: 'Acme Corp',
-      email: 'john@acme.com',
-      phone: '+1 555 123 4567',
-      address: '123 Enterprise Way, Tech City, CA 94016',
-      notes: [],
-    },
-    {
-      id: 2,
-      name: 'Alice Smith',
-      role: 'IT Director',
-      company: 'Vertex Solutions',
-      email: 'alice@vertex.io',
-      phone: '+1 555 987 6543',
-      address: '55 Silicon Avenue, Austin, TX',
-      notes: [],
-    },
-    {
-      id: 3,
-      name: 'Bob Johnson',
-      role: 'Engineering Lead',
-      company: 'Nexus Tech',
-      email: 'bob@nexus.com',
-      phone: '+1 555 456 7890',
-      address: '900 Innovation Street, Seattle, WA',
-      notes: [],
-    },
-    {
-      id: 4,
-      name: 'Carol Williams',
-      role: 'CEO',
-      company: 'Hyperion Labs',
-      email: 'carol@hyperion.com',
-      phone: '+1 555 222 3333',
-      address: '12 Market Street, New York, NY',
-      notes: [],
-    },
-  ];
+  showCreateModal = false;
+  showEditModal = false;
 
-  selectedClient: Client = this.clients[0];
 
-  filteredClients() {
+  newClient: CreateContactPayload = this.resetCreateForm();
+
+  editClient: Contact = {} as Contact;
+
+  constructor(private contactService: ContactService) { }
+
+  private resetCreateForm(): CreateContactPayload {
+    return {
+      name: '',
+      company: '',
+      designation: 'Staff',
+      email: '',
+      phone: '',
+      address: ''
+    };
+  }
+
+
+  saveNewContact(): void {
+    if (!this.newClient.name || !this.newClient.company || !this.newClient.email) {
+      alert('Please fill out all required fields.');
+      return;
+    }
+
+    this.contactService.createContact(this.newClient).subscribe({
+      next: (created) => {
+        const safeContact: any = { ...created, notes: [] };
+        this.clients.push(safeContact);
+        this.selectedClient = safeContact;
+        this.showCreateModal = false;
+        this.newClient = this.resetCreateForm();
+      },
+      error: (err) => console.error('Failed to create new contact profile', err)
+    });
+  }
+
+  openEditModal(): void {
+    if (!this.selectedClient) return;
+    this.editClient = { ...this.selectedClient };
+    this.showEditModal = true;
+  }
+
+  saveEdit(): void {
+    if (!this.editClient.id) return;
+
+    const payload: UpdateContactPayload = {
+      name: this.editClient.name,
+      company: this.editClient.company,
+      designation: this.editClient.designation || 'Staff',
+      email: this.editClient.email,
+      phone: this.editClient.phone,
+      address: this.editClient.address
+    };
+
+    this.contactService.updateContact(this.editClient.id, payload).subscribe({
+      next: (updated) => {
+        const index = this.clients.findIndex(c => c.id === updated.id);
+        if (index !== -1) {
+          const existingNotes = (this.clients[index] as any).notes || [];
+          const safeUpdated: any = { ...updated, notes: existingNotes };
+
+          this.clients[index] = safeUpdated;
+          this.selectedClient = safeUpdated;
+        }
+        this.showEditModal = false;
+      },
+      error: (err) => console.error('Failed to update corporate profile', err)
+    });
+  }
+
+  deleteClient(id: string): void {
+    if (!confirm('Are you sure you want to permanently delete this corporate profile?')) return;
+
+    this.contactService.deleteContact(id).subscribe({
+      next: () => {
+        this.clients = this.clients.filter((c) => c.id !== id);
+        this.selectedClient = this.clients.length ? this.clients[0] : null;
+      },
+      error: (err) => console.error('Failed to delete the selected contact reference', err)
+    });
+  }
+
+  closeModal(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.showCreateModal = false;
+    }
+  }
+
+  closeEditModal(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.showEditModal = false;
+    }
+  }
+
+  filteredClients(): Contact[] {
     return this.clients.filter((client) =>
       client.name.toLowerCase().includes(this.searchText.toLowerCase()) ||
       client.company.toLowerCase().includes(this.searchText.toLowerCase())
     );
   }
 
-  selectClient(client: any) {
+  selectClient(client: Contact): void {
     this.selectedClient = client;
   }
 
-  addClient() {
+  addNote(): void {
+    if (!this.newNote.trim() || !this.selectedClient) return;
 
-    const id = this.clients.length + 1;
+    const clientWithNotes = this.selectedClient as any;
+    if (!clientWithNotes.notes) clientWithNotes.notes = [];
 
-    const newClient = {
-      id,
-      name: `New Client ${id}`,
-      role: 'Manager',
-      company: 'New Company',
-      email: `client${id}@mail.com`,
-      phone: '+1 555 000 0000',
-      address: 'Unknown Address',
-      notes: [],
-    };
-
-    this.clients.unshift(newClient);
-    this.selectedClient = newClient;
-  }
-
-  deleteClient(id: number) {
-
-    this.clients = this.clients.filter((c) => c.id !== id);
-
-    if (this.clients.length) {
-      this.selectedClient = this.clients[0];
-    }
-
-  }
-
-  toggleEditMode() {
-
-    this.editMode = !this.editMode;
-
-    if (this.editMode) {
-
-      const name = prompt('Edit client name', this.selectedClient.name);
-
-      if (name) {
-        this.selectedClient.name = name;
-      }
-
-    }
-
-  }
-
-  addNote() {
-
-    if (!this.newNote.trim()) return;
-
-    this.selectedClient.notes.unshift({
+    clientWithNotes.notes.unshift({
       author: 'David Carter',
       message: this.newNote,
       time: new Date().toLocaleTimeString(),
@@ -145,5 +142,4 @@ export class CustomerProfilesComponent {
 
     this.newNote = '';
   }
-
 }

@@ -9,41 +9,46 @@
 
     <div class="workspace-wrapper">
 
-     <ng-container [ngSwitch]="selectedMenu().route">
+      <ng-container [ngSwitch]="selectedMenu().route">
 
-  <div *ngSwitchCase="'analytics'">
-    <app-analytics-dashboard />
-  </div>
+        <div *ngSwitchCase="'analytics'">
+          <app-analytics-dashboard />
+        </div>
 
-  <div *ngSwitchCase="'leads'">
-    <app-lead-mangement />
-  </div>
+        <div *ngSwitchCase="'leads'">
+          <app-lead-management [leads]="leadsList" />
+        </div>
 
-  <div *ngSwitchCase="'customers'">
-    <app-customer-profiles />
-  </div>
+        <div *ngSwitchCase="'customers'">
+          <app-customer-profiles [clients]="clients" />
+        </div>
 
-  <div *ngSwitchCase="'deals'">
-    <app-deals-pipeline />
-  </div>
+        <div *ngSwitchCase="'deals'">
+          <app-deals-pipeline [clients]="clients"  [deals]="deals" />
+        </div>
 
-  <div *ngSwitchCase="'tasks'">
-    <app-task-follow-up />
-  </div>
+        <div *ngSwitchCase="'tasks'">
+          <app-task-follow-up />
+        </div>
 
-  <div *ngSwitchCase="'tickets'">
-    <app-customer-tickets/>
-  </div>
+        <div *ngSwitchCase="'tickets'">
+          <app-customer-tickets />
+        </div>
 
-  <div *ngSwitchCase="'appointments'">
-    <app-appointment-scheduler/>
-  </div>
+        <div *ngSwitchCase="'appointments'">
+          <app-appointment-scheduler />
+        </div>
 
-  <div *ngSwitchDefault>
-    Select Menu
-  </div>
+        <div *ngSwitchCase="'team-members'">
+          <!-- create this one  -->
+          <app-team-members />
+        </div>
 
-</ng-container>
+        <div *ngSwitchDefault>
+          Select Menu
+        </div>
+
+      </ng-container>
 
     </div>
 

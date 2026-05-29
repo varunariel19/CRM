@@ -1,15 +1,78 @@
 <div class="tickets-wrapper">
 
+<div class="tickets-wrapper">
+
+  <!-- LOG INCIDENT MODAL -->
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
+    <div class="modal-box">
+
+      <div class="modal-header">
+        <h2>Log Support Incident</h2>
+        <button class="modal-close" (click)="showCreateModal = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="form-group full-width">
+          <label>Incident Headline Title <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newTicket.title" placeholder="e.g. Staging DB Timeout SSL errors" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Issue Details / Diagnosis <span class="required">*</span></label>
+          <textarea
+            [(ngModel)]="newTicket.description"
+            placeholder="Describe logs, environment conditions, and client SLA expectations...">
+          </textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Contact Client Ref</label>
+            <select [(ngModel)]="newTicket.clientId">
+              <option *ngFor="let client of clients" [value]="client.id">
+                {{ client.name }} ({{ client.company }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>SLA Criticality Priority</label>
+            <select [(ngModel)]="newTicket.priority">
+              <option>Low</option>
+              <option>Medium</option>
+              <option>High</option>
+              <option>Critical</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Assigned Support Agent</label>
+          <select [(ngModel)]="newTicket.engineer">
+            <option *ngFor="let member of teamMembers" [value]="member.id">
+              {{ member.name }}
+            </option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
+        <button class="btn-register" (click)="submitTicket()">Log Incident</button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- TOPBAR -->
   <div class="tickets-topbar">
 
     <div class="search-box">
       <i class="fas fa-question-circle search-icon"></i>
-      <input
-        type="text"
-        placeholder="Search tickets text..."
-        [(ngModel)]="searchText"
-      />
+      <input type="text" placeholder="Search tickets text..." [(ngModel)]="searchText" />
     </div>
 
     <div class="topbar-right">
@@ -22,7 +85,7 @@
         <option *ngFor="let p of priorityOptions">{{ p }}</option>
       </select>
 
-      <button class="raise-btn" (click)="raiseTicket()">
+      <button class="raise-btn" (click)="showCreateModal = true">
         <i class="fas fa-plus"></i>
         Raise Support Ticket
       </button>
@@ -30,6 +93,7 @@
     </div>
 
   </div>
+
 
   <!-- TICKET CARDS -->
   <div class="tickets-list">

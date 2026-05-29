@@ -1,21 +1,24 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './features/auth/login/login.component';
 import { RootComponent } from './core/layouts/root/root.component';
+import { AuthGuard, GuestGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'home',
+    redirectTo: 'dashboard',
   },
- 
+
   {
     path: 'sign-in',
     component: LoginComponent,
+    canActivate: [GuestGuard],
   },
   {
     path: 'dashboard',
     component: RootComponent,
+    canActivate: [AuthGuard]
 
   },
   {
@@ -24,6 +27,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'home',
+    redirectTo: 'dashboard',
   },
 ];

@@ -1,0 +1,22 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+
+import { TeamMembersComponent } from './team-members.component';
+
+describe('TeamMembersComponent', () => {
+  let component: TeamMembersComponent;
+  let fixture: ComponentFixture<TeamMembersComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TeamMembersComponent],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(TeamMembersComponent);
+    component = fixture.componentInstance;
+    await fixture.whenStable();
+  });
+
+  it('should create', () => {
+    expect(component).toBeTruthy();
+  });
+});

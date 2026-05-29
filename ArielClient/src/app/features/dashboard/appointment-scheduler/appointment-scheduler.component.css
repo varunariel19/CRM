@@ -114,7 +114,6 @@
 .day-label {
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.06em;
   color: var(--text-light);
   text-transform: uppercase;
 }
@@ -404,7 +403,6 @@
   background: #fff;
   outline: none;
   transition: border-color 0.15s;
-  font-family: inherit;
   width: 100%;
   box-sizing: border-box;
 }

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../../services/auth.service';
 
 
 @Component({
@@ -24,6 +25,8 @@ export class LoginComponent {
 
   captchaCode = '';
   private captchaChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  constructor(private authService: AuthService) { }
 
   ngOnInit(): void {
     this.generateCaptcha();
@@ -58,7 +61,7 @@ export class LoginComponent {
       return;
     }
     this.errorMsg = '';
-    alert(`Welcome back, ${this.email}!`);
+    this.authService.login({ email: this.email, password: this.password });
   }
 
   goBack(): void {

@@ -1,43 +1,100 @@
 <div class="tasks-wrapper">
 
+  <!-- CREATE TASK MODAL -->
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
+    <div class="modal-box">
+
+      <div class="modal-header">
+        <h2>Add Pending Action Item</h2>
+        <button class="modal-close" (click)="showCreateModal = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="form-group full-width">
+          <label>Task Description / Title <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newTask.title" placeholder="e.g. Schedule AWS review workshop" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" [(ngModel)]="newTask.dueDate" />
+          </div>
+          <div class="form-group">
+            <label>Call Category Type</label>
+            <select [(ngModel)]="newTask.type">
+              <option value="Call Outreach">📞 Call Outreach</option>
+              <option value="Email Campaign">📧 Email Campaign</option>
+              <option value="Meeting discovery">😊 Meeting discovery</option>
+              <option value="Technical Demo">🖥️ Technical Demo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Assignee Staff Member</label>
+          <select [(ngModel)]="newTask.assignedTo">
+            <option *ngFor="let member of teamMembers" [value]="member.id">
+              {{ member.name }}
+            </option>
+          </select>
+        </div>
+
+        <div class="context-section">
+          <label class="context-label">CONTEXT ALIGNMENT (OPTIONAL)</label>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Connect to Lead</label>
+              <select [(ngModel)]="newTask.leadId">
+                <option [value]="null">None</option>
+                <option *ngFor="let lead of leads" [value]="lead.id">
+                  {{ lead.name }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Connect to Deal</label>
+              <select [(ngModel)]="newTask.dealId">
+                <option [value]="null">None</option>
+                <option *ngFor="let deal of deals" [value]="deal.id">
+                  {{ deal.title }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
+        <button class="btn-register" (click)="submitTask()">Save Task</button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- TOPBAR -->
   <div class="tasks-topbar">
 
     <div class="tabs">
-
-      <button
-        [class.active]="activeTab === 'pending'"
-        (click)="activeTab = 'pending'">
-
+      <button [class.active]="activeTab === 'pending'" (click)="activeTab = 'pending'">
         Pending Reminders
-
       </button>
-
-      <button
-        [class.active]="activeTab === 'completed'"
-        (click)="activeTab = 'completed'">
-
-        Completed tasks
-
+      <button [class.active]="activeTab === 'completed'" (click)="activeTab = 'completed'">
+        Completed Tasks
       </button>
-
-      <button
-        [class.active]="activeTab === 'all'"
-        (click)="activeTab = 'all'">
-
+      <button [class.active]="activeTab === 'all'" (click)="activeTab = 'all'">
         All Logs
-
       </button>
-
     </div>
 
-    <button
-      class="add-btn"
-      (click)="addTask()">
-
+    <button class="add-btn" (click)="showCreateModal = true">
       <i class="fas fa-plus"></i>
       Add Task Action
-
     </button>
 
   </div>
@@ -45,72 +102,34 @@
   <!-- TASKS -->
   <div class="tasks-list">
 
-    <div
-      class="task-card"
-      *ngFor="let task of filteredTasks()">
+    <div class="task-card" *ngFor="let task of filteredTasks()">
 
-      <!-- LEFT -->
       <div class="task-left">
-
-        <input
-          type="checkbox"
-          [checked]="task.completed"
-          (change)="toggleTask(task)"
-        />
-
+        <input type="checkbox" [checked]="task.completed" (change)="toggleTask(task)" />
         <div>
-
-          <h3 [class.completed]="task.completed">
-            {{ task.title }}
-          </h3>
-
+          <h3 [class.completed]="task.completed">{{ task.title }}</h3>
           <div class="task-meta">
-
-            <span
-              class="tag"
-              [ngClass]="task.type.toLowerCase()">
-
+            <span class="tag" [ngClass]="task.type.toLowerCase().replace(' ', '-')">
               {{ task.type }}
-
             </span>
-
             <span class="due-date">
               <i class="fas fa-clock"></i>
               Due: {{ task.dueDate }}
             </span>
-
             <span class="lead-pill">
-
               <i class="fas fa-link"></i>
-
-              Lead:
-              {{ task.lead }}
-
+              Lead: {{ task.lead }}
             </span>
-
           </div>
-
         </div>
-
       </div>
 
-      <!-- RIGHT -->
       <div class="task-right">
-
         <div class="representative">
-
           <i class="fas fa-user"></i>
-
-          Representative:
-          {{ task.rep }}
-
+          Representative: {{ task.rep }}
         </div>
-
-        <i
-          class="fas fa-trash delete-icon"
-          (click)="deleteTask(task.id)">
-        </i>
-
+        <i class="fas fa-trash delete-icon" (click)="deleteTask(task.id)"></i>
       </div>
 
     </div>

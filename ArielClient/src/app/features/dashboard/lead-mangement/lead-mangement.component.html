@@ -1,21 +1,150 @@
 <div class="lead-management-wrapper">
 
-  <!-- TOP BAR -->
-  <div class="top-toolbar">
+  <!-- CREATE LEAD MODAL -->
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Onboard New Lead Opportunity</h2>
+        <button class="modal-close" (click)="showCreateModal = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
 
-    <!-- SEARCH -->
+      <div class="modal-body">
+        <div class="form-group full-width">
+          <label>Company / Enterprise <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newLead.company" placeholder="e.g. Initech Corp" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Primary Contact Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newLead.name" placeholder="e.g. John Doe" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email Address <span class="required">*</span></label>
+            <input type="email" [(ngModel)]="newLead.email" placeholder="john@firm.com" />
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" [(ngModel)]="newLead.phone" placeholder="+1 555-0199" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Source Pipeline</label>
+            <select [(ngModel)]="newLead.source">
+              <option value="Website">Website</option>
+              <option value="Referral">Referral</option>
+              <option value="Instagram">Instagram</option>
+              <option value="ColdCall">Cold Call</option>
+              <option value="LinkedIn">LinkedIn</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assigned Representative</label>
+            <select [(ngModel)]="newLead.assignedToId">
+              <option value="" disabled>Select Member</option>
+              <option *ngFor="let member of teamMembers" [value]="member.id">
+                {{ member.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
+        <button class="btn-register" (click)="submitCreateLead()">Register Entry</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT LEAD MODAL -->
+  <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal($event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Modify Lead File</h2>
+        <button class="modal-close" (click)="showEditModal = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group full-width">
+          <label>Company / Enterprise <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="editLead.company" placeholder="e.g. Initech Corp" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Primary Contact Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="editLead.name" placeholder="e.g. John Doe" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email Address <span class="required">*</span></label>
+            <input type="email" [(ngModel)]="editLead.email" placeholder="john@firm.com" />
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" [(ngModel)]="editLead.phone" placeholder="+1 555-0199" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Source Pipeline</label>
+            <select [(ngModel)]="editLead.source">
+              <option value="Website">Website</option>
+              <option value="Referral">Referral</option>
+              <option value="Instagram">Instagram</option>
+              <option value="ColdCall">Cold Call</option>
+              <option value="LinkedIn">LinkedIn</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assigned Representative</label>
+            <select [(ngModel)]="editLead.assignedToId">
+              <option value="" disabled>Select Member</option>
+              <option *ngFor="let member of teamMembers" [value]="member.id">
+                {{ member.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Lead Status</label>
+          <select [(ngModel)]="editLead.status">
+            <option *ngFor="let status of statusOptions" [value]="status.value">
+              {{ status.label }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showEditModal = false">Cancel</button>
+        <button class="btn-register" (click)="submitEditLead()">Update Information</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP TOOLBAR -->
+  <div class="top-toolbar">
     <div class="search-box">
       <i class="fas fa-magnifying-glass"></i>
-
       <input
         type="text"
         placeholder="Search leads name, company, email..."
+        (input)="onSearch($any($event.target).value)"
       />
     </div>
 
-    <!-- FILTERS -->
     <div class="toolbar-actions">
-
       <div class="filter-label">
         <i class="fas fa-filter"></i>
         <span>Filters:</span>
@@ -29,107 +158,99 @@
         <option>All Sources</option>
       </select>
 
-      <button class="create-btn">
+      <button class="create-btn" (click)="showCreateModal = true">
         <i class="fas fa-plus"></i>
         Create Lead
       </button>
-
     </div>
-
   </div>
 
   <!-- TABLE -->
   <div class="table-wrapper">
 
-    <!-- HEADER -->
     <div class="table-header">
-
       <div>PROSPECT / COMPANY</div>
       <div>CONTACT METHODS</div>
       <div>SOURCE</div>
       <div>CRM STATUS STATE</div>
       <div>ASSIGNEE</div>
       <div>ACTIONS</div>
-
     </div>
 
-    <!-- ROW -->
-    <div class="table-row" *ngFor="let lead of leads">
+    <div class="table-row" *ngFor="let lead of leads; let rowIndex = index">
 
-      <!-- USER -->
       <div class="prospect-info">
-
         <h3>{{ lead.name }}</h3>
-
-        <p>
-          <i class="fas fa-building"></i>
-          {{ lead.company }}
-        </p>
-
+        <p><i class="fas fa-building"></i> {{ lead.company }}</p>
       </div>
 
-      <!-- CONTACT -->
       <div class="contact-info">
-
-        <p>
-          <i class="fas fa-envelope"></i>
-          {{ lead.email }}
-        </p>
-
-        <p>
-          <i class="fas fa-phone"></i>
-          {{ lead.phone }}
-        </p>
-
+        <p><i class="fas fa-envelope"></i> {{ lead.email }}</p>
+        <p><i class="fas fa-phone"></i> {{ lead.phone }}</p>
       </div>
 
-      <!-- SOURCE -->
       <div>
-        <span class="source-badge">
-          {{ lead.source }}
-        </span>
+        <span class="source-badge">{{ lead.source }}</span>
       </div>
 
-      <!-- STATUS -->
       <div>
+        <div class="dropdown-wrap">
+          <button
+            type="button"
+            class="status-select"
+            [ngClass]="statusClass(lead.status)"
+            (click)="toggleStatus(rowIndex)">
+            <span class="status-dot"></span>
+            <span>{{ lead.status }}</span>
+            <i class="fas fa-chevron-down"></i>
+          </button>
 
-        <div
-          class="status-select"
-          [ngClass]="lead.status.toLowerCase()">
-
-          <div class="status-left">
-            <div class="status-dot"></div>
-
-            <span>
-              {{ lead.status }}
-            </span>
+          <div class="dropdown-menu status-menu" *ngIf="openStatusIndex === rowIndex">
+            <button
+              type="button"
+              class="dropdown-option"
+              *ngFor="let status of statusOptions"
+              [ngClass]="status.className"
+              (click)="setStatus(lead, status.value)">
+              <span class="status-dot"></span>
+              <span>{{ status.label }}</span>
+            </button>
           </div>
-
-          <i class="fas fa-chevron-down"></i>
-
         </div>
 
-        <p class="date-text">
-          Date: {{ lead.date }}
-        </p>
-
+        <p class="date-text">Date: {{ lead.createdAt | date: 'M/d/yyyy' }}</p>
       </div>
 
-      <div class="assignee">
+      <div class="dropdown-wrap assignee-wrap">
+        <button type="button" class="assignee" (click)="toggleAssignee(rowIndex)">
+          <i class="fas fa-user"></i>
+          <span>{{ getAssigneeName(lead.assignedToId) }}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
 
-        <i class="fas fa-user"></i>
+        <div class="dropdown-menu assignee-menu" *ngIf="openAssigneeIndex === rowIndex">
+          <button
+            type="button"
+            class="dropdown-option assignee-option"
+            *ngFor="let member of teamMembers"
+            (click)="setAssignee(lead, member.id)">
+            <span class="member-dot">{{ member.name.charAt(0) }}</span>
+            <span>{{ member.name }}</span>
+          </button>
 
-        <span>David Carter</span>
-
-        <i class="fas fa-chevron-down"></i>
-
+          <div class="empty-option" *ngIf="teamMembers.length === 0">
+            No members available
+          </div>
+        </div>
       </div>
 
       <div class="actions">
-
-        <i class="fas fa-pen"></i>
-        <i class="fas fa-trash"></i>
-
+        <button class="action-btn edit-btn" (click)="openEditModal(lead)">
+          <i class="fas fa-pen"></i>
+        </button>
+        <button class="action-btn delete-btn" (click)="deleteLead(lead.id)">
+          <i class="fas fa-trash"></i>
+        </button>
       </div>
 
     </div>

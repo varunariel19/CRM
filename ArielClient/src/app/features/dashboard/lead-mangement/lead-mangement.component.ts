@@ -1,62 +1,236 @@
-
+import { Component, Input, OnInit, signal } from '@angular/core';
+import { CreateLeadDto, LeadResponseDto, LeadSource, LeadStatus, UpdateLeadDto } from '../../../core/types/lead.type';
+import { TeamMember } from '../../../core/types/global.type';
+import { AuthState } from '../../../state/auth.state';
+import { LeadService } from '../../../services/lead.service';
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+
 @Component({
-  selector: 'app-lead-mangement',
-  imports: [CommonModule],
-
+  selector: 'app-lead-management',
+  imports: [CommonModule, FormsModule],
   templateUrl: './lead-mangement.component.html',
-  styleUrl: './lead-mangement.component.css',
+  styleUrls: ['./lead-mangement.component.css']
 })
-
 export class LeadManagementComponent {
 
-  leads = [
-    {
-      name: 'John Doe',
-      company: 'Acme Corp',
-      email: 'john@acme.com',
-      phone: '+1 555 123 4567',
-      source: 'Referral',
-      status: 'New',
-      date: '5/23/2026',
-    },
-    {
-      name: 'Alice Smith',
-      company: 'Vertex Solutions',
-      email: 'alice@vertex.io',
-      phone: '+1 555 987 6543',
-      source: 'Website',
-      status: 'Contacted',
-      date: '5/24/2026',
-    },
-    {
-      name: 'Bob Johnson',
-      company: 'Nexus Tech',
-      email: 'bob@nexus.com',
-      phone: '+1 555 456 7890',
-      source: 'Referral',
-      status: 'Qualified',
-      date: '5/25/2026',
-    },
-    {
-      name: 'Carol Williams',
-      company: 'Hyperion Labs',
-      email: 'carol@hyperion.com',
-      phone: '+1 555 222 3333',
-      source: 'Email Campaign',
-      status: 'Converted',
-      date: '5/26/2026',
-    },
-    {
-      name: 'David Brown',
-      company: 'Initech Inc',
-      email: 'david@initech.com',
-      phone: '+1 555 444 5555',
-      source: 'LinkedIn',
-      status: 'Lost',
-      date: '5/27/2026',
-    },
+  @Input() leads: LeadResponseDto[] = [];
+
+  showCreateModal = false;
+  showEditModal = false;
+
+  openStatusIndex: number | null = null;
+  openAssigneeIndex: number | null = null;
+
+
+  editLead: Partial<UpdateLeadDto & { id: string }> = {};
+
+  newLead: CreateLeadDto = {
+    name: '',
+    company: '',
+    email: '',
+    phone: '',
+    source: 'Website',
+    assignedToId: ''
+  };
+
+  readonly statusOptions: {
+    label: LeadStatus;
+    value: LeadStatus;
+    className: string;
+  }[] = [
+      {
+        label: 'New',
+        value: 'New',
+        className: 'new',
+      },
+      {
+        label: 'Contracted',
+        value: 'Contracted',
+        className: 'contracted',
+      },
+      {
+        label: 'Qualified',
+        value: 'Qualified',
+        className: 'qualified',
+      },
+      {
+        label: 'Converted',
+        value: 'Converted',
+        className: 'converted',
+      },
+      {
+        label: 'Lost',
+        value: 'Lost',
+        className: 'lost',
+      },
+    ];
+
+  readonly sourceOptions: LeadSource[] = [
+    'Website', 'Referral', 'Instagram', 'ColdCall'
   ];
 
+  constructor(
+    private authState: AuthState,
+    private leadService: LeadService
+  ) { }
+
+
+  get teamMembers(): TeamMember[] {
+    return this.authState.teamMembers().filter(m => m.role !== 'Admin');
+  }
+
+  submitCreateLead(): void {
+    debugger;
+    if (!this.newLead.name || !this.newLead.company || !this.newLead.email) return;
+
+    this.leadService.handleCreateLead(this.newLead).subscribe({
+      next: (created) => {
+        this.leads = [created, ...this.leads];
+        this.showCreateModal = false;
+        this.resetNewLead();
+      },
+      error: (err) => console.error('Failed to create lead', err)
+    });
+  }
+
+  private resetNewLead(): void {
+    this.newLead = {
+      name: '',
+      company: '',
+      email: '',
+      phone: '',
+      source: 'Website',
+      assignedToId: ''
+    };
+  }
+
+
+  setStatus(lead: LeadResponseDto, status: LeadStatus): void {
+    const previous = lead.status;
+    lead.status = status;
+    this.openStatusIndex = null;
+
+    const dto: UpdateLeadDto = { status };
+
+    this.leadService.handleUpdateLead(lead.id, dto).subscribe({
+      next: (updated) => {
+        const index = this.leads.findIndex(l => l.id === lead.id);
+        if (index !== -1) this.leads[index] = updated;
+      },
+      error: (err) => {
+        lead.status = previous; // rollback
+        console.error('Failed to update status', err);
+      }
+    });
+  }
+
+
+  setAssignee(lead: LeadResponseDto, memberId: string): void {
+    const previousId = lead.assignedToId;
+    const previousName = lead.assignedToName;
+
+    lead.assignedToId = memberId;
+    lead.assignedToName = this.teamMembers.find(m => m.id === memberId)?.name ?? '';
+    this.openAssigneeIndex = null;
+
+    const dto: UpdateLeadDto = { assignedToId: memberId };
+
+    this.leadService.handleUpdateLead(lead.id, dto).subscribe({
+      next: (updated) => {
+        const index = this.leads.findIndex(l => l.id === lead.id);
+        if (index !== -1) this.leads[index] = updated;
+      },
+      error: (err) => {
+        lead.assignedToId = previousId;
+        lead.assignedToName = previousName;
+        console.error('Failed to update assignee', err);
+      }
+    });
+  }
+
+
+  openEditModal(lead: LeadResponseDto): void {
+    this.editLead = {
+      id: lead.id,
+      name: lead.name,
+      company: lead.company,
+      email: lead.email,
+      phone: lead.phone ?? '',
+      source: lead.source as LeadSource,
+      status: lead.status as LeadStatus,
+      assignedToId: lead.assignedToId
+    };
+    this.showEditModal = true;
+  }
+
+  submitEditLead(): void {
+    if (!this.editLead.id) return;
+
+    const { id, ...dto } = this.editLead;
+
+    this.leadService.handleUpdateLead(id, dto as UpdateLeadDto).subscribe({
+      next: (updated) => {
+        const index = this.leads.findIndex(l => l.id === id);
+        if (index !== -1) this.leads[index] = updated;
+        this.showEditModal = false;
+        this.editLead = {};
+      },
+      error: (err) => console.error('Failed to update lead', err)
+    });
+  }
+
+
+  deleteLead(id: string): void {
+    this.leadService.handleRemoveLead(id).subscribe({
+      next: () => {
+        this.leads = this.leads.filter(l => l.id !== id);
+      },
+      error: (err) => console.error('Failed to delete lead', err)
+    });
+  }
+
+
+  onSearch(value: string): void {
+    if (!value.trim()) {
+      return;
+    }
+
+    this.leadService.handleSearchLead(value).subscribe({
+      next: (results) => this.leads = results,
+      error: (err) => console.error('Search failed', err)
+    });
+  }
+
+
+  closeModal(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.showCreateModal = false;
+    }
+  }
+
+  closeEditModal(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.showEditModal = false;
+    }
+  }
+
+
+  statusClass(status: string): string {
+    return status.toLowerCase();
+  }
+
+  toggleStatus(index: number): void {
+    this.openStatusIndex = this.openStatusIndex === index ? null : index;
+    this.openAssigneeIndex = null;
+  }
+
+  toggleAssignee(index: number): void {
+    this.openAssigneeIndex = this.openAssigneeIndex === index ? null : index;
+    this.openStatusIndex = null;
+  }
+
+  getAssigneeName(memberId: string): string {
+    return this.teamMembers.find(m => m.id === memberId)?.name ?? 'Select member';
+  }
 }

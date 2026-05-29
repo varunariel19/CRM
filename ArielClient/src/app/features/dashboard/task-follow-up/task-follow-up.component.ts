@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 
 @Component({
   selector: 'app-task-follow-up',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
 
   templateUrl: './task-follow-up.component.html',
   styleUrl: './task-follow-up.component.css',
@@ -14,6 +15,10 @@ import { Component } from '@angular/core';
 export class TasksFollowupsComponent {
 
   activeTab: 'pending' | 'completed' | 'all' = 'all';
+
+  teamMembers : any[] = [];
+  leads : any[] = [] ;
+  deals : any[] = [];
 
   tasks = [
     {
@@ -56,6 +61,20 @@ export class TasksFollowupsComponent {
       completed: true,
     },
   ];
+
+  showCreateModal = false;
+  newTask: any = { leadId: null, dealId: null };
+
+  closeModal(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.showCreateModal = false;
+    }
+  }
+
+  submitTask(): void {
+    this.showCreateModal = false;
+    this.newTask = { leadId: null, dealId: null };
+  }
 
   filteredTasks() {
 
