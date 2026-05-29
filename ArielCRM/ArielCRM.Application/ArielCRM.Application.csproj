@@ -6,4 +6,19 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+
+	<ItemGroup>
+		<ProjectReference Include="..\ArielCRM.Infrastructure\ArielCRM.Infrastructure.csproj" />
+		<ProjectReference Include="..\ArielCRM.DataLayer\ArielCRM.DataLayer.csproj" />
+		<ProjectReference Include="..\ArielCRM.Shared\ArielCRM.Shared.csproj" />
+
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.3.10" />
+	  <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.10" />
+	  <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.8" />
+	</ItemGroup>
+
 </Project>
