@@ -1,19 +1,15 @@
 <div class="layout">
 
   <header class="app-header">
-    <app-header
-      (toggleSidebar)="isSidebarCollapsed = !isSidebarCollapsed">
+    <app-header (toggleSidebar)="isSidebarCollapsed = !isSidebarCollapsed">
     </app-header>
   </header>
 
   <div class="body">
 
-    <aside
-      class="sidebar"
-      [class.collapsed]="isSidebarCollapsed">
+    <aside class="sidebar" [class.collapsed]="isSidebarCollapsed">
 
-      <app-sidebar
-        [collapsed]="isSidebarCollapsed">
+      <app-sidebar [collapsed]="isSidebarCollapsed">
       </app-sidebar>
 
     </aside>
@@ -26,3 +22,6 @@
 
   </div>
 </div>
+
+<app-confirmation-modal />
+<app-global-loader />

@@ -53,6 +53,8 @@ namespace ArielCRM.Infrastructure.DTOs
         public string? Phone { get; set; }
         public string Source { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
+        public string ContactId { get; set; } = string.Empty;
+        public ContactDto? CreatedContact { get; set; } 
         public string AssignedToId { get; set; } = string.Empty;
         public string AssignedToName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }

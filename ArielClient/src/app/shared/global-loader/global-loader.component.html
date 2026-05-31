@@ -1,0 +1,24 @@
+@if(loader.isVisible()) {
+
+<div class="loader-overlay">
+
+  <div class="loader-container">
+
+    <div
+      class="crm-loader"
+      [class.sm]="loader.size() === 'sm'"
+      [class.md]="loader.size() === 'md'"
+      [class.lg]="loader.size() === 'lg'">
+    </div>
+
+    @if(loader.message()) {
+      <p class="loader-message">
+        {{ loader.message() }}
+      </p>
+    }
+
+  </div>
+
+</div>
+
+}

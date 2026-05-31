@@ -18,10 +18,11 @@ import { LeadService } from '../../services/lead.service';
 import { ContactService } from '../../services/contact.service';
 import { DealService } from '../../services/deal.service';
 
-import { LeadResponseDto } from '../../core/types/lead.type';
 import { TeamMember } from '../../core/types/global.type';
 import { Contact } from '../../core/types/contact.type';
 import { Deal } from '../../core/types/deal.type';
+import { LeadState } from '../../state/lead.state';
+import { ContactState } from '../../state/contact.state';
 
 @Component({
   selector: 'app-dashboard',
@@ -43,6 +44,8 @@ import { Deal } from '../../core/types/deal.type';
 export class DashboardComponent implements OnInit {
 
   menuState = inject(MenuState);
+  leadState = inject(LeadState);
+  contactState = inject(ContactState);
 
   leadService = inject(LeadService);
   contactService = inject(ContactService);
@@ -50,8 +53,6 @@ export class DashboardComponent implements OnInit {
 
   selectedMenu = this.menuState.selectedMenu;
 
-  leadsList: LeadResponseDto[] = [];
-  clients: Contact[] = [];
   deals: Deal[] = [];
   teamMemberList: TeamMember[] = [];
 
@@ -77,7 +78,7 @@ export class DashboardComponent implements OnInit {
 
     this.leadService.handleGetLeads().subscribe({
       next: (leads) => {
-        this.leadsList = leads;
+        this.leadState.setLeads(leads);
       },
       error: (err) => {
         console.error('Failed to load leads', err);
@@ -86,7 +87,7 @@ export class DashboardComponent implements OnInit {
 
     this.contactService.getAllContacts().subscribe({
       next: (contacts) => {
-        this.clients = contacts;
+        this.contactState.setContacts(contacts);
       },
       error: (err) => {
         console.error('Error fetching contacts', err);
@@ -95,7 +96,6 @@ export class DashboardComponent implements OnInit {
 
     this.dealService.getAllDeals().subscribe({
       next: (deals: Deal[]) => {
-        console.log('Deals Loaded:', deals);
         this.deals = deals;
       },
       error: (err: any) => {

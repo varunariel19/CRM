@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, inject, Input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Contact, CreateContactPayload, UpdateContactPayload } from '../../../core/types/contact.type';
 import { ContactService } from '../../../services/contact.service';
+import { ContactState } from '../../../state/contact.state';
 
 @Component({
   selector: 'app-customer-profiles',
@@ -12,12 +13,11 @@ import { ContactService } from '../../../services/contact.service';
   styleUrl: './customer-profiles.component.css',
 })
 export class CustomerProfilesComponent {
- 
- @Input() clients: Contact[] = [];
+
+  contactState = inject(ContactState);
 
   searchText = '';
   newNote = '';
-  selectedClient: Contact | null = null;
 
   showCreateModal = false;
   showEditModal = false;
@@ -28,6 +28,15 @@ export class CustomerProfilesComponent {
   editClient: Contact = {} as Contact;
 
   constructor(private contactService: ContactService) { }
+
+  get clients(): Contact[] {
+    return this.contactState.contacts();
+  }
+
+  get selectedClient(): Contact | null {
+    return this.contactState.selectedContact();
+  }
+
 
   private resetCreateForm(): CreateContactPayload {
     return {
@@ -51,7 +60,7 @@ export class CustomerProfilesComponent {
       next: (created) => {
         const safeContact: any = { ...created, notes: [] };
         this.clients.push(safeContact);
-        this.selectedClient = safeContact;
+        this.contactState.selectContact(safeContact);
         this.showCreateModal = false;
         this.newClient = this.resetCreateForm();
       },
@@ -78,15 +87,11 @@ export class CustomerProfilesComponent {
     };
 
     this.contactService.updateContact(this.editClient.id, payload).subscribe({
-      next: (updated) => {
-        const index = this.clients.findIndex(c => c.id === updated.id);
-        if (index !== -1) {
-          const existingNotes = (this.clients[index] as any).notes || [];
-          const safeUpdated: any = { ...updated, notes: existingNotes };
+      next: () => {
+        this.contactState.updateContact(this.editClient.id, payload);
+        const updatedContact = this.clients.find(client => client.id == this.editClient.id);
+        if (updatedContact) this.contactState.selectContact(updatedContact);
 
-          this.clients[index] = safeUpdated;
-          this.selectedClient = safeUpdated;
-        }
         this.showEditModal = false;
       },
       error: (err) => console.error('Failed to update corporate profile', err)
@@ -98,8 +103,8 @@ export class CustomerProfilesComponent {
 
     this.contactService.deleteContact(id).subscribe({
       next: () => {
-        this.clients = this.clients.filter((c) => c.id !== id);
-        this.selectedClient = this.clients.length ? this.clients[0] : null;
+        this.contactState.removeContact(id);
+        this.contactState.selectContact(this.clients.length ? this.clients[0] : null);
       },
       error: (err) => console.error('Failed to delete the selected contact reference', err)
     });
@@ -125,7 +130,7 @@ export class CustomerProfilesComponent {
   }
 
   selectClient(client: Contact): void {
-    this.selectedClient = client;
+    this.contactState.selectContact(client);
   }
 
   addNote(): void {

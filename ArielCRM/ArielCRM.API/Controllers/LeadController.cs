@@ -1,24 +1,15 @@
 ﻿using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Threading.Tasks;
 
 namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class LeadsController : ControllerBase
+    public class LeadsController(ILeadService leadService, ILogger<LeadsController> logger) : ControllerBase
     {
-        private readonly ILeadService _leadService;
-        private readonly ILogger<LeadsController> _logger;
-
-        public LeadsController(ILeadService leadService, ILogger<LeadsController> logger)
-        {
-            _leadService = leadService;
-            _logger = logger;
-        }
+        private readonly ILeadService _leadService = leadService;
+        private readonly ILogger<LeadsController> _logger = logger;
 
         // GET api/leads
         [HttpGet]
@@ -91,12 +82,12 @@ namespace ArielCRM.API.Controllers
 
         // PUT api/leads/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] UpdateLeadDto dto)
+        public async Task<IActionResult> HandleUpdateLeadData(string id, [FromBody] UpdateLeadDto dto)
         {
             try
             {
                 var lead = await _leadService.UpdateLeadAsync(id, dto);
-                return lead is null ? NotFound() : Ok(lead);
+                return Ok(lead);
             }
             catch (Exception ex)
             {

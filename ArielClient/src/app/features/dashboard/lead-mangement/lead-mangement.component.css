@@ -5,7 +5,6 @@
   font-family: var(--font-sans);
 }
 
-/* ── TOP TOOLBAR ── */
 
 .top-toolbar {
   background: white;
@@ -93,13 +92,12 @@
   opacity: 0.88;
 }
 
-/* ── TABLE ── */
 
 .table-wrapper {
   background: white;
   border-radius: 18px;
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .table-header,
@@ -135,7 +133,6 @@
   background: #f8fafc;
 }
 
-/* ── PROSPECT ── */
 
 .prospect-info h3 {
   font-size: 15px;
@@ -153,7 +150,6 @@
   margin: 0;
 }
 
-/* ── CONTACT ── */
 
 .contact-info {
   display: flex;
@@ -175,7 +171,6 @@
   width: 14px;
 }
 
-/* ── SOURCE ── */
 
 .source-badge {
   background: #f1f5f9;
@@ -187,7 +182,6 @@
   white-space: nowrap;
 }
 
-/* ── STATUS ── */
 
 .dropdown-wrap {
   position: relative;
@@ -227,7 +221,7 @@
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 20;
+  z-index: 100;
   min-width: 100%;
   padding: 6px;
   border: 1px solid #d7dfeb;
@@ -258,21 +252,26 @@
   background: #f1f5f9;
 }
 
-/* Status color variants */
-.status-select.proposal  { background: #e7f0ff; color: #2563eb; }
-.status-select.proposal .status-dot { background: #2563eb; }
-.dropdown-option.proposal { color: #2563eb; }
-.dropdown-option.proposal .status-dot { background: #2563eb; }
+.status-select.new  { background: #e7f0ff; color: #2563eb; }
+.status-select.new .status-dot { background: #2563eb; }
+.dropdown-option.new { color: #2563eb; }
+.dropdown-option.new .status-dot { background: #2563eb; }
 
-.status-select.negotiation { background: #fff4d6; color: #d97706; }
-.status-select.negotiation .status-dot { background: #fbbf24; }
-.dropdown-option.negotiation { color: #d97706; }
-.dropdown-option.negotiation .status-dot { background: #fbbf24; }
+.status-select.contracted { background: #fff4d6; color: #d97706; }
+.status-select.contracted .status-dot { background: #fbbf24; }
+.dropdown-option.contracted { color: #d97706; }
+.dropdown-option.contracted .status-dot { background: #fbbf24; }
 
-.status-select.won { background: #dcfce7; color: #15803d; }
-.status-select.won .status-dot { background: #16a34a; }
-.dropdown-option.won { color: #15803d; }
-.dropdown-option.won .status-dot { background: #16a34a; }
+
+.status-select.qualified { background: #e8caff; color: #7e06d9; }
+.status-select.qualified .status-dot { background: #7e06d9; }
+.dropdown-option.qualified { color: #7e06d9; }
+.dropdown-option.qualified .status-dot { background: #7e06d9; }
+
+.status-select.converted { background: #dcfce7; color: #15803d; }
+.status-select.converted .status-dot { background: #16a34a; }
+.dropdown-option.converted { color: #15803d; }
+.dropdown-option.converted .status-dot { background: #16a34a; }
 
 .status-select.lost { background: #fee2e2; color: #dc2626; }
 .status-select.lost .status-dot { background: #ef4444; }
@@ -533,7 +532,6 @@
 
 .btn-register:hover { opacity: 0.9; }
 
-/* ── RESPONSIVE ── */
 
 @media (max-width: 1200px) {
   .top-toolbar {

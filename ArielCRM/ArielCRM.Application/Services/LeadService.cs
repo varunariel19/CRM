@@ -39,7 +39,12 @@ namespace ArielCRM.Application.Services
         }
 
         public Task<LeadResponseDto?> UpdateLeadAsync(string id, UpdateLeadDto dto)
-            => _leadRepository.UpdateAsync(id, dto);
+        {
+            if (string.IsNullOrEmpty(id)) throw new Exception("Lead id is null !");
+
+            return _leadRepository.UpdateLeadAsync(id, dto);
+
+        }
 
         public Task<bool> DeleteLeadAsync(string id)
             => _leadRepository.DeleteAsync(id);

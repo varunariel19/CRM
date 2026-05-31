@@ -1,10 +1,14 @@
-import { Component, Input, OnInit, signal } from '@angular/core';
-import { CreateLeadDto, LeadResponseDto, LeadSource, LeadStatus, UpdateLeadDto } from '../../../core/types/lead.type';
+import { Component, inject } from '@angular/core';
+import { CreateLeadDto, Lead, LeadSource, LeadStatus, UpdateLeadDto } from '../../../core/types/lead.type';
 import { TeamMember } from '../../../core/types/global.type';
 import { AuthState } from '../../../state/auth.state';
 import { LeadService } from '../../../services/lead.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MenuState } from '../../../state/menu.state';
+import { LeadState } from '../../../state/lead.state';
+import { ToastService } from '../../../core/services/toast.service';
+import { LoaderService } from '../../../core/services/loader.service';
 
 @Component({
   selector: 'app-lead-management',
@@ -14,16 +18,15 @@ import { FormsModule } from '@angular/forms';
 })
 export class LeadManagementComponent {
 
-  @Input() leads: LeadResponseDto[] = [];
-
+  leadState = inject(LeadState);
+  toastService = inject(ToastService);
+  private loader = inject(LoaderService);
   showCreateModal = false;
   showEditModal = false;
+  editLead: Partial<UpdateLeadDto & { id: string }> = {};
 
   openStatusIndex: number | null = null;
   openAssigneeIndex: number | null = null;
-
-
-  editLead: Partial<UpdateLeadDto & { id: string }> = {};
 
   newLead: CreateLeadDto = {
     name: '',
@@ -72,6 +75,7 @@ export class LeadManagementComponent {
 
   constructor(
     private authState: AuthState,
+    private menuState: MenuState,
     private leadService: LeadService
   ) { }
 
@@ -80,17 +84,28 @@ export class LeadManagementComponent {
     return this.authState.teamMembers().filter(m => m.role !== 'Admin');
   }
 
+  get leadList(): Lead[] {
+    return this.leadState.leads();
+  }
+
   submitCreateLead(): void {
-    debugger;
     if (!this.newLead.name || !this.newLead.company || !this.newLead.email) return;
+
+    this.loader.show('Creating Lead...', 'lg');
 
     this.leadService.handleCreateLead(this.newLead).subscribe({
       next: (created) => {
-        this.leads = [created, ...this.leads];
+        this.leadState.addLead(created);
         this.showCreateModal = false;
         this.resetNewLead();
+        this.loader.hide();
+        this.toastService.success("New lead added successfully!", "New Lead");
       },
-      error: (err) => console.error('Failed to create lead', err)
+      error: (err) => {
+        this.loader.hide();
+        this.toastService.error("Failed to create new lead");
+        console.error('Failed to create lead', err)
+      }
     });
   }
 
@@ -106,51 +121,81 @@ export class LeadManagementComponent {
   }
 
 
-  setStatus(lead: LeadResponseDto, status: LeadStatus): void {
-    const previous = lead.status;
-    lead.status = status;
-    this.openStatusIndex = null;
+  setStatus(lead: Lead, status: LeadStatus): void {
 
-    const dto: UpdateLeadDto = { status };
+    this.menuState.open({
+      title: 'Change Lead Status',
+      message: `Are you sure you want to change the status to "${status}"?`,
 
-    this.leadService.handleUpdateLead(lead.id, dto).subscribe({
-      next: (updated) => {
-        const index = this.leads.findIndex(l => l.id === lead.id);
-        if (index !== -1) this.leads[index] = updated;
-      },
-      error: (err) => {
-        lead.status = previous; // rollback
-        console.error('Failed to update status', err);
+      onConfirm: () => {
+        const prevStatus = lead.status;
+        const dto: UpdateLeadDto = { status };
+
+        this.leadService.handleUpdateLead(lead.id, dto).subscribe({
+          next: () => {
+            this.leadState.updateLead(lead.id, dto);
+            this.toastService.info(`Lead Status updated to ${status}`);
+            this.openStatusIndex = null;
+
+          },
+
+          error: (err) => {
+            lead.status = prevStatus;
+            this.openStatusIndex = null;
+            console.error('Failed to update status', err);
+          }
+        });
+
       }
     });
+
   }
 
 
-  setAssignee(lead: LeadResponseDto, memberId: string): void {
-    const previousId = lead.assignedToId;
-    const previousName = lead.assignedToName;
+  setAssignee(lead: Lead, memberId: string): void {
 
-    lead.assignedToId = memberId;
-    lead.assignedToName = this.teamMembers.find(m => m.id === memberId)?.name ?? '';
-    this.openAssigneeIndex = null;
+    const memberName = this.teamMembers.find(m => m.id === memberId)?.name ?? '';
 
-    const dto: UpdateLeadDto = { assignedToId: memberId };
+    this.menuState.open({
+      title: 'Assign Lead',
+      message: `Are you sure to Assign this lead to ${memberName}?`,
 
-    this.leadService.handleUpdateLead(lead.id, dto).subscribe({
-      next: (updated) => {
-        const index = this.leads.findIndex(l => l.id === lead.id);
-        if (index !== -1) this.leads[index] = updated;
-      },
-      error: (err) => {
-        lead.assignedToId = previousId;
-        lead.assignedToName = previousName;
-        console.error('Failed to update assignee', err);
+      onConfirm: () => {
+
+        const previousId = lead.assignedToId;
+        const previousName = lead.assignedToName;
+
+        lead.assignedToId = memberId;
+        lead.assignedToName = memberName;
+
+        const dto: UpdateLeadDto = {
+          assignedToId: memberId
+        };
+
+        this.leadService.handleUpdateLead(lead.id, dto).subscribe({
+          next: () => {
+            this.leadState.updateLead(lead.id, dto);
+            this.openAssigneeIndex = null;
+          },
+
+          error: (err) => {
+            lead.assignedToId = previousId;
+            lead.assignedToName = previousName;
+            this.openAssigneeIndex = null;
+            console.error(
+              'Failed to update assignee',
+              err
+            );
+          }
+        });
+
       }
     });
+
   }
 
 
-  openEditModal(lead: LeadResponseDto): void {
+  openEditModal(lead: Lead): void {
     this.editLead = {
       id: lead.id,
       name: lead.name,
@@ -158,6 +203,7 @@ export class LeadManagementComponent {
       email: lead.email,
       phone: lead.phone ?? '',
       source: lead.source as LeadSource,
+
       status: lead.status as LeadStatus,
       assignedToId: lead.assignedToId
     };
@@ -170,9 +216,8 @@ export class LeadManagementComponent {
     const { id, ...dto } = this.editLead;
 
     this.leadService.handleUpdateLead(id, dto as UpdateLeadDto).subscribe({
-      next: (updated) => {
-        const index = this.leads.findIndex(l => l.id === id);
-        if (index !== -1) this.leads[index] = updated;
+      next: () => {
+        this.leadState.updateLead(id, this.editLead);
         this.showEditModal = false;
         this.editLead = {};
       },
@@ -182,12 +227,29 @@ export class LeadManagementComponent {
 
 
   deleteLead(id: string): void {
-    this.leadService.handleRemoveLead(id).subscribe({
-      next: () => {
-        this.leads = this.leads.filter(l => l.id !== id);
-      },
-      error: (err) => console.error('Failed to delete lead', err)
+
+    this.menuState.open({
+      title: 'Delete Lead',
+      message: 'Are you sure you want to delete this lead? This action cannot be undone.',
+
+      onConfirm: () => {
+
+        this.leadService.handleRemoveLead(id).subscribe({
+          next: () => {
+            this.leadState.removeLead(id);
+          },
+
+          error: (err) => {
+            console.error(
+              'Failed to delete lead',
+              err
+            );
+          }
+        });
+
+      }
     });
+
   }
 
 
@@ -197,7 +259,7 @@ export class LeadManagementComponent {
     }
 
     this.leadService.handleSearchLead(value).subscribe({
-      next: (results) => this.leads = results,
+      next: (results) => this.leadState.setLeads(results),
       error: (err) => console.error('Search failed', err)
     });
   }

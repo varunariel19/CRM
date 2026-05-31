@@ -14,7 +14,8 @@
             Website,
             Referral,
             LinkedIn,
-            EmailCampaign
+            Instagram,
+            ColdCall
         }
 
         public enum LeadStatus

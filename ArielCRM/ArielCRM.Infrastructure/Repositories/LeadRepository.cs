@@ -3,17 +3,12 @@ using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using Microsoft.EntityFrameworkCore;
-
+using ArielCRM.DataLayer.Enums;
 namespace ArielCRM.Infrastructure.Repositories
 {
-    public class LeadRepository : ILeadRepository
+    public class LeadRepository(AppDbContext context) : ILeadRepository
     {
-        private readonly AppDbContext _context;
-
-        public LeadRepository(AppDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AppDbContext _context = context;
 
         private static LeadResponseDto MapToDto(Lead lead) => new()
         {
@@ -73,10 +68,11 @@ namespace ArielCRM.Infrastructure.Repositories
             return MapToDto(lead);
         }
 
-        public async Task<LeadResponseDto?> UpdateAsync(string id, UpdateLeadDto dto)
+        public async Task<LeadResponseDto?> UpdateLeadAsync(string id, UpdateLeadDto dto)
         {
             var lead = await _context.Leads
                 .Include(l => l.AssignedTo)
+                .Include(l => l.Contact)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             if (lead is null) return null;
@@ -89,11 +85,36 @@ namespace ArielCRM.Infrastructure.Repositories
             if (dto.Status is not null) lead.Status = dto.Status.Value;
             if (dto.AssignedToId is not null) lead.AssignedToId = dto.AssignedToId;
 
-            await _context.SaveChangesAsync();
-            await _context.Entry(lead).Reference(l => l.AssignedTo).LoadAsync();
+            if (dto.Status is LeadStatus.Converted && lead.Status != LeadStatus.Converted)
+            {
+                if (lead.ContactId is null)
+                {
+                    var contact = new Contact
+                    {
+                        Id = Guid.NewGuid().ToString(),
+                        Name = lead.Name,
+                        Company = lead.Company,
+                        Email = lead.Email,
+                        Phone = lead.Phone,
+                        CreatedAt = DateTime.UtcNow,
+                    };
 
-            return MapToDto(lead);
+                    _context.Contacts.Add(contact);
+                    await _context.SaveChangesAsync();
+
+                    lead.ContactId = contact.Id;
+                    lead.Status = dto.Status.Value;
+                    await _context.SaveChangesAsync();
+                    return MapToResponseDto(lead);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return null;
+
         }
+
+
 
         public async Task<bool> DeleteAsync(string id)
         {
@@ -104,6 +125,35 @@ namespace ArielCRM.Infrastructure.Repositories
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+
+        private LeadResponseDto MapToResponseDto(Lead lead)
+        {
+            return new LeadResponseDto
+            {
+                Id = lead.Id,
+                Name = lead.Name,
+                Company = lead.Company,
+                Email = lead.Email,
+                Phone = lead.Phone,
+                Source = lead.Source.ToString(),
+                Status = lead.Status.ToString(),
+                AssignedToId = lead.AssignedToId,
+                ContactId = lead.ContactId!,
+                CreatedAt = lead.CreatedAt,
+                CreatedContact = lead.Contact is not null ? new ContactDto
+                {
+                    Id = lead.Contact.Id,
+                    Name = lead.Contact.Name,
+                    Company = lead.Contact.Company,
+                    Designation = lead.Contact.Designation,
+                    Email = lead.Contact.Email,
+                    Phone = lead.Contact.Phone,
+                    Address = lead.Contact.Address,
+                    CreatedAt = lead.Contact.CreatedAt.ToString("o"),
+                } : null,
+            };
         }
     }
 }

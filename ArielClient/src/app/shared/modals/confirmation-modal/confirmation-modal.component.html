@@ -1,0 +1,39 @@
+@if (confirmationState.isOpen()) {
+
+<div
+  class="modal-backdrop"
+  (click)="confirmationState.cancel()">
+
+  <div
+    class="modal-container"
+    (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <h3>{{ confirmationState.config().title }}</h3>
+    </div>
+
+    <div class="modal-body">
+      <p>{{ confirmationState.config().message }}</p>
+    </div>
+
+    <div class="modal-footer">
+
+      <button
+        class="btn btn-cancel"
+        (click)="confirmationState.cancel()">
+        Cancel
+      </button>
+
+      <button
+        class="btn btn-confirm"
+        (click)="confirmationState.confirm()">
+        Confirm
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+}

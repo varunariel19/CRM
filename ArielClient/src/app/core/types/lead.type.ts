@@ -1,25 +1,13 @@
-export interface LeadResponseDto {
-    id: string;
-    name: string;
-    company: string;
-    email: string;
-    phone: string | null;
-    source: string;
-    status: string;
-    assignedToId: string;
-    assignedToName: string;
-    createdAt: string;
-}
-
 export interface Lead {
     id: string;
     name: string;
     company: string;
     email: string;
-    phone: string;
+    phone: string | null;
     source: LeadSource;
     status: LeadStatus;
-    assignedTo: string;
+    assignedToId: string;
+    assignedToName: string;
     createdAt: string;
 }
 
@@ -50,7 +38,7 @@ export type LeadSource =
     | 'ColdCall'
     | 'LinkedIn';
 
-    
+
 export type LeadStatus = 'New' | 'Contracted' | 'Qualified' | 'Converted' | 'Lost';
 
 

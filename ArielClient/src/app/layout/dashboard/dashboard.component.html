@@ -16,15 +16,15 @@
         </div>
 
         <div *ngSwitchCase="'leads'">
-          <app-lead-management [leads]="leadsList" />
+          <app-lead-management/>
         </div>
 
         <div *ngSwitchCase="'customers'">
-          <app-customer-profiles [clients]="clients" />
+          <app-customer-profiles />
         </div>
 
         <div *ngSwitchCase="'deals'">
-          <app-deals-pipeline [clients]="clients"  [deals]="deals" />
+          <app-deals-pipeline [deals]="deals" />
         </div>
 
         <div *ngSwitchCase="'tasks'">
