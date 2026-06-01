@@ -23,6 +23,10 @@ import { Contact } from '../../core/types/contact.type';
 import { Deal } from '../../core/types/deal.type';
 import { LeadState } from '../../state/lead.state';
 import { ContactState } from '../../state/contact.state';
+import { DealState } from '../../state/deal.state';
+import { TicketService } from '../../services/ticket.service';
+import { Ticket } from '../../core/types/ticket.type';
+import { TicketState } from '../../state/tickets.state';
 
 @Component({
   selector: 'app-dashboard',
@@ -43,17 +47,19 @@ import { ContactState } from '../../state/contact.state';
 })
 export class DashboardComponent implements OnInit {
 
+  contactState = inject(ContactState);
   menuState = inject(MenuState);
   leadState = inject(LeadState);
-  contactState = inject(ContactState);
+  dealState = inject(DealState);
+  ticketState = inject(TicketState);
 
   leadService = inject(LeadService);
   contactService = inject(ContactService);
   dealService = inject(DealService);
+  ticketService = inject(TicketService);
 
   selectedMenu = this.menuState.selectedMenu;
 
-  deals: Deal[] = [];
   teamMemberList: TeamMember[] = [];
 
   constructor(
@@ -96,7 +102,16 @@ export class DashboardComponent implements OnInit {
 
     this.dealService.getAllDeals().subscribe({
       next: (deals: Deal[]) => {
-        this.deals = deals;
+        this.dealState.setDeals(deals);
+      },
+      error: (err: any) => {
+        console.error('Failed to load deals', err);
+      }
+    });
+
+    this.ticketService.getAllTickets().subscribe({
+      next: (tickets: Ticket[]) => {
+        this.ticketState.setTickets(tickets);
       },
       error: (err: any) => {
         console.error('Failed to load deals', err);

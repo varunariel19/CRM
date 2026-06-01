@@ -27,12 +27,24 @@ export const endpoints = {
     updateContact: (id: string) => `${BASE_URL}/api/contacts/${id}`,
     deleteContact: (id: string) => `${BASE_URL}/api/contacts/${id}`,
 
-  
+
     // deals
     getDeals: `${BASE_URL}/api/deals`,
     createDeal: `${BASE_URL}/api/deals`,
     updateDeal: (id: string) => `${BASE_URL}/api/deals/${id}`,
-    updateDealStage: (id: string) => `${BASE_URL}/api/deals/${id}/stage`
+    updateDealStage: (id: string) => `${BASE_URL}/api/deals/${id}/stage`,
+
+
+    // notes
+    notes: `${BASE_URL}/api/notes`,
+
+
+    // tasks
+    tasks: `${BASE_URL}/api/crmTasks`,
+
+
+    // tickets 
+    ticket: `${BASE_URL}/api/tickets`
 
 }
 

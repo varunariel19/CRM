@@ -1,8 +1,5 @@
 <div class="tickets-wrapper">
 
-<div class="tickets-wrapper">
-
-  <!-- LOG INCIDENT MODAL -->
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
     <div class="modal-box">
 
@@ -14,7 +11,6 @@
       </div>
 
       <div class="modal-body">
-
         <div class="form-group full-width">
           <label>Incident Headline Title <span class="required">*</span></label>
           <input type="text" [(ngModel)]="newTicket.title" placeholder="e.g. Staging DB Timeout SSL errors" />
@@ -22,8 +18,7 @@
 
         <div class="form-group full-width">
           <label>Issue Details / Diagnosis <span class="required">*</span></label>
-          <textarea
-            [(ngModel)]="newTicket.description"
+          <textarea [(ngModel)]="newTicket.description"
             placeholder="Describe logs, environment conditions, and client SLA expectations...">
           </textarea>
         </div>
@@ -32,11 +27,13 @@
           <div class="form-group">
             <label>Contact Client Ref</label>
             <select [(ngModel)]="newTicket.clientId">
+              <option value="">None</option>
               <option *ngFor="let client of clients" [value]="client.id">
-                {{ client.name }} ({{ client.company }})
+                {{ client.name }} {{ client.company ? '(' + client.company + ')' : '' }}
               </option>
             </select>
           </div>
+
           <div class="form-group">
             <label>SLA Criticality Priority</label>
             <select [(ngModel)]="newTicket.priority">
@@ -50,35 +47,34 @@
 
         <div class="form-group full-width">
           <label>Assigned Support Agent</label>
-          <select [(ngModel)]="newTicket.engineer">
+          <select [(ngModel)]="newTicket.assignedToId">
+            <option value="" disabled>Select Team Member</option>
             <option *ngFor="let member of teamMembers" [value]="member.id">
               {{ member.name }}
             </option>
           </select>
         </div>
-
       </div>
 
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
-        <button class="btn-register" (click)="submitTicket()">Log Incident</button>
+        <button class="btn-register" [disabled]="!newTicket.title || !newTicket.description"
+          (click)="submitTicket()">Log Incident</button>
       </div>
 
     </div>
   </div>
 
-  <!-- TOPBAR -->
   <div class="tickets-topbar">
-
     <div class="search-box">
-      <i class="fas fa-question-circle search-icon"></i>
+      <i class="fas fa-search search-icon"></i>
       <input type="text" placeholder="Search tickets text..." [(ngModel)]="searchText" />
     </div>
 
     <div class="topbar-right">
-
       <select [(ngModel)]="selectedStatus" class="filter-select">
-        <option *ngFor="let s of statusOptions">{{ s }}</option>
+        <option value="" disabled>Select Status</option>
+        <option *ngFor="let s of status | keyvalue">{{ s.key }}</option>
       </select>
 
       <select [(ngModel)]="selectedPriority" class="filter-select">
@@ -89,56 +85,42 @@
         <i class="fas fa-plus"></i>
         Raise Support Ticket
       </button>
-
     </div>
-
   </div>
 
-
-  <!-- TICKET CARDS -->
   <div class="tickets-list">
+    <div class="ticket-card" *ngFor="let ticket of tickets">
 
-    <div
-      class="ticket-card"
-      *ngFor="let ticket of filteredTickets">
-
-      <!-- CARD HEADER -->
       <div class="card-header">
-
         <div class="header-left">
-          <span class="ticket-code">TICKET STAFF ID: {{ ticket.ticketCode }}</span>
+          <span class="ticket-code">TICKET NO: #{{ ticket.id.substring(0,8).toUpperCase() }}</span>
           <span class="priority-badge" [ngClass]="getPriorityClass(ticket.priority)">
             {{ ticket.priority }}
           </span>
         </div>
 
         <div class="header-right">
-          <select
-            class="status-select"
-            [ngClass]="getStatusClass(ticket.status)"
-            [value]="ticket.status"
-            (change)="changeStatus(ticket, $event)">
-            <option *ngFor="let s of statusOptions.slice(1)">{{ s }}</option>
+          <select class="status-select" [ngClass]="ticket.status" [(ngModel)]="ticket.status"
+            (ngModelChange)="changeStatus(ticket, $event)">
+            <option *ngFor="let item of status | keyvalue" [value]="item.value">
+              {{ item.key }}
+            </option>
           </select>
           <i class="fas fa-trash delete-icon" (click)="deleteTicket(ticket.id)"></i>
         </div>
-
       </div>
 
-      <!-- CARD BODY -->
       <div class="card-body">
         <h3 class="ticket-title">{{ ticket.title }}</h3>
         <p class="ticket-desc">{{ ticket.description }}</p>
       </div>
 
-      <!-- CARD FOOTER -->
       <div class="card-footer">
-
         <div class="requester-box">
           <span class="footer-label">REQUESTER</span>
-          <span class="requester-name">{{ ticket.requester.name }}</span>
-          <span class="requester-meta">
-            at {{ ticket.requester.company }} | {{ ticket.requester.email }}
+          <span class="requester-name">{{ ticket.clientInfo.name || 'Unassigned Client' }}</span>
+          <span class="requester-meta" *ngIf="ticket.clientInfo">
+            at {{ ticket.clientInfo.company || 'N/A' }} | {{ ticket.clientInfo.email }}
           </span>
         </div>
 
@@ -146,26 +128,26 @@
           <span class="footer-label">RESPONSIBLE ENGINEER</span>
           <div class="engineer-row">
             <i class="fas fa-user engineer-icon"></i>
-            <span class="engineer-name">{{ ticket.engineer }}</span>
-            <select
-              class="engineer-select"
-              [value]="ticket.engineer"
-              (change)="changeEngineer(ticket, $event)">
-              <option *ngFor="let e of engineerOptions">{{ e }}</option>
+            <span>{{ ticket.assignedMemberName }}</span>
+            <select class="engineer-select" [(ngModel)]="ticket.assignedToId"
+              (ngModelChange)="changeAssignee(ticket , $event)">
+              <option *ngIf="ticket.assignedToId && !hasTeamMember(ticket.assignedToId)" [value]="ticket.assignedToId">
+                {{ ticket.assignedMemberName || 'Assigned member' }}
+              </option>
+              <option *ngFor="let member of teamMembers" [value]="member.id">
+                {{ member.name }}
+              </option>
             </select>
           </div>
         </div>
-
       </div>
 
     </div>
 
-    <!-- EMPTY STATE -->
-    <div class="empty-state" *ngIf="filteredTickets.length === 0">
+    <div class="empty-state" *ngIf="tickets.length === 0">
       <i class="fas fa-ticket-alt"></i>
-      <p>No tickets match your filters.</p>
+      <p>No support incidents match your filter profile criteria.</p>
     </div>
-
   </div>
 
 </div>

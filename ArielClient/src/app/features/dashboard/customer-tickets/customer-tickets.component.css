@@ -192,25 +192,25 @@
 }
 
 /* Status colors */
-.status-select.open {
+.status-select.Open {
   border-color: var(--active-bg);
   background-color: #f0f6ff;
   color: var(--active-bg);
 }
 
-.status-select.in-progress {
+.status-select.InProgress {
   border-color: var(--orange);
   background-color: #fffbeb;
   color: #b45309;
 }
 
-.status-select.resolved {
+.status-select.Resolved {
   border-color: #16a34a;
   background-color: var(--success-bg);
   color: var(--success-text);
 }
 
-.status-select.closed {
+.status-select.Closed {
   border-color: #94a3b8;
   background-color: #f1f5f9;
   color: #475569;

@@ -49,11 +49,11 @@ export interface UpdateDealStagePayload {
 
 
 export interface PipelineColumn {
-    key: string;       // matches lowercase equivalent representation e.g. 'proposal'
-    title: string;     // Column display label e.g. 'PROPOSAL'
-    color: string;     // Color badge tracking hexadecimal configuration
-    stage: DealStage;  // Enum fallback binding
-    deals: Deal[];     // Active deal cards inside this tracking lane
+    key: string;
+    title: string;
+    color: string;
+    stage: DealStage;
+    deals: Deal[];
 }
 
 // Basic relational entity mocks for compile-safety

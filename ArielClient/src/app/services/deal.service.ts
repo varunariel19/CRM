@@ -19,7 +19,7 @@ export class DealService {
         return this.http.post<Deal>(endpoints.createDeal, payload);
     }
 
-    updateDeal(id: string, payload: UpdateDealPayload): Observable<Deal> {
+    updateDeal(id: string, payload: Partial<Deal>): Observable<Deal> {
         return this.http.put<Deal>(endpoints.updateDeal(id), payload);
     }
 

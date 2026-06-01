@@ -4,7 +4,7 @@ namespace ArielCRM.Shared.Utils
 {
     public class Utils
     {
-
+        private static readonly char[] Characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray();
         private const string Lower = "abcdefghijklmnopqrstuvwxyz";
         private const string Upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         private const string Numbers = "0123456789";
@@ -51,5 +51,19 @@ namespace ArielCRM.Shared.Utils
             return $"{localPart}@{normalizedDomain}";
         }
 
+
+
+        public static string GenerateRandomCode(int length = 6)
+        {
+            Span<char> result = stackalloc char[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                int randomIndex = Random.Shared.Next(Characters.Length);
+                result[i] = Characters[randomIndex];
+            }
+
+            return new string(result);
+        }
     }
 }

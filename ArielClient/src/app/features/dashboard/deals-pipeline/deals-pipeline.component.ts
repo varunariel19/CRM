@@ -1,9 +1,6 @@
 import {
   Component,
   inject,
-  Input,
-  OnChanges,
-  SimpleChanges
 } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
@@ -12,9 +9,9 @@ import { FormsModule } from '@angular/forms';
 import {
   Deal,
   CreateDealPayload,
-  UpdateDealPayload,
   DealStage,
-  DEAL_STAGE
+  DEAL_STAGE,
+  PipelineColumn
 } from '../../../core/types/deal.type';
 
 import { DealService } from '../../../services/deal.service';
@@ -23,20 +20,25 @@ import { TeamMember } from '../../../core/types/global.type';
 import { Contact } from '../../../core/types/contact.type';
 
 import { AuthState } from '../../../state/auth.state';
+import { ContactState } from '../../../state/contact.state';
+import { DealState } from '../../../state/deal.state';
+import { MenuState } from '../../../state/menu.state';
+import { ToastService } from '../../../core/services/toast.service';
+import { LoaderService } from '../../../core/services/loader.service';
 
-export interface DealColumn {
-  key: string;
-  title: string;
-  color: string;
-  stage: DealStage;
-  deals: any[];
-}
 
 const StageMapping: Record<string, DealStage> = {
   proposal: DEAL_STAGE.PROPOSAL,
   negotiation: DEAL_STAGE.NEGOTIATION,
   won: DEAL_STAGE.WON,
-  lost: DEAL_STAGE.LOST
+  lost: DEAL_STAGE.LOST,
+};
+
+const StageToKey: Record<DealStage, string> = {
+  [DEAL_STAGE.PROPOSAL]: 'proposal',
+  [DEAL_STAGE.NEGOTIATION]: 'negotiation',
+  [DEAL_STAGE.WON]: 'won',
+  [DEAL_STAGE.LOST]: 'lost',
 };
 
 @Component({
@@ -46,67 +48,31 @@ const StageMapping: Record<string, DealStage> = {
   templateUrl: './deals-pipeline.component.html',
   styleUrl: './deals-pipeline.component.css',
 })
-export class DealsPipelineComponent implements OnChanges {
+export class DealsPipelineComponent {
 
-  @Input() clients: Contact[] = [];
-  @Input() deals: Deal[] = [];
+  private authState = inject(AuthState);
+  private menuState = inject(MenuState);
+  private toast = inject(ToastService);
+  private loader = inject(LoaderService);
+  private contactState = inject(ContactState);
+  readonly dealState = inject(DealState);
 
-  authState = inject(AuthState);
+  constructor(private dealService: DealService) { }
 
-  get teamMembers(): TeamMember[] {
-    return this.authState.teamMembers();
-  }
-
-  columns: DealColumn[] = [
-    {
-      key: 'proposal',
-      title: 'PROPOSAL',
-      color: '#2563eb',
-      stage: DEAL_STAGE.PROPOSAL,
-      deals: [],
-    },
-    {
-      key: 'negotiation',
-      title: 'NEGOTIATION',
-      color: '#f59e0b',
-      stage: DEAL_STAGE.NEGOTIATION,
-      deals: [],
-    },
-    {
-      key: 'won',
-      title: 'WON',
-      color: '#10b981',
-      stage: DEAL_STAGE.WON,
-      deals: [],
-    },
-    {
-      key: 'lost',
-      title: 'LOST',
-      color: '#ef4444',
-      stage: DEAL_STAGE.LOST,
-      deals: [],
-    },
-  ];
-
-  draggedDeal: any = null;
+  draggedDeal: Deal | null = null;
   draggedFrom = '';
 
   showCreateModal = false;
   showEditModal = false;
 
   newDeal: CreateDealPayload = this.resetCreateForm();
+  editDeal: (Partial<Deal> & { id: string; stage: string }) | null = null;
 
-  editDeal: any = {};
-
-  constructor(private dealService: DealService) { }
-
-  ngOnChanges(changes: SimpleChanges): void {
-
-    if (changes['deals']) {
-      console.log('Deals Input Updated:', this.deals);
-      this.loadPipelineBoard();
-    }
+  get teamMembers(): TeamMember[] {
+    return this.authState.teamMembers().filter(m => m.role !== 'Admin');
   }
+  get clients(): Contact[] { return this.contactState.contacts(); }
+  get columns(): PipelineColumn[] { return this.dealState.pipelineColumns(); }
 
   private resetCreateForm(): CreateDealPayload {
     return {
@@ -115,177 +81,125 @@ export class DealsPipelineComponent implements OnChanges {
       stage: DEAL_STAGE.PROPOSAL,
       closeDate: new Date().toISOString().split('T')[0],
       assignedToId: '',
-      contactId: null
+      contactId: null,
     };
   }
 
-  loadPipelineBoard(): void {
-
-    this.columns.forEach(col => col.deals = []);
-
-    this.deals.forEach(deal => {
-
-      const formattedDeal = {
-        id: deal.id,
-        title: deal.title,
-        value: deal.value,
-        closeDate: deal.closeDate,
-        stage: deal.stage,
-        assignedToId: deal.assignedToId,
-        contactId: deal.contactId,
-        company: deal.contact?.company || 'No Company',
-        owner: deal.assignedTo?.name || 'Unassigned',
-      };
-
-      const targetColumn = this.columns.find(
-        c => c.stage === deal.stage
-      );
-
-      if (targetColumn) {
-        targetColumn.deals.push(formattedDeal);
-      }
-    });
-
-    console.log('Pipeline Columns:', this.columns);
+  getTotal(deals: Deal[]): number {
+    return deals.reduce((sum, d) => sum + d.value, 0);
   }
 
   submitDeal(): void {
-
     if (!this.newDeal.title || !this.newDeal.assignedToId) {
       alert('Title and Representative assignment fields are required.');
       return;
     }
 
+    this.loader.show('Creating new Deal...', 'lg');
     this.dealService.createDeal(this.newDeal).subscribe({
-      next: (createdDeal) => {
-
-        this.deals = [...this.deals, createdDeal];
-
-        this.loadPipelineBoard();
-
+      next: (created) => {
+        this.dealState.addDeal(created);
         this.showCreateModal = false;
-
         this.newDeal = this.resetCreateForm();
+        this.loader.hide();
+        this.toast.success(`Deal "${created.title}" created successfully`);
       },
       error: (err) => {
+        this.loader.hide();
+        this.toast.error('Failed to create deal. Please try again.');
         console.error('Failed to create deal', err);
-      }
-    });
-  }
-
-  submitEdit(): void {
-
-    const payload: UpdateDealPayload = {
-      title: this.editDeal.title,
-      value: this.editDeal.value,
-      stage: typeof this.editDeal.stage === 'string'
-        ? StageMapping[this.editDeal.stage]
-        : this.editDeal.stage,
-      closeDate: this.editDeal.closeDate,
-      assignedToId: this.editDeal.assignedToId,
-      contactId: this.editDeal.contactId || null
-    };
-
-    this.dealService.updateDeal(this.editDeal.id, payload).subscribe({
-      next: () => {
-
-        const index = this.deals.findIndex(
-          d => d.id === this.editDeal.id
-        );
-
-        if (index !== -1) {
-
-          this.deals[index] = {
-            ...this.deals[index],
-            ...payload
-          } as Deal;
-        }
-
-        this.loadPipelineBoard();
-
-        this.showEditModal = false;
       },
-      error: (err) => {
-        console.error('Failed updating deal', err);
-      }
     });
   }
 
-  moveDeal(fromKey: string, toKey: string, deal: any): void {
-
-    const source = this.columns.find(c => c.key === fromKey);
-
-    const target = this.columns.find(c => c.key === toKey);
-
-    if (!source || !target) return;
-
-    const nextEnumStage = StageMapping[toKey];
-
-    source.deals = source.deals.filter(d => d.id !== deal.id);
-
-    deal.stage = nextEnumStage;
-
-    target.deals.push(deal);
-
-    this.dealService.updateDealStage(deal.id, {
-      stage: nextEnumStage
-    }).subscribe({
-      error: (err) => {
-        console.error('Failed updating stage', err);
-        this.loadPipelineBoard();
-      }
-    });
-  }
-
-  getTotal(deals: any[]): number {
-    return deals.reduce((sum, deal) => sum + deal.value, 0);
-  }
-
-  openEditModal(deal: any): void {
-
-    let currentStringKey = 'proposal';
-
-    if (deal.stage === DEAL_STAGE.NEGOTIATION) {
-      currentStringKey = 'negotiation';
-    }
-
-    if (deal.stage === DEAL_STAGE.WON) {
-      currentStringKey = 'won';
-    }
-
-    if (deal.stage === DEAL_STAGE.LOST) {
-      currentStringKey = 'lost';
-    }
-
+  openEditModal(deal: Deal): void {
     this.editDeal = {
-      ...deal,
-      stage: currentStringKey
+      id: deal.id,
+      title: deal.title,
+      value: deal.value,
+      stage: StageToKey[deal.stage] as DealStage,
+      closeDate: deal.closeDate,
+      assignedToId: deal.assignedToId,
+      contactId: deal.contactId,
     };
-
     this.showEditModal = true;
   }
 
-  closeCreateModal(event: MouseEvent): void {
+  submitEdit(): void {
+    if (!this.editDeal) return;
 
-    if (
-      (event.target as HTMLElement)
-        .classList.contains('modal-overlay')
-    ) {
-      this.showCreateModal = false;
-    }
+    const payload: Partial<Deal> = {
+      title: this.editDeal.title,
+      value: this.editDeal.value,
+      stage: StageMapping[this.editDeal.stage] ?? this.editDeal.stage as DealStage,
+      closeDate: this.editDeal.closeDate,
+      assignedToId: this.editDeal.assignedToId,
+      contactId: this.editDeal.contactId,
+    };
+
+    this.loader.show('Updating Deal...', 'lg');
+    this.dealService.updateDeal(this.editDeal.id, payload).subscribe({
+      next: () => {
+        const assignedTo = this.authState.teamMembers().find(m => m.id === payload.assignedToId) ?? null;
+        const contact = this.contactState.contacts().find(c => c.id === payload.contactId) ?? null;
+
+        this.dealState.updateDeal(this.editDeal!.id, { ...payload, assignedTo, contact });
+        this.showEditModal = false;
+        this.editDeal = null;
+        this.loader.hide();
+        this.toast.success(`Deal "${payload.title}" updated successfully`);
+      },
+      error: (err) => {
+        this.loader.hide();
+        this.toast.error('Failed to update deal. Please try again.');
+        console.error('Failed updating deal', err);
+      },
+    });
   }
 
-  closeEditModal(event: MouseEvent): void {
+  private moveDeal(fromKey: string, toKey: string, deal: Deal): void {
+    if (fromKey === toKey) return;
 
-    if (
-      (event.target as HTMLElement)
-        .classList.contains('modal-overlay')
-    ) {
-      this.showEditModal = false;
-    }
+    const nextStage = StageMapping[toKey];
+    if (!nextStage) return;
+
+    this.menuState.open({
+      title: 'Move Deal',
+      message: `Are you sure you want to move "${deal.title}" to ${nextStage}?`,
+
+      onConfirm: () => {
+        this.loader.show();
+        this.dealState.moveDealToStage(deal.id, nextStage);
+
+        this.dealService.updateDealStage(deal.id, { stage: nextStage }).subscribe({
+          next: () => {
+            this.loader.hide();
+            this.toast.info(`"${deal.title}" moved to ${nextStage}`);
+          },
+          error: (err) => {
+            this.loader.hide();
+            this.toast.error('Failed to move deal. Please try again.');
+            console.error('Failed updating stage', err);
+            this.dealState.moveDealToStage(deal.id, StageMapping[fromKey]);
+          },
+        });
+      },
+    });
   }
 
-  dragDeal(event: DragEvent, deal: any, columnKey: string): void {
+  moveLeft(currentKey: string, deal: Deal): void {
+    const idx = this.columns.findIndex(c => c.key === currentKey);
+    if (idx <= 0) return;
+    this.moveDeal(currentKey, this.columns[idx - 1].key, deal);
+  }
+
+  moveRight(currentKey: string, deal: Deal): void {
+    const idx = this.columns.findIndex(c => c.key === currentKey);
+    if (idx >= this.columns.length - 1) return;
+    this.moveDeal(currentKey, this.columns[idx + 1].key, deal);
+  }
+
+  dragDeal(event: DragEvent, deal: Deal, columnKey: string): void {
     this.draggedDeal = deal;
     this.draggedFrom = columnKey;
   }
@@ -294,53 +208,24 @@ export class DealsPipelineComponent implements OnChanges {
     event.preventDefault();
   }
 
-  dropDeal(event: DragEvent, targetColumn: string): void {
-
+  dropDeal(event: DragEvent, targetKey: string): void {
     event.preventDefault();
-
-    if (
-      !this.draggedDeal ||
-      this.draggedFrom === targetColumn
-    ) {
-      return;
-    }
-
-    this.moveDeal(
-      this.draggedFrom,
-      targetColumn,
-      this.draggedDeal
-    );
-
+    if (!this.draggedDeal || this.draggedFrom === targetKey) return;
+    this.moveDeal(this.draggedFrom, targetKey, this.draggedDeal);
     this.draggedDeal = null;
+    this.draggedFrom = '';
   }
 
-  moveLeft(currentKey: string, deal: any): void {
-
-    const currentIndex = this.columns.findIndex(
-      c => c.key === currentKey
-    );
-
-    if (currentIndex <= 0) return;
-
-    this.moveDeal(
-      currentKey,
-      this.columns[currentIndex - 1].key,
-      deal
-    );
+  closeCreateModal(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.showCreateModal = false;
+    }
   }
 
-  moveRight(currentKey: string, deal: any): void {
-
-    const currentIndex = this.columns.findIndex(
-      c => c.key === currentKey
-    );
-
-    if (currentIndex >= this.columns.length - 1) return;
-
-    this.moveDeal(
-      currentKey,
-      this.columns[currentIndex + 1].key,
-      deal
-    );
+  closeEditModal(event: MouseEvent): void {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.showEditModal = false;
+      this.editDeal = null;
+    }
   }
 }

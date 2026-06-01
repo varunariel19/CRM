@@ -1,6 +1,5 @@
 <div class="tasks-wrapper">
 
-  <!-- CREATE TASK MODAL -->
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
     <div class="modal-box">
 
@@ -26,6 +25,7 @@
           <div class="form-group">
             <label>Call Category Type</label>
             <select [(ngModel)]="newTask.type">
+              <option value="" selected disabled>None</option>
               <option value="Call Outreach">📞 Call Outreach</option>
               <option value="Email Campaign">📧 Email Campaign</option>
               <option value="Meeting discovery">😊 Meeting discovery</option>
@@ -37,6 +37,7 @@
         <div class="form-group full-width">
           <label>Assignee Staff Member</label>
           <select [(ngModel)]="newTask.assignedTo">
+            <option [value]="null" disabled>None</option>
             <option *ngFor="let member of teamMembers" [value]="member.id">
               {{ member.name }}
             </option>
@@ -48,8 +49,8 @@
           <div class="form-row">
             <div class="form-group">
               <label>Connect to Lead</label>
-              <select [(ngModel)]="newTask.leadId">
-                <option [value]="null">None</option>
+              <select [(ngModel)]="newTask.leadId" (ngModelChange)="onLeadSelect($event)">
+                <option [value]="null" disabled>None</option>
                 <option *ngFor="let lead of leads" [value]="lead.id">
                   {{ lead.name }}
                 </option>
@@ -57,8 +58,8 @@
             </div>
             <div class="form-group">
               <label>Connect to Deal</label>
-              <select [(ngModel)]="newTask.dealId">
-                <option [value]="null">None</option>
+              <select [(ngModel)]="newTask.dealId" (ngModelChange)="onDealSelect($event)">
+                <option [value]="null" disabled >None</option>
                 <option *ngFor="let deal of deals" [value]="deal.id">
                   {{ deal.title }}
                 </option>
@@ -77,7 +78,6 @@
     </div>
   </div>
 
-  <!-- TOPBAR -->
   <div class="tasks-topbar">
 
     <div class="tabs">
@@ -99,15 +99,14 @@
 
   </div>
 
-  <!-- TASKS -->
   <div class="tasks-list">
 
     <div class="task-card" *ngFor="let task of filteredTasks()">
 
       <div class="task-left">
-        <input type="checkbox" [checked]="task.completed" (change)="toggleTask(task)" />
+        <input type="checkbox" [checked]="isCompleted(task)" (change)="toggleTask(task ,$event)" />
         <div>
-          <h3 [class.completed]="task.completed">{{ task.title }}</h3>
+          <h3 [class.completed]="isCompleted(task)">{{ task.title }}</h3>
           <div class="task-meta">
             <span class="tag" [ngClass]="task.type.toLowerCase().replace(' ', '-')">
               {{ task.type }}
@@ -116,9 +115,14 @@
               <i class="fas fa-clock"></i>
               Due: {{ task.dueDate }}
             </span>
-            <span class="lead-pill">
+            <span *ngIf="task.leadName" class="lead-pill">
               <i class="fas fa-link"></i>
-              Lead: {{ task.lead }}
+              Lead: {{ task.leadName }}
+            </span>
+
+            <span *ngIf="task.dealTitle" class="deal-pill">
+              <i class="fas fa-link"></i>
+              {{ task.dealTitle }}
             </span>
           </div>
         </div>
@@ -127,7 +131,7 @@
       <div class="task-right">
         <div class="representative">
           <i class="fas fa-user"></i>
-          Representative: {{ task.rep }}
+          Representative: {{ task.assignedToName }}
         </div>
         <i class="fas fa-trash delete-icon" (click)="deleteTask(task.id)"></i>
       </div>

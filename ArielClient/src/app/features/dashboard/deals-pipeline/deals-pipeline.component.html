@@ -60,12 +60,12 @@
     </div>
   </div>
 
-  <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal($event)">
+  <div class="modal-overlay" *ngIf="showEditModal && editDeal" (click)="closeEditModal($event)">
     <div class="modal-box">
 
       <div class="modal-header">
         <h2>Update Contract Opportunity</h2>
-        <button class="modal-close" (click)="showEditModal = false">
+        <button class="modal-close" (click)="showEditModal = false; editDeal = null">
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -90,16 +90,30 @@
 
         <div class="form-row">
           <div class="form-group">
+            <label>Pipeline Stage</label>
+            <select [(ngModel)]="editDeal.stage">
+              <option value="proposal">Proposal</option>
+              <option value="negotiation">Negotiation</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label>Key Customer Contact</label>
-            <select [(ngModel)]="editDeal.customerId">
+            <select [(ngModel)]="editDeal.contactId">
+              <option [value]="null">No Contact</option>
               <option *ngFor="let client of clients" [value]="client.id">
                 {{ client.name }} ({{ client.company }})
               </option>
             </select>
           </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
-            <label>Lead Representative</label>
-            <select [(ngModel)]="editDeal.assignedTo">
+            <label>Lead Representative <span class="required">*</span></label>
+            <select [(ngModel)]="editDeal.assignedToId">
+              <option value="" disabled>Select Representative</option>
               <option *ngFor="let member of teamMembers" [value]="member.id">
                 {{ member.name }}
               </option>
@@ -110,7 +124,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" (click)="showEditModal = false">Cancel</button>
+        <button class="btn-cancel" (click)="showEditModal = false; editDeal = null">Cancel</button>
         <button class="btn-register" (click)="submitEdit()">Update Parameters</button>
       </div>
 
@@ -162,7 +176,7 @@
 
           <p class="company">
             <i class="fas fa-building"></i>
-            {{ deal.contact?.company }}
+            {{ deal.contact?.company ?? '—' }}
           </p>
 
           <div class="deal-info">
@@ -182,7 +196,7 @@
           <div class="deal-footer">
             <div class="owner">
               <i class="fas fa-user"></i>
-              {{ deal.assignedTo?.name }}
+              {{ deal.assignedTo?.name ?? '—' }}
             </div>
             <div class="deal-actions">
               <i class="fas fa-pen" (click)="openEditModal(deal)"></i>

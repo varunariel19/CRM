@@ -19,6 +19,11 @@ namespace ArielCRM.DataLayer.Entities
             public string Title { get; set; } = string.Empty;
 
             [Required]
+            [Column("ticket_code")]
+            [MaxLength(150)]
+            public string TicketCode { get; set; } = string.Empty;
+
+            [Required]
             [Column("description")]
             public string Description { get; set; } = string.Empty;
 

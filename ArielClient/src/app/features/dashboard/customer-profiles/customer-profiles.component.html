@@ -175,31 +175,99 @@
     </div>
 
     <div class="notes-section">
-      <h4>
-        <i class="fas fa-clipboard"></i> INTERNAL CONTACT HISTORY & SHARED NOTES
-      </h4>
 
-      <div class="notes-box">
-        <div *ngIf="!$any(selectedClient).notes || $any(selectedClient).notes.length === 0" class="empty-notes">
-          No notes written yet. Submit comments below to coordinate client deliverables.
-        </div>
-
-        <div *ngFor="let note of $any(selectedClient).notes" class="note-item">
-          <div class="note-header">
-            <strong>{{ note.author }}</strong>
-            <span>{{ note.time }}</span>
+      <div class="notes-header">
+        <div class="header-left">
+          <i class="fas fa-clipboard-list"></i>
+          <div>
+            <h3>Internal Notes</h3>
+            <span>{{ notes.length || 0 }} Notes</span>
           </div>
-          <p>{{ note.message }}</p>
         </div>
+      </div>
+
+      <div class="notes-box" #notesBox>
+
+        <div *ngIf="!notes.length" class="empty-notes">
+          <i class="fas fa-comment-slash"></i>
+          <h4>No Notes Available</h4>
+          <p>Add an internal note to keep track of important updates.</p>
+        </div>
+
+        <div *ngFor="let note of notes" class="note-row">
+
+          <div class="note-meta">
+
+            <div class="note-avatar">
+              {{ note.createdByName | slice:0:2 | uppercase }}
+            </div>
+
+            <div class="note-info">
+              <div class="note-top">
+
+                <span class="note-author">
+                  {{ note.createdByName }}
+                </span>
+
+                <span class="note-time">
+                  {{ note.updatedAt | date:'dd MMM yyyy, h:mm a' }}
+                </span>
+
+                <span *ngIf="note.isEdited" class="edited-badge">
+                  Edited
+                </span>
+
+              </div>
+            </div>
+
+            <div class="note-actions" *ngIf="note.createdById === this.authState.userId()">
+              <button class="note-action-btn" (click)="startEdit(note)">
+                <i class="fas fa-pen"></i>
+              </button>
+
+              <button class="note-action-btn danger" (click)="deleteNote(note)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+
+          </div>
+
+          <div *ngIf="editingNote?.id !== note.id" class="note-bubble" [class.edited]="note.isEdited">
+            {{ note.content }}
+          </div>
+
+          <div *ngIf="editingNote?.id === note.id" class="note-edit-box">
+
+            <textarea [(ngModel)]="editingText" placeholder="Update note..." (keyup.escape)="cancelEdit()">
+  </textarea>
+
+            <div class="edit-actions">
+              <button class="edit-cancel" (click)="cancelEdit()">
+                Cancel
+              </button>
+
+              <button class="edit-save" (click)="saveEditNote(note)">
+                <i class="fas fa-check"></i>
+                Save
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
       <div class="note-input">
-        <input type="text" [(ngModel)]="newNote" placeholder="Type an internal note regarding client communication..."
-          (keyup.enter)="addNote()" />
-        <button (click)="addNote()">
+
+        <input type="text" [(ngModel)]="newNote" placeholder="Write an internal note..." (keyup.enter)="addNote()" />
+
+        <button class="send-btn" (click)="addNote()">
           <i class="fas fa-paper-plane"></i>
         </button>
+
       </div>
+
     </div>
 
   </div>

@@ -49,10 +49,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
 
-        options.Events.OnRedirectToLogin = context =>
+        options.Events.OnRedirectToLogin = context => 
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return Task.CompletedTask;
+            return Task.CompletedTask;  
         };
         options.Events.OnRedirectToAccessDenied = context =>
         {
@@ -74,6 +74,13 @@ builder.Services.AddScoped<IContactRepository, ContactRepository>();
 builder.Services.AddScoped<IContactService, ContactService>();
 builder.Services.AddScoped<IDealService, DealService>();
 builder.Services.AddScoped<IDealRepository, DealRepository>();
+builder.Services.AddScoped<INoteRepository, NoteRepository>();
+builder.Services.AddScoped<INoteService, NoteService>();
+builder.Services.AddScoped<ICrmTaskRepository, CrmTaskRepository>();
+builder.Services.AddScoped<ICrmTaskService, CrmTaskService>();
+builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+builder.Services.AddScoped<ITicketService, TicketService>();
+
 
 
 

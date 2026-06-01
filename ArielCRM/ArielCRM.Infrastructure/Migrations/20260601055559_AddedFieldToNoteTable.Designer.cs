@@ -4,6 +4,7 @@ using ArielCRM.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ArielCRM.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260601055559_AddedFieldToNoteTable")]
+    partial class AddedFieldToNoteTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -376,17 +379,11 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("CreatedById")
+                    b.Property<string>("CreatedBy")
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)")
-                        .HasColumnName("created_by_id");
-
-                    b.Property<string>("CreatedByName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
-                        .HasColumnName("created_by_name");
+                        .HasColumnName("created_by");
 
                     b.Property<bool>("IsEdited")
                         .HasColumnType("bit")
@@ -454,12 +451,6 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("status");
-
-                    b.Property<string>("TicketCode")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
-                        .HasColumnName("ticket_code");
 
                     b.Property<string>("Title")
                         .IsRequired()

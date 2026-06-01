@@ -82,7 +82,6 @@ namespace ArielCRM.Infrastructure.Repositories
             if (dto.Email is not null) lead.Email = dto.Email;
             if (dto.Phone is not null) lead.Phone = dto.Phone;
             if (dto.Source is not null) lead.Source = dto.Source.Value;
-            if (dto.Status is not null) lead.Status = dto.Status.Value;
             if (dto.AssignedToId is not null) lead.AssignedToId = dto.AssignedToId;
 
             if (dto.Status is LeadStatus.Converted && lead.Status != LeadStatus.Converted)
@@ -100,7 +99,6 @@ namespace ArielCRM.Infrastructure.Repositories
                     };
 
                     _context.Contacts.Add(contact);
-                    await _context.SaveChangesAsync();
 
                     lead.ContactId = contact.Id;
                     lead.Status = dto.Status.Value;

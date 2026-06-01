@@ -407,6 +407,22 @@
   opacity: 0.9;
 }
 
+
+.deal-pill  {
+    background: #c0ffc0;
+  height: 26px;
+  border-radius: 999px;
+
+  padding: 0 12px;
+
+  color: #2563eb;
+  font-size: 12px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 900px) {
   .tasks-topbar {
     flex-direction: column;
