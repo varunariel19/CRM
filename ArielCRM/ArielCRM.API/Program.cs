@@ -80,6 +80,9 @@ builder.Services.AddScoped<ICrmTaskRepository, CrmTaskRepository>();
 builder.Services.AddScoped<ICrmTaskService, CrmTaskService>();
 builder.Services.AddScoped<ITicketRepository, TicketRepository>();
 builder.Services.AddScoped<ITicketService, TicketService>();
+builder.Services.AddScoped<IMeetingService, MeetingService>();
+builder.Services.AddScoped<IMeetingRepository, MeetingRepository>();
+
 
 
 

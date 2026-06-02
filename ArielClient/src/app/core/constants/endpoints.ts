@@ -44,7 +44,11 @@ export const endpoints = {
 
 
     // tickets 
-    ticket: `${BASE_URL}/api/tickets`
+    ticket: `${BASE_URL}/api/tickets`,
+
+
+    // meetings
+    meetings: `${BASE_URL}/api/meetings`
 
 }
 

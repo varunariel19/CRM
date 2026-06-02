@@ -17,11 +17,6 @@ namespace ArielCRM.DataLayer.Entities
             public string Title { get; set; } = string.Empty;
 
             [Required]
-            [Column("client")]
-            [MaxLength(150)]
-            public string Client { get; set; } = string.Empty;
-
-            [Required]
             [Column("date")]
             public DateOnly Date { get; set; }
 

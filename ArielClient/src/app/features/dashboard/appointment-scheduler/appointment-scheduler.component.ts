@@ -1,24 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { CalendarDay, CreateMeetingPayload, LocationOption, Meeting } from '../../../core/types/meeting.type';
+import { MeetingService } from '../../../services/meeting.service';
+import { ToastService } from '../../../core/services/toast.service';
+import { LoaderService } from '../../../core/services/loader.service';
+import { MenuState } from '../../../state/menu.state';
+import { LeadState } from '../../../state/lead.state';
+import { MeetingState } from '../../../state/meeting.state';
 
-export interface Meeting {
-  id: number;
-  subject: string;
-  company: string;
-  date: string;
-  time: string;
-  location: string;
-  notes: string;
-}
 
-export interface CalendarDay {
-  dayLabel: string;
-  monthLabel: string;
-  date: number;
-  fullDate: string;
-  hasEvent: boolean;
-}
 @Component({
   selector: 'app-appointment-scheduler',
   imports: [CommonModule, FormsModule],
@@ -29,56 +20,28 @@ export interface CalendarDay {
 
 
 export class AppointmentSchedulerComponent implements OnInit {
-
+  private readonly meetingService = inject(MeetingService);
+  private leadState = inject(LeadState);
+  private readonly toast = inject(ToastService);
+  private readonly loader = inject(LoaderService);
+  private readonly menuState = inject(MenuState);
+  private readonly meetingState = inject(MeetingState);
   selectedDate = '';
   showModal = false;
+  isLocationDropdownOpen = false;
+  isSubmitting = false;
+  isDateFixed = false;
+  errorMsg: string | null = null;
 
-  locationOptions = [
-    'Google Meet Conference',
-    'Zoom Call',
-    'Microsoft Teams',
-    'In-Person Office',
-    'Phone Call',
+  locationOptions: LocationOption[] = [
+    { label: 'Google Meet', value: 'Google Meet Conference', icon: 'fas fa-video', dotClass: 'dot-blue' },
+    { label: 'Zoom Call', value: 'Zoom Call', icon: 'fas fa-video-camera', dotClass: 'dot-purple' },
+    { label: 'Microsoft Teams', value: 'Microsoft Teams', icon: 'fas fa-users', dotClass: 'dot-indigo' },
+    { label: 'In-Person Meeting', value: 'In-Person Office', icon: 'fas fa-handshake', dotClass: 'dot-green' },
+    { label: 'Phone Call', value: 'Phone Call', icon: 'fas fa-phone', dotClass: 'dot-orange' },
   ];
 
-  newMeeting = {
-    subject: '',
-    company: '',
-    date: '',
-    time: '10:00',
-    location: 'Google Meet Conference',
-    notes: '',
-  };
-
-  meetings: Meeting[] = [
-    {
-      id: 1,
-      subject: 'Auth0 SSO Kickoff Session',
-      company: 'Hyperion Labs',
-      date: '2026-05-27',
-      time: '10:00',
-      location: 'Google Meet Conference',
-      notes: 'Discuss SSO integration scope and timeline.',
-    },
-    {
-      id: 2,
-      subject: 'Billing Refund Review',
-      company: 'Vertex Solutions',
-      date: '2026-05-30',
-      time: '14:00',
-      location: 'Zoom Call',
-      notes: 'Go over extra developer hours on SLA invoice.',
-    },
-    {
-      id: 3,
-      subject: 'API Performance Planning',
-      company: 'DataSync Inc',
-      date: '2026-06-01',
-      time: '11:00',
-      location: 'Microsoft Teams',
-      notes: 'Rate limit strategy and scaling plan.',
-    },
-  ];
+  newMeeting: CreateMeetingPayload = this.createEmptyModal();
 
   calendarDays: CalendarDay[] = [];
 
@@ -88,33 +51,17 @@ export class AppointmentSchedulerComponent implements OnInit {
   ngOnInit(): void {
     const today = new Date();
     this.selectedDate = this.toDateString(today);
-    this.newMeeting.date = this.selectedDate;
     this.buildCalendar(today);
   }
 
-  private toDateString(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  @HostListener('document:click')
+  closeLocationDropdown(): void {
+    this.isLocationDropdownOpen = false;
   }
 
-  private buildCalendar(from: Date): void {
-    this.calendarDays = [];
-    const eventDates = new Set(this.meetings.map((m) => m.date));
-    for (let i = 0; i < 28; i++) {
-      const d = new Date(from);
-      d.setDate(from.getDate() + i);
-      const fullDate = this.toDateString(d);
-      this.calendarDays.push({
-        dayLabel: this.dayNames[d.getDay()],
-        monthLabel: this.monthNames[d.getMonth()],
-        date: d.getDate(),
-        fullDate,
-        hasEvent: eventDates.has(fullDate),
-      });
-    }
-  }
 
-  selectDay(day: CalendarDay): void {
-    this.selectedDate = day.fullDate;
+  get meetings() {
+    return this.meetingState.meetings();
   }
 
   get selectedDateLabel(): string {
@@ -131,54 +78,111 @@ export class AppointmentSchedulerComponent implements OnInit {
     return this.meetings.filter((m) => m.date === this.selectedDate);
   }
 
+  get leads() {
+    return this.leadState.leads();
+  }
+
+  get selectedLocationOption(): LocationOption {
+    return this.getLocationOption(this.newMeeting.location);
+  }
+
+
+  scheduleMeeting(): void {
+    if (!this.newMeeting.title.trim() || !this.newMeeting.leadId || !this.newMeeting.date || !this.newMeeting.time) {
+      this.errorMsg = 'Please fill in all required fields.';
+      return;
+    }
+    this.isSubmitting = true;
+    this.errorMsg = null;
+    this.loader.show('Creating Meeting...', 'md');
+
+    this.meetingService.createMeeting(this.newMeeting).subscribe({
+      next: (created) => {
+        this.meetingState.addNewMeeting(created);
+        this.selectedDate = created.date;
+        this.rebuildCalendarFromCurrentStart();
+        this.isSubmitting = false;
+        this.loader.hide();
+        this.closeModal();
+        this.toast.success('Meeting created successfully.');
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.loader.hide();
+        this.toast.error('Failed to create meeting.');
+      },
+    });
+  }
+
+  deleteMeeting(id: string): void {
+    this.menuState.open({
+      title: 'Delete Meeting',
+      message: 'Are you sure you want to delete this meeting?',
+      onConfirm: () => {
+        this.loader.show('Deleting Meeting...', 'md');
+
+        this.meetingService.deleteMeeting(id).subscribe({
+          next: () => {
+            this.meetingState.removeMeeting(id);
+            this.rebuildCalendarFromCurrentStart();
+            this.loader.hide();
+            this.toast.success('Meeting deleted successfully.');
+          },
+          error: () => {
+            this.loader.hide();
+            this.toast.error('Failed to delete meeting.');
+          },
+        });
+      },
+    });
+  }
+
+
+
+  selectDay(day: CalendarDay): void {
+    this.selectedDate = day.fullDate;
+  }
+
+  selectLocation(option: LocationOption): void {
+    this.newMeeting.location = option.value;
+    this.isLocationDropdownOpen = false;
+  }
+
   openModal(): void {
-    this.newMeeting = {
-      subject: '',
-      company: '',
-      date: this.selectedDate,
-      time: '10:00',
-      location: 'Google Meet Conference',
-      notes: '',
-    };
+    this.isDateFixed = false;
+    this.newMeeting = this.createEmptyModal();
+    this.newMeeting.date = '';
+    this.showModal = true;
+  }
+
+  openModalForDate(): void {
+    this.isDateFixed = true;
+    this.newMeeting = this.createEmptyModal();
+    this.newMeeting.date = this.selectedDate;
     this.showModal = true;
   }
 
   closeModal(): void {
     this.showModal = false;
+    this.isLocationDropdownOpen = false;
   }
 
-  scheduleMeeting(): void {
-    if (!this.newMeeting.subject || !this.newMeeting.company || !this.newMeeting.date) return;
 
-    this.meetings.push({
-      id: Date.now(),
-      subject: this.newMeeting.subject,
-      company: this.newMeeting.company,
-      date: this.newMeeting.date,
-      time: this.newMeeting.time,
-      location: this.newMeeting.location,
-      notes: this.newMeeting.notes,
-    });
-
-    const today = new Date(this.selectedDate + 'T00:00:00');
-    this.buildCalendar(new Date(this.calendarDays[0].fullDate + 'T00:00:00'));
-    this.closeModal();
+  toggleLocationDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.isLocationDropdownOpen = !this.isLocationDropdownOpen;
   }
 
-  deleteMeeting(id: number): void {
-    this.meetings = this.meetings.filter((m) => m.id !== id);
-    this.buildCalendar(new Date(this.calendarDays[0].fullDate + 'T00:00:00'));
+  getLocationOption(loc: string): LocationOption {
+    return this.locationOptions.find(option => option.value === loc) || this.locationOptions[0];
   }
 
   getLocationDotClass(loc: string): string {
-    const map: Record<string, string> = {
-      'Google Meet Conference': 'dot-blue',
-      'Zoom Call': 'dot-purple',
-      'Microsoft Teams': 'dot-indigo',
-      'In-Person Office': 'dot-green',
-      'Phone Call': 'dot-orange',
-    };
-    return map[loc] || 'dot-blue';
+    return this.getLocationOption(loc).dotClass;
+  }
+
+  getLocationIconClass(loc: string): string {
+    return this.getLocationOption(loc).icon;
   }
 
   formatTime(time: string): string {
@@ -186,5 +190,44 @@ export class AppointmentSchedulerComponent implements OnInit {
     const suffix = h >= 12 ? 'PM' : 'AM';
     const hour = h % 12 || 12;
     return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
+  }
+
+
+  private rebuildCalendarFromCurrentStart(): void {
+    const startDate = this.calendarDays[0]?.fullDate ?? this.selectedDate;
+    this.buildCalendar(new Date(startDate + 'T00:00:00'));
+  }
+
+  
+
+  private toDateString(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  private buildCalendar(from: Date): void {
+    this.calendarDays = [];
+    for (let i = 0; i < 28; i++) {
+      const d = new Date(from);
+      d.setDate(from.getDate() + i);
+      const fullDate = this.toDateString(d);
+      this.calendarDays.push({
+        dayLabel: this.dayNames[d.getDay()],
+        monthLabel: this.monthNames[d.getMonth()],
+        date: d.getDate(),
+        fullDate,
+        meetingCount: this.meetings.filter(m => m.date === fullDate).length,
+      });
+    }
+  }
+
+  private createEmptyModal(): CreateMeetingPayload {
+    return {
+      title: '',
+      date: this.selectedDate,
+      leadId: null,
+      time: '10:00',
+      location: 'Google Meet Conference',
+      notes: '',
+    }
   }
 }

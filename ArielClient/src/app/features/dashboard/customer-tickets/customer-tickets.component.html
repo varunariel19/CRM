@@ -73,12 +73,12 @@
 
     <div class="topbar-right">
       <select [(ngModel)]="selectedStatus" class="filter-select">
-        <option value="" disabled>Select Status</option>
-        <option *ngFor="let s of status | keyvalue">{{ s.key }}</option>
+        <option value="">All Statuses</option>
+        <option *ngFor="let s of status | keyvalue" [value]="s.value">{{ s.key }}</option>
       </select>
 
       <select [(ngModel)]="selectedPriority" class="filter-select">
-        <option *ngFor="let p of priorityOptions">{{ p }}</option>
+        <option *ngFor="let p of priorityOptions" [value]="p">{{ p }}</option>
       </select>
 
       <button class="raise-btn" (click)="showCreateModal = true">
@@ -89,7 +89,7 @@
   </div>
 
   <div class="tickets-list">
-    <div class="ticket-card" *ngFor="let ticket of tickets">
+    <div class="ticket-card" *ngFor="let ticket of filteredTickets">
 
       <div class="card-header">
         <div class="header-left">
@@ -144,7 +144,7 @@
 
     </div>
 
-    <div class="empty-state" *ngIf="tickets.length === 0">
+    <div class="empty-state" *ngIf="filteredTickets.length === 0">
       <i class="fas fa-ticket-alt"></i>
       <p>No support incidents match your filter profile criteria.</p>
     </div>

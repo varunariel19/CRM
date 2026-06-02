@@ -5,7 +5,7 @@
 
       <div class="modal-header">
         <h2>Add Pending Action Item</h2>
-        <button class="modal-close" (click)="showCreateModal = false">
+        <button class="modal-close" (click)="dismissCreateModal()">
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -24,13 +24,32 @@
           </div>
           <div class="form-group">
             <label>Call Category Type</label>
-            <select [(ngModel)]="newTask.type">
-              <option value="" selected disabled>None</option>
-              <option value="Call Outreach">📞 Call Outreach</option>
-              <option value="Email Campaign">📧 Email Campaign</option>
-              <option value="Meeting discovery">😊 Meeting discovery</option>
-              <option value="Technical Demo">🖥️ Technical Demo</option>
-            </select>
+            <div class="type-select-wrap" (click)="$event.stopPropagation()">
+              <button type="button" class="type-select-trigger" [class.open]="isTypeDropdownOpen"
+                (click)="toggleTypeDropdown($event)">
+                <span class="type-option-main" *ngIf="selectedTaskTypeOption; else typePlaceholder">
+                  <span class="type-icon" [ngClass]="selectedTaskTypeOption.className">
+                    <i [ngClass]="selectedTaskTypeOption.icon"></i>
+                  </span>
+                  <span class="type-option-text">{{ selectedTaskTypeOption.label }}</span>
+                </span>
+                <ng-template #typePlaceholder>
+                  <span class="type-placeholder">None</span>
+                </ng-template>
+                <i class="fas fa-chevron-down type-chevron"></i>
+              </button>
+
+              <div class="type-menu" *ngIf="isTypeDropdownOpen">
+                <button type="button" class="type-menu-item" *ngFor="let type of taskTypeOptions"
+                  [class.selected]="newTask.type === type.value" (click)="selectTaskType(type)">
+                  <span class="type-icon" [ngClass]="type.className">
+                    <i [ngClass]="type.icon"></i>
+                  </span>
+                  <span class="type-option-text">{{ type.label }}</span>
+                  <i class="fas fa-check type-check" *ngIf="newTask.type === type.value"></i>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -59,7 +78,7 @@
             <div class="form-group">
               <label>Connect to Deal</label>
               <select [(ngModel)]="newTask.dealId" (ngModelChange)="onDealSelect($event)">
-                <option [value]="null" disabled >None</option>
+                <option [value]="null" disabled>None</option>
                 <option *ngFor="let deal of deals" [value]="deal.id">
                   {{ deal.title }}
                 </option>
@@ -71,7 +90,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
+        <button class="btn-cancel" (click)="dismissCreateModal()">Cancel</button>
         <button class="btn-register" (click)="submitTask()">Save Task</button>
       </div>
 
@@ -92,7 +111,7 @@
       </button>
     </div>
 
-    <button class="add-btn" (click)="showCreateModal = true">
+    <button class="add-btn" (click)="openCreateModal()">
       <i class="fas fa-plus"></i>
       Add Task Action
     </button>
@@ -108,8 +127,9 @@
         <div>
           <h3 [class.completed]="isCompleted(task)">{{ task.title }}</h3>
           <div class="task-meta">
-            <span class="tag" [ngClass]="task.type.toLowerCase().replace(' ', '-')">
-              {{ task.type }}
+            <span class="tag" [ngClass]="getTaskTypeClass(task.type)">
+              <i [ngClass]="getTaskTypeOption(task.type).icon"></i>
+              {{ getTaskTypeOption(task.type).label }}
             </span>
             <span class="due-date">
               <i class="fas fa-clock"></i>

@@ -71,7 +71,7 @@
                             {{ roleLabels[m.role] }}
                         </span>
                         <span class="member-since">
-                            <i class="fas fa-calendar-alt"></i> {{ formatDate(m.createdAt) }}
+                            <i class="fas fa-calendar-alt"></i>{{ m.createdAt | date:'MMM d, yyyy h:mm a' }}
                         </span>
                     </div>
 

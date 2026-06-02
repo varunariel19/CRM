@@ -1,9 +1,246 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartOptions, ChartType } from 'chart.js';
+
+import { LeadState } from '../../../state/lead.state';
+import { DealState } from '../../../state/deal.state';
+import { TicketState } from '../../../state/tickets.state';
+import { DEAL_STAGE } from '../../../core/types/deal.type';
+import { CommonModule } from '@angular/common';
+import { LeadSource } from '../../../core/types/lead.type';
+import { MenuState } from '../../../state/menu.state';
+import { TaskState } from '../../../state/task.state';
+import { MeetingState } from '../../../state/meeting.state';
 
 @Component({
   selector: 'app-analytics-dashboard',
-  imports: [],
+  imports: [BaseChartDirective, CommonModule],
   templateUrl: './analytics-dashboard.component.html',
   styleUrl: './analytics-dashboard.component.css',
 })
-export class AnalyticsDashboardComponent {}
+export class AnalyticsDashboardComponent {
+
+  leadState = inject(LeadState);
+  dealState = inject(DealState);
+  menuState = inject(MenuState);
+  ticketState = inject(TicketState);
+  taskState = inject(TaskState);
+  meetingState = inject(MeetingState);
+
+
+
+  barChartType: ChartType = 'bar';
+
+  barChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) =>
+            `$${Number(context.raw).toLocaleString()}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false
+        }
+      },
+      y: {
+        ticks: {
+          callback: (value) => `$${value}`
+        }
+      }
+    }
+  };
+
+  doughnutChartOptions: ChartOptions<'doughnut'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '75%',
+    plugins: {
+      legend: {
+        display: false
+      }
+    }
+  };
+
+
+  get leads() {
+    return this.leadState.leads();
+  }
+
+  get pendingTask() {
+    return this.taskState.tasks().filter(task => task.status == 'Pending');
+  }
+
+  navigateMenuOptions(index: number) {
+    this.menuState.setActiveMenu(index);
+  }
+
+  get upcomingMeetings() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const nextTwoDays = new Date(today);
+    nextTwoDays.setDate(today.getDate() + 2);
+
+    return this.meetingState.meetings()
+      .filter(meeting => {
+        const [year, month, day] = meeting.date.split('-').map(Number);
+        const meetingDate = new Date(year, month - 1, day);
+
+        return meetingDate >= today && meetingDate <= nextTwoDays;
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+
+        return dateA - dateB; 
+      });
+  }
+
+  get totalLeads() {
+    return this.leadState.leads().length;
+  }
+
+  get activeDeals(): number {
+    return this.dealState
+      .deals()
+      .filter(
+        deal =>
+          deal.stage === DEAL_STAGE.PROPOSAL ||
+          deal.stage === DEAL_STAGE.NEGOTIATION
+      )
+      .length;
+  }
+
+  get wonRevenue(): number {
+    return this.dealState
+      .deals()
+      .filter(deal => deal.stage === DEAL_STAGE.WON)
+      .reduce((total, deal) => total + deal.value, 0);
+  }
+
+  get openTickets() {
+    return this.ticketState
+      .tickets()
+      .filter(ticket => ticket.status === 'Open')
+      .length;
+  }
+
+  get dealStageData() {
+    const deals = this.dealState.deals();
+
+    return [
+      {
+        name: 'Proposal',
+        value: deals
+          .filter(x => x.stage === DEAL_STAGE.PROPOSAL)
+          .reduce((sum, x) => sum + x.value, 0)
+      },
+      {
+        name: 'Negotiation',
+        value: deals
+          .filter(x => x.stage === DEAL_STAGE.NEGOTIATION)
+          .reduce((sum, x) => sum + x.value, 0)
+      },
+      {
+        name: 'Won',
+        value: deals
+          .filter(x => x.stage === DEAL_STAGE.WON)
+          .reduce((sum, x) => sum + x.value, 0)
+      },
+      {
+        name: 'Lost',
+        value: deals
+          .filter(x => x.stage === DEAL_STAGE.LOST)
+          .reduce((sum, x) => sum + x.value, 0)
+      }
+    ];
+  }
+
+  get barChartData(): ChartData<'bar'> {
+    return {
+      labels: this.dealStageData.map(x => x.name),
+      datasets: [
+        {
+          data: this.dealStageData.map(x => x.value),
+          backgroundColor: '#206ce8',
+          borderRadius: 4,
+          barThickness: 40
+        }
+      ]
+    };
+  }
+
+  get leadSourceData() {
+    const leads = this.leadState.leads();
+
+    const countBySource = (source: LeadSource) =>
+      leads.filter(x => x.source === source).length;
+
+    return {
+      website: countBySource('Website'),
+      referral: countBySource('Referral'),
+      instagram: countBySource('Instagram'),
+      coldCall: countBySource('ColdCall'),
+      linkedIn: countBySource('LinkedIn')
+    };
+  }
+
+  get doughnutChartData(): ChartData<'doughnut'> {
+    const data = this.leadSourceData;
+
+    return {
+      labels: [
+        'Website',
+        'Referral',
+        'Instagram',
+        'Cold Call',
+        'LinkedIn'
+      ],
+      datasets: [
+        {
+          data: [
+            data.website,
+            data.referral,
+            data.instagram,
+            data.coldCall,
+            data.linkedIn
+          ],
+          backgroundColor: [
+            '#206ce8',
+            '#7c3aed',
+            '#f97316',
+            '#ef4444',
+            '#38bdf8'
+          ],
+          borderWidth: 0
+        }
+      ]
+    };
+  }
+
+
+
+  formatTime(time: string): string {
+    if (!time) return '';
+
+    const [hours, minutes] = time.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, minutes);
+
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  }
+
+}

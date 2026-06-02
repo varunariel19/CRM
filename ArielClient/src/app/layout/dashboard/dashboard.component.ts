@@ -27,6 +27,10 @@ import { DealState } from '../../state/deal.state';
 import { TicketService } from '../../services/ticket.service';
 import { Ticket } from '../../core/types/ticket.type';
 import { TicketState } from '../../state/tickets.state';
+import { CrmTaskService } from '../../services/crm-task.service';
+import { TaskState } from '../../state/task.state';
+import { MeetingService } from '../../services/meeting.service';
+import { MeetingState } from '../../state/meeting.state';
 
 @Component({
   selector: 'app-dashboard',
@@ -46,17 +50,22 @@ import { TicketState } from '../../state/tickets.state';
   styleUrl: './dashboard.component.css',
 })
 export class DashboardComponent implements OnInit {
+  private crmTaskService = inject(CrmTaskService);
+  private readonly meetingState = inject(MeetingState);
 
   contactState = inject(ContactState);
   menuState = inject(MenuState);
   leadState = inject(LeadState);
   dealState = inject(DealState);
   ticketState = inject(TicketState);
+  taskState = inject(TaskState);
+
 
   leadService = inject(LeadService);
   contactService = inject(ContactService);
   dealService = inject(DealService);
   ticketService = inject(TicketService);
+  meetingService = inject(MeetingService);
 
   selectedMenu = this.menuState.selectedMenu;
 
@@ -116,6 +125,21 @@ export class DashboardComponent implements OnInit {
       error: (err: any) => {
         console.error('Failed to load deals', err);
       }
+    });
+
+    this.crmTaskService.getAll().subscribe({
+      next: (tasks) => {
+        this.taskState.setTasks(tasks);
+      },
+
+    });
+
+
+
+    this.meetingService.getAllMeetings().subscribe({
+      next: (meetings) => {
+        this.meetingState.setMeetings(meetings);
+      },
     });
   }
 }

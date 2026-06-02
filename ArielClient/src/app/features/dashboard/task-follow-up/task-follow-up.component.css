@@ -149,6 +149,7 @@
 
   font-size: 11px;
   font-weight: 700;
+  gap: 6px;
 }
 
 /* TAG COLORS */
@@ -349,6 +350,112 @@
 }
 
 /* ── CONTEXT SECTION ── */
+
+.type-select-wrap {
+  position: relative;
+}
+
+.type-select-trigger {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  color: var(--text-dark);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.type-select-trigger:hover,
+.type-select-trigger.open,
+.type-select-trigger:focus {
+  border-color: var(--crm-violet);
+  outline: none;
+}
+
+.type-option-main,
+.type-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.type-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.type-option-text,
+.type-placeholder {
+  color: var(--text-dark);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.type-placeholder {
+  color: #94a3b8;
+}
+
+.type-chevron {
+  color: #94a3b8;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.type-select-trigger.open .type-chevron {
+  transform: rotate(180deg);
+}
+
+.type-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.14);
+}
+
+.type-menu-item {
+  width: 100%;
+  min-height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.type-menu-item:hover,
+.type-menu-item.selected {
+  background: #f4f7fb;
+}
+
+.type-check {
+  margin-left: auto;
+  color: var(--active-bg);
+  font-size: 12px;
+}
 
 .context-section {
   display: flex;

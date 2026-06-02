@@ -5,16 +5,7 @@ export type UserRole = 'Admin' | 'Manager' | 'SalesExecutive' | 'BDE' | 'Support
 export type TaskStatus = 'Pending' | 'Completed';
 export type TaskType = 'Call' | 'Email' | 'Meeting' | 'Demo';
 
-export interface Task {
-  id: string;
-  title: string;
-  type: TaskType;
-  dueDate: string;
-  status: TaskStatus;
-  assignedTo: string;
-  leadId?: string;
-  dealId?: string;
-}
+
 
 export interface Meeting {
   id: string;

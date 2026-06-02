@@ -50,6 +50,32 @@ export class CustomerTicketsComponent {
     return this.ticketState.tickets();
   }
 
+  get filteredTickets(): Ticket[] {
+    const search = this.searchText.trim().toLowerCase();
+    const selectedStatus = this.selectedStatus;
+    const selectedPriority = this.selectedPriority;
+
+    return this.tickets.filter(ticket => {
+      const matchesSearch = !search || [
+        ticket.id,
+        ticket.ticketCode,
+        ticket.title,
+        ticket.description,
+        ticket.priority,
+        ticket.status,
+        ticket.assignedMemberName,
+        ticket.clientInfo?.name,
+        ticket.clientInfo?.company,
+        ticket.clientInfo?.email,
+      ].some(value => value?.toLowerCase().includes(search));
+
+      const matchesStatus = !selectedStatus || ticket.status === selectedStatus;
+      const matchesPriority = selectedPriority === 'All Priorities' || ticket.priority === selectedPriority;
+
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }
+
 
   submitTicket(): void {
     if (!this.newTicket.title || !this.newTicket.description) return;
@@ -73,7 +99,6 @@ export class CustomerTicketsComponent {
   }
 
   changeStatus(ticket: Ticket, nextStatus: TicketStatus): void {
-    debugger;
     this.ticketState.updateTicket(ticket.id, { status: nextStatus });
     this.ticketService.updateStatus(ticket.id, nextStatus).subscribe();
   }

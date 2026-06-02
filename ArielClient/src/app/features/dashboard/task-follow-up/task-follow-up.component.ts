@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, HostListener, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LeadState } from '../../../state/lead.state';
 import { DealState } from '../../../state/deal.state';
@@ -12,6 +12,7 @@ import {
 import { ToastService } from '../../../core/services/toast.service';
 import { LoaderService } from '../../../core/services/loader.service';
 import { MenuState } from '../../../state/menu.state';
+import { TaskState } from '../../../state/task.state';
 
 const TASK_TYPE_MAP: Record<string, number> = {
   'Call Outreach': 0,
@@ -19,6 +20,19 @@ const TASK_TYPE_MAP: Record<string, number> = {
   'Meeting discovery': 2,
   'Technical Demo': 3,
 };
+
+export enum TaskType {
+  Call = 'Call',
+  Email = 'Email',
+  Meeting = 'Meeting',
+  Demo = 'Demo'
+}
+interface TaskTypeOption {
+  label: string;
+  value: TaskType;
+  icon: string;
+  className: string;
+}
 
 @Component({
   selector: 'app-task-follow-up',
@@ -34,12 +48,40 @@ export class TasksFollowupsComponent implements OnInit {
   toast = inject(ToastService);
   loader = inject(LoaderService);
   menuState = inject(MenuState);
+  taskState = inject(TaskState);
 
   activeTab: 'pending' | 'completed' | 'all' = 'all';
   showCreateModal = false;
+  isTypeDropdownOpen = false;
   errorMsg: string | null = null;
 
-  tasks = signal<CrmTaskDto[]>([]);
+
+  taskTypeOptions: TaskTypeOption[] = [
+    {
+      label: 'Call Outreach',
+      value: TaskType.Call,
+      icon: 'fas fa-phone',
+      className: 'call'
+    },
+    {
+      label: 'Email Campaign',
+      value: TaskType.Email,
+      icon: 'fas fa-envelope',
+      className: 'email'
+    },
+    {
+      label: 'Meeting Discovery',
+      value: TaskType.Meeting,
+      icon: 'fas fa-users',
+      className: 'meeting'
+    },
+    {
+      label: 'Technical Demo',
+      value: TaskType.Demo,
+      icon: 'fas fa-desktop',
+      className: 'demo'
+    }
+  ];
 
   newTask: {
     title: string;
@@ -56,33 +98,18 @@ export class TasksFollowupsComponent implements OnInit {
   get teamMembers() { return this.authState.teamMembers().filter(member => member.role != "Admin"); }
   get leads() { return this.leadState.leads(); }
   get deals() { return this.dealState.deals(); }
+  get tasks() { return this.taskState.tasks(); }
 
 
   ngOnInit(): void {
-    this.loadTasks();
   }
 
 
-  private loadTasks(): void {
-    this.errorMsg = null;
-    this.loader.show('Loading Tasks...', 'md');
 
-    this.crmTaskService.getAll().subscribe({
-      next: (data) => {
-        this.tasks.set(data);
-        this.loader.hide();
-      },
-      error: (err) => {
-        this.loader.hide();
-        this.toast.error('Failed to load tasks.');
-        this.errorMsg = 'Failed to load tasks. Please try again.';
-      },
-    });
-  }
 
 
   filteredTasks(): CrmTaskDto[] {
-    const all = this.tasks();
+    const all = this.tasks;
 
     if (this.activeTab === 'pending') return all.filter(t => t.status === 'Pending');
     if (this.activeTab === 'completed') return all.filter(t => t.status === 'Completed');
@@ -93,11 +120,17 @@ export class TasksFollowupsComponent implements OnInit {
   openCreateModal(): void {
     this.newTask = this.blankTask();
     this.showCreateModal = true;
+    this.isTypeDropdownOpen = false;
+  }
+
+  dismissCreateModal(): void {
+    this.showCreateModal = false;
+    this.isTypeDropdownOpen = false;
   }
 
   closeModal(event: MouseEvent): void {
     if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
-      this.showCreateModal = false;
+      this.dismissCreateModal();
     }
   }
 
@@ -130,8 +163,8 @@ export class TasksFollowupsComponent implements OnInit {
 
     this.crmTaskService.create(dto).subscribe({
       next: (created) => {
-        this.tasks.update(prev => [created, ...prev]);
-        this.showCreateModal = false;
+        this.taskState.addTask(created);
+        this.dismissCreateModal();
 
         this.loader.hide();
         this.toast.success('Task created successfully.');
@@ -156,8 +189,7 @@ export class TasksFollowupsComponent implements OnInit {
 
         this.crmTaskService.delete(id).subscribe({
           next: () => {
-            this.tasks.update(prev => prev.filter(t => t.id !== id));
-
+            this.taskState.removeTask(id);
             this.loader.hide();
             this.toast.success('Task deleted successfully.');
           },
@@ -189,9 +221,7 @@ export class TasksFollowupsComponent implements OnInit {
           status: newStatus,
         };
 
-        this.tasks.update(prev =>
-          prev.map(t => t.id === task.id ? updated : t)
-        );
+        this.taskState.updateTask(updated.id, updated);
 
         this.crmTaskService.updateStatus(updated.id, updated.status).subscribe({
           next: () => {
@@ -200,11 +230,7 @@ export class TasksFollowupsComponent implements OnInit {
           },
           error: () => {
             this.loader.hide();
-
-            this.tasks.update(prev =>
-              prev.map(t => t.id === task.id ? task : t)
-            );
-
+            this.taskState.updateTask(task.id, task);
             this.toast.error('Failed to update task status.');
           }
         });
@@ -231,9 +257,36 @@ export class TasksFollowupsComponent implements OnInit {
     return task.status === 'Completed';
   }
 
+  toggleTypeDropdown(event: MouseEvent): void {
+    event.stopPropagation();
+    this.isTypeDropdownOpen = !this.isTypeDropdownOpen;
+  }
+
+  selectTaskType(option: TaskTypeOption): void {
+    this.newTask.type = option.value;
+    this.isTypeDropdownOpen = false;
+  }
+
+  get selectedTaskTypeOption(): TaskTypeOption | null {
+    return this.taskTypeOptions.find(option => option.value === this.newTask.type) || null;
+  }
+
+  getTaskTypeOption(type: string): TaskTypeOption {
+    return this.taskTypeOptions.find(option => option.value === type) || this.taskTypeOptions[0];
+  }
+
+  getTaskTypeClass(type: string): string {
+    return this.getTaskTypeOption(type).className;
+  }
+
   contextLabel(task: CrmTaskDto): string {
     if (task.leadName) return `Lead: ${task.leadName}`;
     if (task.dealTitle) return `Deal: ${task.dealTitle}`;
     return '—';
+  }
+
+  @HostListener('document:click')
+  closeTypeDropdown(): void {
+    this.isTypeDropdownOpen = false;
   }
 }

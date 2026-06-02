@@ -137,11 +137,8 @@
   <div class="top-toolbar">
     <div class="search-box">
       <i class="fas fa-magnifying-glass"></i>
-      <input
-        type="text"
-        placeholder="Search leads name, company, email..."
-        (input)="onSearch($any($event.target).value)"
-      />
+      <input type="text" placeholder="Search leads name, company, email..."
+        (input)="onSearch($any($event.target).value)" />
     </div>
 
     <div class="toolbar-actions">
@@ -193,12 +190,9 @@
         <span class="source-badge">{{ lead.source }}</span>
       </div>
 
-      <div>
+      <div class="crm-status-container">
         <div class="dropdown-wrap">
-          <button
-            type="button"
-            class="status-select"
-            [ngClass]="statusClass(lead.status)"
+          <button type="button" class="status-select" [ngClass]="statusClass(lead.status)"
             (click)="toggleStatus(rowIndex)">
             <span class="status-dot"></span>
             <span>{{ lead.status }}</span>
@@ -206,19 +200,15 @@
           </button>
 
           <div class="dropdown-menu status-menu" *ngIf="openStatusIndex === rowIndex">
-            <button
-              type="button"
-              class="dropdown-option"
-              *ngFor="let status of statusOptions"
-              [ngClass]="status.className"
-              (click)="setStatus(lead, status.value)">
+            <button type="button" class="dropdown-option" *ngFor="let status of statusOptions"
+              [ngClass]="status.className" (click)="setStatus(lead, status.value)">
               <span class="status-dot"></span>
               <span>{{ status.label }}</span>
             </button>
           </div>
         </div>
 
-        <p class="date-text">Date: {{ lead.createdAt | date: 'M/d/yyyy' }}</p>
+        <p class="date-text">Modified: {{ lead.createdAt | date: 'M/d/yyyy' }}</p>
       </div>
 
       <div class="dropdown-wrap assignee-wrap">
@@ -229,10 +219,7 @@
         </button>
 
         <div class="dropdown-menu assignee-menu" *ngIf="openAssigneeIndex === rowIndex">
-          <button
-            type="button"
-            class="dropdown-option assignee-option"
-            *ngFor="let member of teamMembers"
+          <button type="button" class="dropdown-option assignee-option" *ngFor="let member of teamMembers"
             (click)="setAssignee(lead, member.id)">
             <span class="member-dot">{{ member.name.charAt(0) }}</span>
             <span>{{ member.name }}</span>

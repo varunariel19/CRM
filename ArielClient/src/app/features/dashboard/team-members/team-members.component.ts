@@ -190,12 +190,4 @@ export class TeamMembersComponent {
       .toUpperCase();
   }
 
-  formatDate(d: string): string {
-    return new Date(d + 'T00:00:00')
-      .toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      });
-  }
 }
