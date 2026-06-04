@@ -24,3 +24,9 @@
   "UserId": "sa",
   "Password": "Test@12345"
 },
+
+
+
+## DATABASE UPDATE :
+
+dotnet ef database update --project ArielCRM.Infrastructure --startup-project ArielCRM.API

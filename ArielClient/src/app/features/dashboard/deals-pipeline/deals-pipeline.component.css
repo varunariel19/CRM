@@ -1,12 +1,12 @@
 .pipeline-wrapper {
   padding: 16px;
-  background: #f4f7fb;
+  background: var(--page-bg);
   min-height: 100vh;
 }
 
 
 .pipeline-header {
-  background: white;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 18px;
 
@@ -31,7 +31,7 @@
 }
 
 .pipeline-header p {
-  color: #94a3b8;
+  color: var(--placeholder-text);
   font-size: 14px;
 }
 
@@ -42,7 +42,7 @@
   border-radius: 10px;
 
   background: var(--active-bg);
-  color: white;
+  color: var(--on-primary);
 
   padding: 0 18px;
 
@@ -66,7 +66,7 @@
 /* COLUMN */
 
 .pipeline-column {
-  background: white;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 16px;
 
@@ -80,7 +80,7 @@
 
   padding: 0 14px;
 
-  border-bottom: 1px solid #edf2f7;
+  border-bottom: 1px solid var(--border-color);
 
   display: flex;
   justify-content: space-between;
@@ -104,14 +104,14 @@
 
   border-radius: 50%;
 
-  background: #f1f5f9;
+  background: var(--surface-muted);
 
   display: flex;
   align-items: center;
   justify-content: center;
 
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-light);
 }
 
 .column-dot {
@@ -135,9 +135,9 @@
 /* DEAL CARD */
 
 .deal-card {
-  background: white;
+  background: var(--card-bg);
 
-  border: 1px solid #e6edf7;
+  border: 1px solid var(--border-color);
   border-radius: 14px;
 
   padding: 14px;
@@ -161,7 +161,7 @@
 }
 
 .company {
-  color: #94a3b8;
+  color: var(--placeholder-text);
   font-size: 13px;
 
   display: flex;
@@ -177,8 +177,8 @@
   display: flex;
   justify-content: space-between;
 
-  border-top: 1px solid #edf2f7;
-  border-bottom: 1px solid #edf2f7;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 
   padding: 14px 0;
 
@@ -187,7 +187,7 @@
 
 .deal-info span {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--placeholder-text);
 }
 
 .deal-info h2 {
@@ -198,7 +198,7 @@
 .deal-info p {
   margin-top: 6px;
 
-  color: #475569;
+  color: var(--text-light);
   font-size: 13px;
 
   display: flex;
@@ -215,7 +215,7 @@
 }
 
 .owner {
-  color: #64748b;
+  color: var(--text-light);
   font-size: 13px;
 
   display: flex;
@@ -228,7 +228,7 @@
   align-items: center;
   gap: 14px;
 
-  color: #94a3b8;
+  color: var(--placeholder-text);
 }
 
 .deal-actions i {
@@ -248,7 +248,7 @@
   align-items: center;
   justify-content: center;
 
-  color: #94a3b8;
+  color: var(--placeholder-text);
   font-style: italic;
 }
 
@@ -257,7 +257,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -265,7 +265,7 @@
 }
 
 .modal-box {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 16px;
   width: 100%;
   max-width: 480px;
@@ -294,7 +294,7 @@
 }
 
 .modal-close {
-  background: none;
+  background: transparent;
   border: none;
   color: var(--text-light);
   font-size: 15px;
@@ -334,7 +334,7 @@
   color: var(--text-dark);
 }
 
-.form-group .required { color: #ef4444; }
+.form-group .required { color: var(--danger-text); }
 
 .form-group input,
 .form-group select {
@@ -346,7 +346,7 @@
   font-family: var(--font-sans);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
-  background: #fff;
+  background: var(--card-bg);
   width: 100%;
   box-sizing: border-box;
 }
@@ -354,10 +354,10 @@
 .form-group input:focus,
 .form-group select:focus {
   border-color: var(--crm-violet);
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
-.form-group input::placeholder { color: #b0bac9; }
+.form-group input::placeholder { color: var(--placeholder-text); }
 
 /* ── MODAL FOOTER ── */
 
@@ -372,7 +372,7 @@
   padding: 9px 20px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  background: #fff;
+  background: var(--card-bg);
   color: var(--text-dark);
   font-size: 13px;
   font-weight: 500;
@@ -381,14 +381,14 @@
   transition: background 0.15s;
 }
 
-.btn-cancel:hover { background: #f1f5f9; }
+.btn-cancel:hover { background: var(--surface-muted); }
 
 .btn-register {
   padding: 9px 20px;
   border: none;
   border-radius: 8px;
   background: var(--active-bg);
-  color: #fff;
+  color: var(--on-primary);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;

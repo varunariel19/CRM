@@ -32,7 +32,7 @@
   font-weight: 700;
   font-size: 14px;
 
-  color: white;
+  color: var(--on-primary);
 }
 
 .brand {
@@ -168,8 +168,8 @@
 }
 
 .logout-btn:hover {
-  background: #dc2626;
-  color: white;
+  background: var(--danger-text);
+  color: var(--on-primary);
 }
 
 

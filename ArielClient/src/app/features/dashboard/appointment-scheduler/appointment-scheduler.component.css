@@ -2,15 +2,15 @@
   display: grid;
   grid-template-columns: 450px 1fr;
   gap: 0;
-  background: #f4f7fb;
+  background: var(--page-bg);
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
 }
 
 .disabled-input {
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: var(--surface-muted);
+  color: var(--text-light);
   cursor: not-allowed;
   opacity: 0.8;
 }
@@ -85,7 +85,7 @@
 }
 
 .date-grid::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--placeholder-text);
   border-radius: 4px;
 }
 
@@ -100,7 +100,7 @@
 }
 
 .date-cell:hover:not(.selected) {
-  background: #f8fafc;
+  background: var(--surface-muted);
 }
 
 .date-cell.selected {
@@ -123,7 +123,7 @@
 }
 
 .date-cell.selected .day-label {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--on-primary);
 }
 
 .event-dot {
@@ -142,7 +142,7 @@
 }
 
 .date-cell.selected .day-number {
-  color: #fff;
+  color: var(--on-primary);
 }
 
 .meetings-panel {
@@ -240,13 +240,13 @@
 
 .meeting-notes {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--placeholder-text);
   margin: 4px 0 0 0;
   font-style: italic;
 }
 
 .meeting-delete {
-  color: #cbd5e1;
+  color: var(--placeholder-text);
   cursor: pointer;
   font-size: 14px;
   transition: color 0.2s;
@@ -255,7 +255,7 @@
 }
 
 .meeting-delete:hover {
-  color: #ef4444;
+  color: var(--danger-text);
 }
 
 .empty-state {
@@ -271,7 +271,7 @@
 
 .empty-icon {
   font-size: 48px;
-  color: #cbd5e1;
+  color: var(--placeholder-text);
 }
 
 .empty-text {
@@ -309,10 +309,10 @@
   background: var(--purple);
 }
 .dot-indigo {
-  background: #4f46e5;
+  background: var(--crm-violet);
 }
 .dot-green {
-  background: #16a34a;
+  background: var(--success-text);
 }
 .dot-orange {
   background: var(--orange);
@@ -321,7 +321,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: var(--overlay-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -330,10 +330,11 @@
 
 .modal-box {
   background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
   width: 100%;
   max-width: 440px;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.18);
+  box-shadow: var(--elevated-shadow);
   overflow: hidden;
 }
 
@@ -355,7 +356,7 @@
 .modal-close {
   border: none;
   background: transparent;
-  color: #94a3b8;
+  color: var(--placeholder-text);
   font-size: 16px;
   cursor: pointer;
   padding: 0;
@@ -387,7 +388,7 @@
 }
 
 .req {
-  color: #ef4444;
+  color: var(--danger-text);
 }
 
 .form-group input,
@@ -398,7 +399,7 @@
   padding: 9px 12px;
   font-size: 13.5px;
   color: var(--text-dark);
-  background: #fff;
+  background: var(--input-bg);
   outline: none;
   transition: border-color 0.15s;
   width: 100%;
@@ -413,7 +414,7 @@
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
-  color: #94a3b8;
+  color: var(--placeholder-text);
 }
 
 .form-group textarea {
@@ -436,7 +437,7 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 12px;
-  background: #fff;
+  background: var(--input-bg);
   color: var(--text-dark);
   cursor: pointer;
   display: flex;
@@ -470,7 +471,7 @@
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  color: #fff;
+  color: var(--on-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -487,7 +488,7 @@
 }
 
 .location-chevron {
-  color: #94a3b8;
+  color: var(--placeholder-text);
   font-size: 11px;
   flex-shrink: 0;
 }
@@ -502,13 +503,13 @@
   right: 0;
   top: 100%;
   z-index: 20;
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-top: none;
   border-color: var(--active-bg);
   border-radius: 0 0 10px 10px;
   padding: 6px;
-  box-shadow: 0 14px 24px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 14px 24px var(--shadow-color);
 }
 
 .location-menu-item {
@@ -526,7 +527,7 @@
 
 .location-menu-item:hover,
 .location-menu-item.selected {
-  background: #f4f7fb;
+  background: var(--page-bg);
 }
 
 .location-check {
@@ -548,7 +549,7 @@
   border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 0 20px;
-  background: #fff;
+  background: var(--card-bg);
   color: var(--text-dark);
   font-size: 13px;
   font-weight: 600;
@@ -557,7 +558,7 @@
 }
 
 .btn-cancel:hover {
-  background: #f8fafc;
+  background: var(--surface-muted);
 }
 
 .btn-schedule {
@@ -566,7 +567,7 @@
   border-radius: 10px;
   padding: 0 20px;
   background: var(--active-bg);
-  color: #fff;
+  color: var(--on-primary);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -577,7 +578,7 @@
 }
 
 .btn-schedule:hover {
-  background: #1d5ce8;
+  background: var(--active-bg);
 }
 
 @media (max-width: 900px) {
@@ -608,7 +609,7 @@
   transition: border-color 0.15s;
 }
 .meeting-card:hover {
-  border-color: #94a3b8;
+  border-color: var(--placeholder-text);
 }
 
 .meeting-card-left {
@@ -626,19 +627,19 @@
   flex-shrink: 0;
 }
 .ac-dot-blue {
-  background: #378add;
+  background: var(--active-bg);
 }
 .ac-dot-purple {
-  background: #7f77dd;
+  background: var(--purple);
 }
 .ac-dot-green {
-  background: #3b6d11;
+  background: var(--success-text);
 }
 .ac-dot-orange {
-  background: #ba7517;
+  background: var(--orange);
 }
 .ac-dot-indigo {
-  background: #4f46e5;
+  background: var(--crm-violet);
 }
 
 .meeting-body {
@@ -675,20 +676,20 @@
   font-size: 10px;
   font-weight: 600;
   flex-shrink: 0;
-  background: #e6f1fb;
-  color: #0c447c;
+  background: var(--event-blue-bg);
+  color: var(--event-blue-text);
 }
 .meeting-avatar.dot-purple {
-  background: #eeedfe;
-  color: #3c3489;
+  background: var(--event-purple-bg);
+  color: var(--event-purple-text);
 }
 .meeting-avatar.dot-green {
-  background: #eaf3de;
-  color: #27500a;
+  background: var(--event-green-bg);
+  color: var(--event-green-text);
 }
 .meeting-avatar.dot-orange {
-  background: #faeeda;
-  color: #633806;
+  background: var(--event-orange-bg);
+  color: var(--event-orange-text);
 }
 
 .meeting-client-info {
@@ -746,44 +747,44 @@
   border-radius: 6px;
   border: 1px solid var(--border-color);
   color: var(--text-light);
-  background: #f8fafc;
+  background: var(--surface-muted);
 }
 .chip-loc {
   border: none;
 }
 .chip-dot-blue {
-  background: #e6f1fb;
-  color: #0c447c;
+  background: var(--event-blue-bg);
+  color: var(--event-blue-text);
 }
 .chip-dot-purple {
-  background: #eeedfe;
-  color: #3c3489;
+  background: var(--event-purple-bg);
+  color: var(--event-purple-text);
 }
 .chip-dot-green {
-  background: #eaf3de;
-  color: #27500a;
+  background: var(--event-green-bg);
+  color: var(--event-green-text);
 }
 .chip-dot-orange {
-  background: #faeeda;
-  color: #633806;
+  background: var(--event-orange-bg);
+  color: var(--event-orange-text);
 }
 .chip-dot-indigo {
-  background: #ede9fe;
-  color: #3730a3;
+  background: var(--primary-soft-bg);
+  color: var(--crm-violet);
 }
 
 .meeting-notes {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--placeholder-text);
   font-style: italic;
   margin: 0;
 }
 
 .meeting-delete {
-  background: none;
+  background: transparent;
   border: 1px solid transparent;
   cursor: pointer;
-  color: #94a3b8;
+  color: var(--placeholder-text);
   font-size: 14px;
   padding: 6px 7px;
   border-radius: 8px;
@@ -794,9 +795,9 @@
     border-color 0.15s;
 }
 .meeting-delete:hover {
-  color: #991b1b;
-  background: #fcebeb;
-  border-color: #f09595;
+  color: var(--danger-text);
+  background: var(--danger-hover-bg);
+  border-color: var(--danger-text);
 }
 
 
@@ -805,7 +806,7 @@
   height: 18px;
   border-radius: 99px;
   background: var(--active-bg);
-  color: #ffffff;
+  color: var(--on-primary);
   font-size: 11px;
   font-weight: 700;
   display: flex;

@@ -12,6 +12,7 @@ import { MenuState } from '../../../state/menu.state';
 import { TaskState } from '../../../state/task.state';
 import { MeetingState } from '../../../state/meeting.state';
 import { HistoryResponseDto, HistoryService } from '../../../core/services/history.service';
+import { ThemeService } from '../../../core/services/theme.service';
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -21,62 +22,97 @@ import { HistoryResponseDto, HistoryService } from '../../../core/services/histo
 })
 export class AnalyticsDashboardComponent implements OnInit {
 
-  leadState = inject(LeadState);
-  dealState = inject(DealState);
-  menuState = inject(MenuState);
-  ticketState = inject(TicketState);
-  taskState = inject(TaskState);
+  leadState    = inject(LeadState);
+  dealState    = inject(DealState);
+  menuState    = inject(MenuState);
+  ticketState  = inject(TicketState);
+  taskState    = inject(TaskState);
   meetingState = inject(MeetingState);
-
-
+  themeService = inject(ThemeService);
 
   barChartType: ChartType = 'bar';
 
-  barChartOptions: ChartConfiguration<'bar'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false
+  // ── Theme-aware helpers ──────────────────────────────────────
+  private get gridColor(): string {
+    return this.themeService.isDark()
+      ? 'rgba(255,255,255,0.08)'
+      : 'rgba(0,0,0,0.08)';
+  }
+
+  private get tickColor(): string {
+    return this.themeService.isDark() ? '#a0a0a0' : '#3a4a6b';
+  }
+
+  private get borderColor(): string {
+    return this.themeService.isDark()
+      ? 'rgba(255,255,255,0.10)'
+      : 'rgba(0,0,0,0.10)';
+  }
+
+  // ── Bar chart options (getter — re-evaluates on every CD) ────
+  get barChartOptions(): ChartConfiguration<'bar'>['options'] {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) => `$${Number(context.raw).toLocaleString()}`
+          }
+        }
       },
-      tooltip: {
-        callbacks: {
-          label: (context) =>
-            `$${Number(context.raw).toLocaleString()}`
+      scales: {
+        x: {
+          grid: {
+            display: false
+          },
+          ticks: {
+            color: this.tickColor
+          },
+          border: {
+            color: this.borderColor
+          }
+        },
+        y: {
+          grid: {
+            color: this.gridColor
+          },
+          ticks: {
+            color: this.tickColor,
+            callback: (value) => `$${value}`
+          },
+          border: {
+            color: this.borderColor
+          }
         }
       }
-    },
-    scales: {
-      x: {
-        grid: {
+    };
+  }
+
+  // ── Doughnut chart options (getter) ──────────────────────────
+  get doughnutChartOptions(): ChartOptions<'doughnut'> {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '75%',
+      plugins: {
+        legend: {
           display: false
         }
-      },
-      y: {
-        ticks: {
-          callback: (value) => `$${value}`
-        }
       }
-    }
-  };
-
-  doughnutChartOptions: ChartOptions<'doughnut'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    cutout: '75%',
-    plugins: {
-      legend: {
-        display: false
-      }
-    }
-  };
-
+    };
+  }
 
   constructor(private historyService: HistoryService) { }
+
   ngOnInit(): void {
     this.loadRecentHistory();
   }
 
+  // ── rest of your code unchanged below ───────────────────────
 
   get leads() {
     return this.leadState.leads();
@@ -101,15 +137,9 @@ export class AnalyticsDashboardComponent implements OnInit {
       .filter(meeting => {
         const [year, month, day] = meeting.date.split('-').map(Number);
         const meetingDate = new Date(year, month - 1, day);
-
         return meetingDate >= today && meetingDate <= nextTwoDays;
       })
-      .sort((a, b) => {
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
-
-        return dateA - dateB;
-      });
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 
   get totalLeads() {
@@ -117,139 +147,79 @@ export class AnalyticsDashboardComponent implements OnInit {
   }
 
   get activeDeals(): number {
-    return this.dealState
-      .deals()
-      .filter(
-        deal =>
-          deal.stage === DEAL_STAGE.PROPOSAL ||
-          deal.stage === DEAL_STAGE.NEGOTIATION
-      )
-      .length;
+    return this.dealState.deals()
+      .filter(deal =>
+        deal.stage === DEAL_STAGE.PROPOSAL ||
+        deal.stage === DEAL_STAGE.NEGOTIATION
+      ).length;
   }
 
   get wonRevenue(): number {
-    return this.dealState
-      .deals()
+    return this.dealState.deals()
       .filter(deal => deal.stage === DEAL_STAGE.WON)
       .reduce((total, deal) => total + deal.value, 0);
   }
 
   get openTickets() {
-    return this.ticketState
-      .tickets()
-      .filter(ticket => ticket.status === 'Open')
-      .length;
+    return this.ticketState.tickets()
+      .filter(ticket => ticket.status === 'Open').length;
   }
 
   get dealStageData() {
     const deals = this.dealState.deals();
-
     return [
-      {
-        name: 'Proposal',
-        value: deals
-          .filter(x => x.stage === DEAL_STAGE.PROPOSAL)
-          .reduce((sum, x) => sum + x.value, 0)
-      },
-      {
-        name: 'Negotiation',
-        value: deals
-          .filter(x => x.stage === DEAL_STAGE.NEGOTIATION)
-          .reduce((sum, x) => sum + x.value, 0)
-      },
-      {
-        name: 'Won',
-        value: deals
-          .filter(x => x.stage === DEAL_STAGE.WON)
-          .reduce((sum, x) => sum + x.value, 0)
-      },
-      {
-        name: 'Lost',
-        value: deals
-          .filter(x => x.stage === DEAL_STAGE.LOST)
-          .reduce((sum, x) => sum + x.value, 0)
-      }
+      { name: 'Proposal',    value: deals.filter(x => x.stage === DEAL_STAGE.PROPOSAL).reduce((sum, x) => sum + x.value, 0) },
+      { name: 'Negotiation', value: deals.filter(x => x.stage === DEAL_STAGE.NEGOTIATION).reduce((sum, x) => sum + x.value, 0) },
+      { name: 'Won',         value: deals.filter(x => x.stage === DEAL_STAGE.WON).reduce((sum, x) => sum + x.value, 0) },
+      { name: 'Lost',        value: deals.filter(x => x.stage === DEAL_STAGE.LOST).reduce((sum, x) => sum + x.value, 0) }
     ];
   }
 
   get barChartData(): ChartData<'bar'> {
     return {
       labels: this.dealStageData.map(x => x.name),
-      datasets: [
-        {
-          data: this.dealStageData.map(x => x.value),
-          backgroundColor: '#206ce8',
-          borderRadius: 4,
-          barThickness: 40
-        }
-      ]
+      datasets: [{
+        data: this.dealStageData.map(x => x.value),
+        backgroundColor: '#206ce8',
+        borderRadius: 4,
+        barThickness: 40
+      }]
     };
   }
 
   get leadSourceData() {
     const leads = this.leadState.leads();
-
     const countBySource = (source: LeadSource) =>
       leads.filter(x => x.source === source).length;
 
     return {
-      website: countBySource('Website'),
-      referral: countBySource('Referral'),
+      website:   countBySource('Website'),
+      referral:  countBySource('Referral'),
       instagram: countBySource('Instagram'),
-      coldCall: countBySource('ColdCall'),
-      linkedIn: countBySource('LinkedIn')
+      coldCall:  countBySource('ColdCall'),
+      linkedIn:  countBySource('LinkedIn')
     };
   }
 
   get doughnutChartData(): ChartData<'doughnut'> {
     const data = this.leadSourceData;
-
     return {
-      labels: [
-        'Website',
-        'Referral',
-        'Instagram',
-        'Cold Call',
-        'LinkedIn'
-      ],
-      datasets: [
-        {
-          data: [
-            data.website,
-            data.referral,
-            data.instagram,
-            data.coldCall,
-            data.linkedIn
-          ],
-          backgroundColor: [
-            '#206ce8',
-            '#7c3aed',
-            '#f97316',
-            '#ef4444',
-            '#38bdf8'
-          ],
-          borderWidth: 0
-        }
-      ]
+      labels: ['Website', 'Referral', 'Instagram', 'Cold Call', 'LinkedIn'],
+      datasets: [{
+        data: [data.website, data.referral, data.instagram, data.coldCall, data.linkedIn],
+        backgroundColor: ['#206ce8', '#7c3aed', '#f97316', '#ef4444', '#38bdf8'],
+        borderWidth: 0
+      }]
     };
   }
 
-
-
   formatTime(time: string): string {
     if (!time) return '';
-
     const [hours, minutes] = time.split(':').map(Number);
     const date = new Date();
     date.setHours(hours, minutes);
-
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   }
-
 
   recentHistory: HistoryResponseDto[] = [];
   isLoadingHistory = false;
@@ -272,8 +242,7 @@ export class AnalyticsDashboardComponent implements OnInit {
       case 'create': return 'action-create';
       case 'update': return 'action-update';
       case 'delete': return 'action-delete';
-      default: return 'action-default';
+      default:       return 'action-default';
     }
   }
-
 }

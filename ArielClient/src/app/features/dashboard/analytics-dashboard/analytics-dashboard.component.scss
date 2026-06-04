@@ -1,10 +1,9 @@
 .dashboard-wrapper {
   padding: 24px;
-  background: #f3f6fb;
+  background: var(--page-bg);
   min-height: 100vh;
 }
 
-/* TOP CARDS */
 
 .top-cards {
   display: grid;
@@ -38,7 +37,6 @@
 }
 
 .card-link {
-  color: var(--active-bg);
   font-weight: 600;
   font-size: 14px;
 }
@@ -60,35 +58,34 @@
 }
 
 .card-icon.blue {
-  background: #e8f0ff;
-  color: var(--active-bg);
+  background: var(--info-bg);
 }
 
 .card-icon.purple {
-  background: #ede9fe;
+  background: var(--primary-soft-bg);
   color: var(--purple);
 }
 
 .card-icon.orange {
-  background: #fff7e8;
+  background: var(--warning-bg);
   color: var(--orange);
 }
 
 .revenue-card {
-  background: #07132d;
-  color: white;
+  background: var(--remaining-bg);
+  color: var(--menu-text);
 }
 
 .revenue-card h2,
 .revenue-card .card-title {
-  color: white;
+  color: var(--menu-text);
 }
 
 .badge {
   margin-top: 10px;
   display: inline-block;
-  background: #073b35;
-  color: #34d399;
+  background: var(--success-bg);
+  color: var(--success-text);
   padding: 6px 10px;
   border-radius: 8px;
   font-size: 12px;
@@ -98,14 +95,13 @@
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  border: 1px solid #17305c;
+  border: 1px solid var(--border-color);
 
   display: flex;
   align-items: center;
   justify-content: center;
 
   font-size: 22px;
-  color: #3b82f6;
 }
 
 /* CHART GRID */
@@ -119,7 +115,7 @@
 
 .chart-card,
 .bottom-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 18px;
   border: 1px solid var(--border-color);
   padding: 22px;
@@ -161,8 +157,8 @@
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
-  border-left: 2px solid #cbd5e1;
-  border-bottom: 2px solid #cbd5e1;
+  border-left: 2px solid var(--placeholder-text);
+  border-bottom: 2px solid var(--placeholder-text);
   padding: 0 30px 0 30px;
 }
 
@@ -224,7 +220,7 @@
 
 .donut-center p {
   margin: 0;
-  color: #64748b;
+  color: var(--text-light);
   font-size: 14px;
 }
 
@@ -249,20 +245,20 @@
 }
 
 .blue {
-  background: #206ce8;
+  background: var(--active-bg);
 }
 .purple {
-  background: #7c3aed;
+  background: var(--crm-violet);
 }
 .light-blue {
-  background: #38bdf8;
+  background: var(--light-blue);
 }
 .orange {
-  background: #f97316;
+  background: var(--orange);
 }
 
 .red {
-  background: #ef4444;
+  background: var(--danger-text);
 }
 
 /* BOTTOM GRID */
@@ -274,7 +270,6 @@
 }
 
 .view-link {
-  color: var(--active-bg);
   font-weight: 600;
 }
 
@@ -285,7 +280,7 @@
   align-items: flex-start;
 
   padding: 14px 0;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .prospect-item h4,
@@ -309,27 +304,28 @@
 }
 
 .status.lost {
-  background: #ffa9a9;
+  background: var(--danger-bg);
+  color: var(--danger-text);
 }
 
 .status.converted {
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .status.qualified {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: var(--primary-soft-bg);
+  color: var(--crm-purple);
 }
 
 .status.contacted {
-  background: #fef3c7;
-  color: #b45309;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .status.new {
-  background: #dbeafe;
-  color: #1d4ed8;
+  background: var(--info-bg);
+  color: var(--active-bg);
 }
 
 .empty-state {
@@ -340,12 +336,12 @@
   align-items: center;
   justify-content: center;
 
-  color: #94a3b8;
+  color: var(--placeholder-text);
 }
 
 .empty-state i {
   font-size: 42px;
-  color: #10b981;
+  color: var(--success-text);
   margin-bottom: 14px;
 }
 
@@ -368,7 +364,7 @@
 
 .activity-item span {
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--placeholder-text);
 }
 
 .task-list {
@@ -383,15 +379,15 @@
   align-items: center;
   padding: 12px;
   border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-color);
 }
 
 .task-info h4 {
   margin: 0 0 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-dark);
 }
 
 .task-meta {
@@ -399,7 +395,7 @@
   gap: 12px;
   flex-wrap: wrap;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-light);
 }
 
 .task-meta span {
@@ -411,7 +407,7 @@
 .task-date {
   font-size: 12px;
   font-weight: 600;
-  color: #2563eb;
+  color: var(--active-bg);
   white-space: nowrap;
 }
 
@@ -430,9 +426,9 @@
   justify-content: space-between;
   align-items: flex-start;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: #f8fafc;
+  background: var(--surface-muted);
 }
 
 .meeting-info h4 {
@@ -443,7 +439,7 @@
 
 .meeting-info p {
   margin: 0 0 6px;
-  color: #64748b;
+  color: var(--text-light);
   font-size: 12px;
 }
 
@@ -452,7 +448,7 @@
   gap: 12px;
   flex-wrap: wrap;
   font-size: 12px;
-  color: #64748b;
+  color: var(--text-light);
 }
 
 .meeting-meta span {
@@ -464,7 +460,7 @@
 .meeting-date {
   font-size: 12px;
   font-weight: 600;
-  color: #2563eb;
+  color: var(--active-bg);
   white-space: nowrap;
 }
 
@@ -499,7 +495,7 @@
   top: 0;
   bottom: 0;
   width: 2px;
-  background: #e2e8f0;
+  background: var(--border-color);
 }
 
 
@@ -515,22 +511,22 @@
   height: 10px;
   border-radius: 50%;
   z-index: 2;
-  background: #94a3b8;
+  background: var(--placeholder-text);
 
   &.action-create {
-    background: #10b981;
+    background: var(--success-text);
   }
 
   &.action-update {
-    background: #3b82f6;
+    background: var(--active-bg);
   }
 
   &.action-delete {
-    background: #ef4444;
+    background: var(--danger-text);
   }
 
   &.action-default {
-    background: #94a3b8;
+    background: var(--placeholder-text);
   }
 }
 

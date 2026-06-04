@@ -19,11 +19,11 @@
   align-items: center;
   justify-content: center;
 
-  color: white;
+  color: var(--on-primary);
 }
 
 .logo-text h2 {
-  color: white;
+  color: var(--on-primary);
   font-size: 18px;
 }
 
@@ -60,11 +60,11 @@
 
 .menu-item.active {
   background: var(--active-bg);
-  color: white;
+  color: var(--on-primary);
 }
 
 .menu-item.active i {
-  color: white;
+  color: var(--on-primary);
 }
 
 .menu-item i {

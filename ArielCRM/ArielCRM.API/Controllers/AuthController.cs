@@ -55,7 +55,7 @@ namespace ArielCRM.API.Controllers
 
 
         [HttpPost("register")]
-        [Authorize(Roles = "Admin")]
+        // [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RegisterMember([FromBody] RegisterRequestDto dto)  
         {
             if (!ModelState.IsValid)
