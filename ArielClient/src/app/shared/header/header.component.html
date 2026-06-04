@@ -11,7 +11,7 @@
     </div>
 
 
-    <button class="toggle-btn" (click)="toggleSidebar.emit()">
+    <button class="toggle-btn" type="button" (click)="toggleSidebar.emit()">
       <i class="fas fa-bars"></i>
     </button>
 
@@ -29,17 +29,22 @@
   <div class="right-section">
 
 
-    <button class="icon-btn">
+    <button class="icon-btn" type="button" aria-label="Notifications" title="Notifications">
       <i class="fa-regular fa-bell"></i>
     </button>
 
 
-    <button class="icon-btn">
-      <i class="fa-regular fa-moon"></i>
+    <button
+      class="icon-btn"
+      type="button"
+      [attr.aria-label]="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
+      [attr.title]="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
+      (click)="toggleTheme.emit()">
+      <i class="fa-solid" [class.fa-sun]="isDarkTheme" [class.fa-moon]="!isDarkTheme"></i>
     </button>
 
 
-    <button class="icon-btn">
+    <button class="icon-btn" type="button" aria-label="Settings" title="Settings">
       <i class="fa-solid fa-gear"></i>
     </button>
 

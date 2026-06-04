@@ -31,6 +31,7 @@ import { CrmTaskService } from '../../services/crm-task.service';
 import { TaskState } from '../../state/task.state';
 import { MeetingService } from '../../services/meeting.service';
 import { MeetingState } from '../../state/meeting.state';
+import { AuditHistoryComponent } from '../../features/dashboard/audit-history/audit-history.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -44,7 +45,8 @@ import { MeetingState } from '../../state/meeting.state';
     TasksFollowupsComponent,
     CustomerTicketsComponent,
     AppointmentSchedulerComponent,
-    TeamMembersComponent
+    TeamMembersComponent,
+    AuditHistoryComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',

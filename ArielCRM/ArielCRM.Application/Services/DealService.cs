@@ -3,12 +3,29 @@ using ArielCRM.DataLayer.Entities;
 using ArielCRM.DataLayer.Enums;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ArielCRM.Application.Services
 {
-    public class DealService(IDealRepository dealRepository) : IDealService
+    public class DealService : IDealService
     {
-        private readonly IDealRepository _dealRepository = dealRepository;
+        private readonly IDealRepository _dealRepository;
+        private readonly IHistoryService _historyService;
+
+        private static readonly JsonSerializerOptions _jsonOpts = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            WriteIndented = false,
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,  
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
+        public DealService(IDealRepository dealRepository, IHistoryService historyService)
+        {
+            _dealRepository = dealRepository;
+            _historyService = historyService;
+        }
 
         public async Task<IEnumerable<Deal>> GetAllDealsAsync()
         {
@@ -34,13 +51,28 @@ namespace ArielCRM.Application.Services
 
             await _dealRepository.AddAsync(deal);
             await _dealRepository.SaveChangesAsync();
-            return await _dealRepository.GetByIdAsync(deal.Id) ?? deal;
+
+            var created = await _dealRepository.GetByIdAsync(deal.Id) ?? deal;
+
+            await _historyService.LogAsync(new LogHistoryRequest
+            {
+                EntityName = "Deal",
+                EntityId = created.Id,
+                ActionType = CRMActionType.Create,
+                Title = $"Created deal '{created.Title}'",
+                PreviousState = null,
+                UpdatedState = JsonSerializer.Serialize(created)
+            });
+
+            return created;
         }
 
         public async Task<Deal?> UpdateDealAsync(string id, UpdateDealDto dto)
         {
-            var deal = await _dealRepository.GetByIdAsync(id);
+            var deal = await _dealRepository.NormalGetByIdAsync(id);
             if (deal == null) return null;
+
+            var previousSnapshot = JsonSerializer.Serialize(deal , _jsonOpts);
 
             deal.Title = dto.Title;
             deal.Value = dto.Value;
@@ -51,6 +83,17 @@ namespace ArielCRM.Application.Services
 
             _dealRepository.Update(deal);
             await _dealRepository.SaveChangesAsync();
+
+            await _historyService.LogAsync(new LogHistoryRequest
+            {
+                EntityName = "Deal",
+                EntityId = deal.Id,
+                ActionType = CRMActionType.Update,
+                Title = $"Updated deal '{deal.Title}'",
+                PreviousState = previousSnapshot,
+                UpdatedState = JsonSerializer.Serialize(deal)
+            });
+
             return deal;
         }
 
@@ -59,9 +102,53 @@ namespace ArielCRM.Application.Services
             var deal = await _dealRepository.GetByIdAsync(id);
             if (deal == null) return false;
 
+            var previousSnapshot = JsonSerializer.Serialize(deal, _jsonOpts);
+            var oldStage = deal.Stage;
+
             deal.Stage = stage;
             _dealRepository.Update(deal);
-            return await _dealRepository.SaveChangesAsync();
+            var result = await _dealRepository.SaveChangesAsync();
+
+            if (result)
+            {
+                await _historyService.LogAsync(new LogHistoryRequest
+                {
+                    EntityName = "Deal",
+                    EntityId = deal.Id,
+                    ActionType = CRMActionType.Update,
+                    Title = $"Updated deal '{deal.Title}' stage from '{oldStage}' to '{stage}'",
+                    PreviousState = previousSnapshot,
+                    UpdatedState = JsonSerializer.Serialize(deal , _jsonOpts)
+                });
+            }
+
+            return result;
+        }
+
+        public async Task<bool> DeleteDealAsync(string id)
+        {
+            var deal = await _dealRepository.GetByIdAsync(id);
+            if (deal == null) return false;
+
+            var previousSnapshot = JsonSerializer.Serialize(deal);
+
+            _dealRepository.Delete(deal);
+            var result = await _dealRepository.SaveChangesAsync();
+
+            if (result)
+            {
+                await _historyService.LogAsync(new LogHistoryRequest
+                {
+                    EntityName = "Deal",
+                    EntityId = id,
+                    ActionType = CRMActionType.Delete,
+                    Title = $"Deleted deal '{deal.Title}'",
+                    PreviousState = previousSnapshot,
+                    UpdatedState = null
+                });
+            }
+
+            return result;
         }
     }
 }

@@ -38,7 +38,6 @@
 .brand {
   font-size: 20px;
   font-weight: 600;
-
 }
 
 /* CENTER */
@@ -66,7 +65,7 @@
 
   background: var(--hover-bg);
 
-  color: white;
+  color: var(--menu-text);
 
   padding: 0 18px;
 
@@ -74,7 +73,7 @@
 }
 
 .search-box input::placeholder {
-  color: #9fb0df;
+  color: var(--placeholder-text);
 }
 
 /* RIGHT */
@@ -143,7 +142,7 @@
 
 .profile-info p {
   font-size: 12px;
-  color: #9fb0df;
+  color: var(--placeholder-text);
 }
 
 /* LOGOUT */
@@ -187,7 +186,7 @@
 
   background: var(--hover-bg);
 
-  color: white;
+  color: var(--menu-text);
 
   cursor: pointer;
 

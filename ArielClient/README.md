@@ -1,59 +1,161 @@
-# ArielClient
+## Feature: Universal History/Audit Log System
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.5.
+### Overview
+Build a complete **History/Audit Log** module (`controller`, `service`, `repository`) that tracks every meaningful action performed on core entities across the application.
 
-## Development server
+---
 
-To start a local development server, run:
+### Entities to Track
+`DEAL` | `LEAD` | `TICKET` | `CLIENT`
 
-```bash
-ng serve
+### Action Types
+`CREATE` | `UPDATE` | `DELETE`
+
+---
+
+### Requirements
+
+**1. History Schema**
+```cs
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace ArielCRM.DataLayer.Entities
+{
+    public enum CRMActionType
+    {
+        Create,
+        Update,
+        Delete
+    }
+
+    public enum CRMRevertType
+    {
+        None,
+        Delete,      
+        Update,  
+        Create      
+    }
+
+    [Table("crm_history")]
+    public class CRMHistory
+    {
+        [Key]
+        [Column("id")]
+        [MaxLength(50)]
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
+        [Required]
+        [Column("entity_name")]
+        [MaxLength(100)]
+        public string EntityName { get; set; } = string.Empty;
+
+        [Required]
+        [Column("entity_id")]
+        [MaxLength(50)]
+        public string EntityId { get; set; } = string.Empty;
+
+        [Required]
+        [Column("title", TypeName = "text")]
+        public string Title { get; set; } = string.Empty;
+
+        [Required]
+        [Column("action_type")]
+        [MaxLength(20)]
+        public string ActionTypeRaw { get; set; } = CRMActionType.Create.ToString();
+
+        [NotMapped]
+        public CRMActionType ActionType
+        {
+            get => Enum.Parse<CRMActionType>(ActionTypeRaw, ignoreCase: true);
+            set => ActionTypeRaw = value.ToString();
+        }
+
+        [Required]
+        [Column("revert_type")]
+        [MaxLength(20)]
+        public string RevertTypeRaw { get; set; } = CRMRevertType.None.ToString();
+
+        [NotMapped]
+        public CRMRevertType RevertType
+        {
+            get => Enum.Parse<CRMRevertType>(RevertTypeRaw, ignoreCase: true);
+            set => RevertTypeRaw = value.ToString();
+        }
+
+        [Column("modified_data", TypeName = "text")]
+        public string? ModifiedData { get; set; }
+
+        [Required]
+        [Column("initiated_at")]
+        public DateTime InitiatedAt { get; set; } = DateTime.UtcNow;
+
+        [Required]
+        [Column("initiated_by_id")]
+        [MaxLength(50)]
+        public string InitiatedById { get; set; } = string.Empty;
+
+        [ForeignKey("InitiatedById")]
+        public User InitiatedBy { get; set; } = null!;
+
+        [Column("previous_state", TypeName = "text")]
+        public string? PreviousState { get; set; }
+
+        [Column("updated_state", TypeName = "text")]
+        public string? UpdatedState { get; set; }
+    }
+}
 ```
+---
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+**2. Title — Human-Readable Summary**
+Every log entry must have a concise, descriptive `title` that lets an admin instantly understand what happened. Examples:
 
-## Code scaffolding
+| Action | Title |
+|---|---|
+| Status change | `Moved Deal from 'Proposal' → 'Won'` |
+| Field update | `Deal 'Apollo Project' has been updated` |
+| New record | `New Lead 'John Doe' was created` |
+| Deletion | `Ticket #482 has been deleted` |
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+---
 
-```bash
-ng generate component component-name
-```
+**3. `modifiedFields` — HTML Diff (UPDATE only)**
+When `actionType = UPDATE`, compute a field-level diff between `previousState` and `newState`. Store it as a **styled HTML string** that renders cleanly in an admin UI:
+- Struck-through red for old value
+- Green for new value
+- One row per changed field
+- Skip unchanged fields
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+---
 
-```bash
-ng generate --help
-```
+**4. Revert Method**
+Expose a `revert(historyId)` method that restores an entity to its state before the logged action:
+- `CREATE` log → **delete** the entity
+- `DELETE` log → **re-create** the entity from `previousState`
+- `UPDATE` log → **patch** the entity back to `previousState`
 
-## Building
+---
 
-To build the project run:
+**5. API Endpoints**
 
-```bash
-ng build
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/history` | Get all history (paginated, filterable) |
+| `GET` | `/history/:entityType/:entityId` | Get history for a specific entity |
+| `POST` | `/history` | Manually add a log entry |
+| `DELETE` | `/history` | Delete all history |
+| `DELETE` | `/history/:id` | Delete single log entry |
+| `POST` | `/history/:id/revert` | Revert entity to pre-action state |
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+---
 
-## Running unit tests
+**6. Integration Guide**
+Show exactly how to inject and call `HistoryService` inside `DealService`, `LeadService`, `TicketService`, and `ClientService` — with real code examples for each action type.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+---
 
-```bash
-ng test
-```
+Now go ahead and implement this fully.
 
-## Running end-to-end tests
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Updated deal 'Data Warehouse Modernization Project'

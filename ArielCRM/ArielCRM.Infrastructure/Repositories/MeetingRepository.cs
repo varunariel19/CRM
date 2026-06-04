@@ -60,5 +60,11 @@ namespace ArielCRM.Infrastructure.Repositories
             _context.Meetings.Remove(meeting);
             return await _context.SaveChangesAsync() > 0;
         }
+
+
+        public async Task<Meeting?> GetByIdAsync(string id)
+        {
+            return await _context.Meetings.FindAsync(id);
+        }
     }
 }

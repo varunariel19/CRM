@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
@@ -9,6 +9,8 @@ import { AuthService } from '../../services/auth.service';
 })
 export class HeaderComponent {
    @Output() toggleSidebar = new EventEmitter<void>();
+   @Output() toggleTheme = new EventEmitter<void>();
+   @Input() isDarkTheme = true;
 
    constructor(private authService: AuthService) { }
 

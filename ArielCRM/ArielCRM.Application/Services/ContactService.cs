@@ -2,22 +2,26 @@
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
+using System.Text.Json;
 
 namespace ArielCRM.Application.Services
 {
     public class ContactService : IContactService
     {
         private readonly IContactRepository _contactRepository;
+        private readonly IHistoryService _historyService;
 
-        public ContactService(IContactRepository contactRepository)
+        public ContactService(IContactRepository contactRepository, IHistoryService historyService)
         {
             _contactRepository = contactRepository;
+            _historyService = historyService;
         }
 
         public async Task<IEnumerable<Contact>> GetAllContactsAsync()
         {
             return await _contactRepository.GetAllAsync();
         }
+
         public async Task<Contact?> GetContactByIdAsync(string id)
         {
             return await _contactRepository.GetByIdAsync(id);
@@ -38,6 +42,16 @@ namespace ArielCRM.Application.Services
             await _contactRepository.AddAsync(contact);
             await _contactRepository.SaveChangesAsync();
 
+            await _historyService.LogAsync(new LogHistoryRequest
+            {
+                EntityName = "Contact",
+                EntityId = contact.Id,
+                ActionType = CRMActionType.Create,
+                Title = $"Created contact '{contact.Name}'",
+                PreviousState = null,
+                UpdatedState = JsonSerializer.Serialize(contact)
+            });
+
             return contact;
         }
 
@@ -45,6 +59,8 @@ namespace ArielCRM.Application.Services
         {
             var contact = await _contactRepository.GetByIdAsync(id);
             if (contact == null) return null;
+
+            var previousSnapshot = JsonSerializer.Serialize(contact);
 
             contact.Name = dto.Name;
             contact.Company = dto.Company;
@@ -56,6 +72,16 @@ namespace ArielCRM.Application.Services
             _contactRepository.Update(contact);
             await _contactRepository.SaveChangesAsync();
 
+            await _historyService.LogAsync(new LogHistoryRequest
+            {
+                EntityName = "Contact",
+                EntityId = contact.Id,
+                ActionType = CRMActionType.Update,
+                Title = $"Updated contact '{contact.Name}'",
+                PreviousState = previousSnapshot,
+                UpdatedState = JsonSerializer.Serialize(contact)
+            });
+
             return contact;
         }
 
@@ -64,8 +90,25 @@ namespace ArielCRM.Application.Services
             var contact = await _contactRepository.GetByIdAsync(id);
             if (contact == null) return false;
 
+            var previousSnapshot = JsonSerializer.Serialize(contact);
+
             _contactRepository.Delete(contact);
-            return await _contactRepository.SaveChangesAsync();
+            var result = await _contactRepository.SaveChangesAsync();
+
+            if (result)
+            {
+                await _historyService.LogAsync(new LogHistoryRequest
+                {
+                    EntityName = "Contact",
+                    EntityId = id,
+                    ActionType = CRMActionType.Delete,
+                    Title = $"Deleted contact '{contact.Name}'",
+                    PreviousState = previousSnapshot,
+                    UpdatedState = null
+                });
+            }
+
+            return result;
         }
     }
 }

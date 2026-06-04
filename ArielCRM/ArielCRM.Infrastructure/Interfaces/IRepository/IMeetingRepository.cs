@@ -6,6 +6,7 @@ namespace ArielCRM.Infrastructure.Interfaces.IRepository
     public interface IMeetingRepository
     {
         Task<IEnumerable<MeetingResDto>> GetAllAsync();
+        Task<Meeting?> GetByIdAsync(string id);
         Task<MeetingResDto> CreateAsync(Meeting meeting);
         Task<bool> DeleteAsync(string id);
     }

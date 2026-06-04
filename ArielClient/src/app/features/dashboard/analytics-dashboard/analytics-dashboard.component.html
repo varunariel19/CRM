@@ -258,53 +258,54 @@
 
     </div>
 
-    <!-- ACTIVITY -->
+    <!-- ACTIVITY here for history logs  -->
     <div class="bottom-card">
-
       <div class="section-header">
         <h3>
-          <i class="fas fa-wave-square"></i>
+          <i class="fas fa-bolt"></i>
           CRM Live Activity Feed
         </h3>
+        <span class="view-link cursor-pointer" (click)="navigateMenuOptions(7)">View All</span>
       </div>
 
+      @if (isLoadingHistory) {
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading activity...</p>
+      </div>
+      } @else if (recentHistory.length > 0) {
       <div class="activity-feed">
+        @for (log of recentHistory; track log.id) {
 
         <div class="activity-item">
-          <div class="activity-dot"></div>
 
-          <div>
-            <h4>Moved Deal "Custom CRM Development" to "Proposal" stage</h4>
-            <p>By: Sarah Miller</p>
+          <div class="activity-timeline">
+            <span class="activity-dot" [ngClass]="getActionClass(log.actionType)">
+            </span>
           </div>
 
-          <span>04:08 PM</span>
-        </div>
+          <div class="activity-body">
+            <h4>{{ log.title }}</h4>
 
-        <div class="activity-item">
-          <div class="activity-dot"></div>
+            <div class="activity-meta">
+              <span>By: {{ log.initiatedByName || 'System' }}</span>
 
-          <div>
-            <h4>Moved Deal "Custom CRM Development" to "Negotiation" stage</h4>
-            <p>By: Sarah Miller</p>
+              <span>
+                {{ log.initiatedAt | date:'hh:mm a' }}
+              </span>
+            </div>
           </div>
 
-          <span>04:08 PM</span>
         </div>
 
-        <div class="activity-item">
-          <div class="activity-dot"></div>
-
-          <div>
-            <h4>Updated Lead for "John Doe"</h4>
-            <p>By: Sarah Miller</p>
-          </div>
-
-          <span>04:07 PM</span>
-        </div>
-
+        }
       </div>
-
+      } @else {
+      <div class="empty-state">
+        <i class="fas fa-bolt"></i>
+        <p>No recent activity found.</p>
+      </div>
+      }
     </div>
 
 

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartOptions, ChartType } from 'chart.js';
 
@@ -11,14 +11,15 @@ import { LeadSource } from '../../../core/types/lead.type';
 import { MenuState } from '../../../state/menu.state';
 import { TaskState } from '../../../state/task.state';
 import { MeetingState } from '../../../state/meeting.state';
+import { HistoryResponseDto, HistoryService } from '../../../core/services/history.service';
 
 @Component({
   selector: 'app-analytics-dashboard',
   imports: [BaseChartDirective, CommonModule],
   templateUrl: './analytics-dashboard.component.html',
-  styleUrl: './analytics-dashboard.component.css',
+  styleUrl: './analytics-dashboard.component.scss',
 })
-export class AnalyticsDashboardComponent {
+export class AnalyticsDashboardComponent implements OnInit {
 
   leadState = inject(LeadState);
   dealState = inject(DealState);
@@ -71,6 +72,12 @@ export class AnalyticsDashboardComponent {
   };
 
 
+  constructor(private historyService: HistoryService) { }
+  ngOnInit(): void {
+    this.loadRecentHistory();
+  }
+
+
   get leads() {
     return this.leadState.leads();
   }
@@ -101,7 +108,7 @@ export class AnalyticsDashboardComponent {
         const dateA = new Date(a.date).getTime();
         const dateB = new Date(b.date).getTime();
 
-        return dateA - dateB; 
+        return dateA - dateB;
       });
   }
 
@@ -241,6 +248,32 @@ export class AnalyticsDashboardComponent {
       minute: '2-digit',
       hour12: true
     });
+  }
+
+
+  recentHistory: HistoryResponseDto[] = [];
+  isLoadingHistory = false;
+
+  loadRecentHistory(): void {
+    this.isLoadingHistory = true;
+    this.historyService.getAll({ page: 1, pageSize: 10 }).subscribe({
+      next: (res) => {
+        this.recentHistory = res.items;
+        this.isLoadingHistory = false;
+      },
+      error: () => {
+        this.isLoadingHistory = false;
+      }
+    });
+  }
+
+  getActionClass(actionType: string): string {
+    switch (actionType.toLowerCase()) {
+      case 'create': return 'action-create';
+      case 'update': return 'action-update';
+      case 'delete': return 'action-delete';
+      default: return 'action-default';
+    }
   }
 
 }

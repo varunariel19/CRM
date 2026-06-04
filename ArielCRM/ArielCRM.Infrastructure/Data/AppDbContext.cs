@@ -17,6 +17,8 @@ namespace ArielCRM.Infrastructure.Data
         public DbSet<Meeting> Meetings { get; set; } = null!;
         public DbSet<Note> Notes { get; set; } = null!;
         public DbSet<ActivityLog> ActivityLogs { get; set; } = null!;
+        public DbSet<CRMHistory> CRMHistories { get; set; } = null!;
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -26,7 +28,8 @@ namespace ArielCRM.Infrastructure.Data
                 .Property(d => d.Value)
                 .HasPrecision(12, 2);
 
-
+            modelBuilder.Entity<CRMHistory>()
+    .ToTable("crm_history");
 
             modelBuilder.Entity<User>()
                 .Property(u => u.Role)

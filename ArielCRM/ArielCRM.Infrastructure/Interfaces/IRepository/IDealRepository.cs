@@ -6,8 +6,10 @@ namespace ArielCRM.Infrastructure.Interfaces.IRepository
     {
         Task<IEnumerable<Deal>> GetAllAsync();
         Task<Deal?> GetByIdAsync(string id);
+        Task<Deal?> NormalGetByIdAsync(string id);
         Task AddAsync(Deal deal);
         void Update(Deal deal);
+        void Delete(Deal deal);
         Task<bool> SaveChangesAsync();
     }
 }

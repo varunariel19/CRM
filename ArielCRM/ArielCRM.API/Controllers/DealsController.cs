@@ -1,5 +1,6 @@
 ﻿using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArielCRM.API.Controllers
@@ -80,6 +81,7 @@ namespace ArielCRM.API.Controllers
         }
 
         // PATCH api/deals/{id}/stage (Optimized for drag-and-drop or arrow shift)
+        [Authorize]
         [HttpPatch("{id}/stage")]
         public async Task<IActionResult> UpdateStage(string id, [FromBody] UpdateDealStageDto dto)
         {

@@ -20,11 +20,11 @@ export class ContactService {
     }
 
     createContact(payload: CreateContactPayload): Observable<Contact> {
-        return this.http.post<Contact>(endpoints.createContact, payload);
+        return this.http.post<Contact>(endpoints.createContact, payload, { withCredentials: true });
     }
 
     updateContact(id: string, payload: UpdateContactPayload): Observable<Contact> {
-        return this.http.put<Contact>(endpoints.updateContact(id), payload);
+        return this.http.put<Contact>(endpoints.updateContact(id), payload , { withCredentials: true });
     }
 
     deleteContact(id: string): Observable<void> {

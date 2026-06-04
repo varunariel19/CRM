@@ -40,5 +40,11 @@ export const menuItems = [
     icon: 'fas fa-users',
     label: 'Team Members',
     route: 'team-members',
+  },
+
+  {
+    icon: 'fas fa-history',
+    label: 'Audit History',
+    route: 'audit-history',
   }
 ];

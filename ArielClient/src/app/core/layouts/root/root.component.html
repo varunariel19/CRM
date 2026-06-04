@@ -1,7 +1,10 @@
 <div class="layout">
 
   <header class="app-header">
-    <app-header (toggleSidebar)="isSidebarCollapsed = !isSidebarCollapsed">
+    <app-header
+      [isDarkTheme]="isDarkTheme"
+      (toggleSidebar)="isSidebarCollapsed = !isSidebarCollapsed"
+      (toggleTheme)="toggleTheme()">
     </app-header>
   </header>
 

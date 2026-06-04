@@ -16,7 +16,7 @@
         </div>
 
         <div *ngSwitchCase="'leads'">
-          <app-lead-management/>
+          <app-lead-management />
         </div>
 
         <div *ngSwitchCase="'customers'">
@@ -40,8 +40,12 @@
         </div>
 
         <div *ngSwitchCase="'team-members'">
-          <!-- create this one  -->
           <app-team-members />
+        </div>
+
+        <div *ngSwitchCase="'audit-history'">
+          <!-- create this one  -->
+          <app-audit-history />
         </div>
 
         <div *ngSwitchDefault>

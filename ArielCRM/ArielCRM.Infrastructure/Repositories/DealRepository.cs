@@ -25,6 +25,11 @@ namespace ArielCRM.Infrastructure.Repositories
                 .FirstOrDefaultAsync(d => d.Id == id);
         }
 
+        public async Task<Deal?> NormalGetByIdAsync(string id)
+        {
+            return await _context.Deals.FindAsync(id);
+        }
+
         public async Task AddAsync(Deal deal)
         {
             await _context.Set<Deal>().AddAsync(deal);
@@ -38,6 +43,11 @@ namespace ArielCRM.Infrastructure.Repositories
         public async Task<bool> SaveChangesAsync()
         {
             return (await _context.SaveChangesAsync()) > 0;
+        }
+
+        public void Delete(Deal deal)
+        {
+            _context.Deals.Remove(deal);
         }
     }
 }

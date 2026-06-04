@@ -1,5 +1,6 @@
 ﻿using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArielCRM.API.Controllers
@@ -43,6 +44,7 @@ namespace ArielCRM.API.Controllers
         }
 
         // POST api/contacts
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateContactDto dto)
         {
@@ -51,6 +53,7 @@ namespace ArielCRM.API.Controllers
             try
             {
                 var contact = await _contactService.CreateContactAsync(dto);
+
                 return CreatedAtAction(nameof(GetById), new { id = contact.Id }, contact);
             }
             catch (Exception ex)

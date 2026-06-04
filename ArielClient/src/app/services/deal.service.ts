@@ -20,10 +20,10 @@ export class DealService {
     }
 
     updateDeal(id: string, payload: Partial<Deal>): Observable<Deal> {
-        return this.http.put<Deal>(endpoints.updateDeal(id), payload);
+        return this.http.put<Deal>(endpoints.updateDeal(id), payload , {withCredentials : true});
     }
 
     updateDealStage(id: string, payload: UpdateDealStagePayload): Observable<void> {
-        return this.http.patch<void>(endpoints.updateDealStage(id), payload);
+        return this.http.patch<void>(endpoints.updateDealStage(id), payload , {withCredentials : true});
     }
 }
