@@ -27,7 +27,7 @@ export class TicketService {
     }
 
     createTicket(ticketDto: TicketPayload): Observable<Ticket> {
-        return this.http.post<Ticket>(this.apiUrl, ticketDto).pipe(
+        return this.http.post<Ticket>(this.apiUrl, ticketDto ,{ withCredentials: true }).pipe(
             tap(newTicket => this.state.addTicket(newTicket)),
             finalize(() => { })
         );
@@ -35,28 +35,28 @@ export class TicketService {
 
     updateStatus(id: string, status: TicketStatus): Observable<{ message: string }> {
         const payload = { id, status };
-        return this.http.patch<{ message: string }>(`${this.apiUrl}/update-status`, payload).pipe(
+        return this.http.patch<{ message: string }>(`${this.apiUrl}/update-status`, payload  , { withCredentials: true }).pipe(
             tap(() => this.state.moveTicketToStatus(id, status))
         );
     }
 
     updatePriority(id: string, priority: TicketPriority): Observable<{ message: string }> {
         const payload = { id, priority };
-        return this.http.patch<{ message: string }>(`${this.apiUrl}/update-priority`, payload).pipe(
+        return this.http.patch<{ message: string }>(`${this.apiUrl}/update-priority`, payload , { withCredentials: true }).pipe(
             tap(() => this.state.updateTicket(id, { priority }))
         );
     }
 
     updateAssignee(id: string, assignedToId: string): Observable<{ message: string }> {
         const payload = { id, assignedToId };
-        return this.http.patch<{ message: string }>(`${this.apiUrl}/update-assignee`, payload).pipe(
+        return this.http.patch<{ message: string }>(`${this.apiUrl}/update-assignee`, payload , { withCredentials: true }).pipe(
             tap(() => this.state.updateTicket(id, { assignedToId }))
         );
     }
 
 
     deleteTicket(id: string): Observable<void> {
-        return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
+        return this.http.delete<void>(`${this.apiUrl}/${id}` , { withCredentials: true }).pipe(
             tap(() => this.state.removeTicket(id)),
             finalize(() => { })
         );

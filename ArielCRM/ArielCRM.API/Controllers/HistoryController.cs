@@ -1,5 +1,6 @@
 ﻿using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -48,6 +49,7 @@ namespace ArielCRM.API.Controllers
         }
 
         // POST api/history/{id}/revert
+        [Authorize]
         [HttpPost("{id}/revert")]
         public async Task<IActionResult> Revert(string id)
         {

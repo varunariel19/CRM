@@ -46,7 +46,7 @@ namespace ArielCRM.Application.Services
             {
                 EntityName = "Contact",
                 EntityId = contact.Id,
-                ActionType = CRMActionType.Create,
+                ActionType = CRMActionType.Create.ToString(),
                 Title = $"Created contact '{contact.Name}'",
                 PreviousState = null,
                 UpdatedState = JsonSerializer.Serialize(contact)
@@ -76,7 +76,7 @@ namespace ArielCRM.Application.Services
             {
                 EntityName = "Contact",
                 EntityId = contact.Id,
-                ActionType = CRMActionType.Update,
+                ActionType = CRMActionType.Update.ToString(),
                 Title = $"Updated contact '{contact.Name}'",
                 PreviousState = previousSnapshot,
                 UpdatedState = JsonSerializer.Serialize(contact)
@@ -101,7 +101,7 @@ namespace ArielCRM.Application.Services
                 {
                     EntityName = "Contact",
                     EntityId = id,
-                    ActionType = CRMActionType.Delete,
+                    ActionType = CRMActionType.Delete.ToString(),
                     Title = $"Deleted contact '{contact.Name}'",
                     PreviousState = previousSnapshot,
                     UpdatedState = null

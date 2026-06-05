@@ -41,7 +41,7 @@ namespace ArielCRM.Application.Services
             {
                 EntityName = "Ticket",
                 EntityId = ticket.Id,
-                ActionType = CRMActionType.Create,
+                ActionType = CRMActionType.Create.ToString(),
                 Title = $"Created ticket '{ticket.Title}'",
                 PreviousState = null,
                 UpdatedState = JsonSerializer.Serialize(ticket)
@@ -67,7 +67,7 @@ namespace ArielCRM.Application.Services
                 {
                     EntityName = "Ticket",
                     EntityId = ticket.Id,
-                    ActionType = CRMActionType.Update,
+                    ActionType = CRMActionType.Update.ToString(),
                     Title = $"Updated ticket '{ticket.Title}' status from '{oldStatus}' to '{dto.Status}'",
                     PreviousState = previousSnapshot,
                     UpdatedState = JsonSerializer.Serialize(ticket)
@@ -94,7 +94,7 @@ namespace ArielCRM.Application.Services
                 {
                     EntityName = "Ticket",
                     EntityId = ticket.Id,
-                    ActionType = CRMActionType.Update,
+                    ActionType = CRMActionType.Update.ToString(),
                     Title = $"Updated ticket '{ticket.Title}' priority from '{oldPriority}' to '{dto.Priority}'",
                     PreviousState = previousSnapshot,
                     UpdatedState = JsonSerializer.Serialize(ticket)
@@ -121,7 +121,7 @@ namespace ArielCRM.Application.Services
                 {
                     EntityName = "Ticket",
                     EntityId = ticket.Id,
-                    ActionType = CRMActionType.Update,
+                    ActionType = CRMActionType.Update.ToString(),
                     Title = $"Updated ticket '{ticket.Title}' assignee from '{oldAssignee}' to '{dto.AssignedToId}'",
                     PreviousState = previousSnapshot,
                     UpdatedState = JsonSerializer.Serialize(ticket)
@@ -146,7 +146,7 @@ namespace ArielCRM.Application.Services
                 {
                     EntityName = "Ticket",
                     EntityId = id,
-                    ActionType = CRMActionType.Delete,
+                    ActionType = CRMActionType.Delete.ToString(),
                     Title = $"Deleted ticket '{ticket.Title}'",
                     PreviousState = previousSnapshot,
                     UpdatedState = null

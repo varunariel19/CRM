@@ -16,7 +16,7 @@ export class DealService {
     }
 
     createDeal(payload: CreateDealPayload): Observable<Deal> {
-        return this.http.post<Deal>(endpoints.createDeal, payload);
+        return this.http.post<Deal>(endpoints.createDeal, payload , { withCredentials: true });
     }
 
     updateDeal(id: string, payload: Partial<Deal>): Observable<Deal> {

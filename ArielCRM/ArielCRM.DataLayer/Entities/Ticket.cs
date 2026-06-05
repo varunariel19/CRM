@@ -29,7 +29,7 @@ namespace ArielCRM.DataLayer.Entities
 
             [Required]
             [Column("status")]
-            public TicketStatus Status { get; set; } = TicketStatus.Open;
+            public TicketStatus Status { get; set; } = TicketStatus.Todo;
 
             [Required]
             [Column("priority")]

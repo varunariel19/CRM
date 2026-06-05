@@ -40,14 +40,17 @@ namespace ArielCRM.Application.Services
 
             var created = await _leadRepository.CreateAsync(lead);
 
+            if (created == null)
+                throw new Exception("Failed to create lead.");
+
             await _historyService.LogAsync(new LogHistoryRequest
             {
                 EntityName = "Lead",
-                EntityId = lead.Id,
-                ActionType = CRMActionType.Create,
-                Title = $"Created lead '{dto.Name}'",
-                PreviousState = null,
-                UpdatedState = JsonSerializer.Serialize(lead)
+                EntityId = created.Id,                        
+                ActionType = CRMActionType.Create.ToString(),
+                Title = $"Created lead '{created.Name}'",     
+                PreviousState = string.Empty,
+                UpdatedState = JsonSerializer.Serialize(created)
             });
 
             return created;
@@ -55,12 +58,14 @@ namespace ArielCRM.Application.Services
 
         public async Task<LeadResponseDto?> UpdateLeadAsync(string id, UpdateLeadDto dto)
         {
-            if (string.IsNullOrEmpty(id)) throw new Exception("Lead id is null!");
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentException("Lead id is null or empty.", nameof(id));
 
             var existing = await _leadRepository.GetByIdAsync(id);
             if (existing == null) return null;
 
             var previousSnapshot = JsonSerializer.Serialize(existing);
+            var existingName = existing.Name; 
 
             var updated = await _leadRepository.UpdateLeadAsync(id, dto);
             if (updated == null) return null;
@@ -69,8 +74,8 @@ namespace ArielCRM.Application.Services
             {
                 EntityName = "Lead",
                 EntityId = id,
-                ActionType = CRMActionType.Update,
-                Title = $"Updated lead '{existing.Name}'",
+                ActionType = CRMActionType.Update.ToString(),
+                Title = $"Updated lead '{existingName}'",   
                 PreviousState = previousSnapshot,
                 UpdatedState = JsonSerializer.Serialize(updated)
             });
@@ -80,6 +85,9 @@ namespace ArielCRM.Application.Services
 
         public async Task<bool> DeleteLeadAsync(string id)
         {
+            if (string.IsNullOrEmpty(id))
+                throw new ArgumentException("Lead id is null or empty.", nameof(id));
+
             var existing = await _leadRepository.GetByIdAsync(id);
             if (existing == null) return false;
 
@@ -93,10 +101,10 @@ namespace ArielCRM.Application.Services
                 {
                     EntityName = "Lead",
                     EntityId = id,
-                    ActionType = CRMActionType.Delete,
+                    ActionType = CRMActionType.Delete.ToString(),
                     Title = $"Deleted lead '{existing.Name}'",
                     PreviousState = previousSnapshot,
-                    UpdatedState = null
+                    UpdatedState = string.Empty   
                 });
             }
 

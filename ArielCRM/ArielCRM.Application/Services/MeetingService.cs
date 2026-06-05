@@ -40,7 +40,7 @@ namespace ArielCRM.Application.Services
             {
                 EntityName = "Meeting",
                 EntityId = meeting.Id,
-                ActionType = CRMActionType.Create,
+                ActionType = CRMActionType.Create.ToString(),
                 Title = $"Created meeting '{meeting.Title}'",
                 PreviousState = null,
                 UpdatedState = JsonSerializer.Serialize(meeting)
@@ -64,7 +64,7 @@ namespace ArielCRM.Application.Services
                 {
                     EntityName = "Meeting",
                     EntityId = id,
-                    ActionType = CRMActionType.Delete,
+                    ActionType = CRMActionType.Delete.ToString(),
                     Title = $"Deleted meeting '{meeting.Title}'",
                     PreviousState = previousSnapshot,
                     UpdatedState = null

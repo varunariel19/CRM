@@ -1,6 +1,7 @@
 ﻿using ArielCRM.DataLayer.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace ArielCRM.DataLayer.Entities
 {
@@ -24,6 +25,7 @@ namespace ArielCRM.DataLayer.Entities
 
             [Required]
             [Column("stage")]
+            [JsonConverter(typeof(JsonStringEnumConverter))]
             public DealStage Stage { get; set; }
 
             [Required]

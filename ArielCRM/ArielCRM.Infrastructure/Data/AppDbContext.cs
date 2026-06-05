@@ -3,11 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ArielCRM.Infrastructure.Data
 {
-
     public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
     {
-
-
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Lead> Leads { get; set; } = null!;
         public DbSet<Contact> Contacts { get; set; } = null!;
@@ -18,19 +15,37 @@ namespace ArielCRM.Infrastructure.Data
         public DbSet<Note> Notes { get; set; } = null!;
         public DbSet<ActivityLog> ActivityLogs { get; set; } = null!;
         public DbSet<CRMHistory> CRMHistories { get; set; } = null!;
-
+        public DbSet<Project> Projects { get; set; } = null!;
+        public DbSet<TicketTask> TicketTasks { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Ignore<System.Threading.Tasks.Task>();
+            // ── Explicit keys ────────────────────────────────────────────
+            modelBuilder.Entity<CrmTask>()
+                .HasKey(t => t.Id);
+
+            modelBuilder.Entity<TicketTask>()
+                .HasKey(t => t.TaskId);
+
+            // ── Table mappings ───────────────────────────────────────────
+            modelBuilder.Entity<CRMHistory>()
+                .ToTable("crm_history");
+
+            modelBuilder.Entity<CrmTask>()
+                .ToTable("tasks");
+
+            modelBuilder.Entity<TicketTask>()
+                .ToTable("ticket_tasks");
+
+            // ── Precision ────────────────────────────────────────────────
             modelBuilder.Entity<Deal>()
                 .Property(d => d.Value)
                 .HasPrecision(12, 2);
 
-            modelBuilder.Entity<CRMHistory>()
-    .ToTable("crm_history");
-
+            // ── Enum → string conversions ────────────────────────────────
             modelBuilder.Entity<User>()
                 .Property(u => u.Role)
                 .HasConversion<string>()
@@ -81,7 +96,7 @@ namespace ArielCRM.Infrastructure.Data
                 .HasConversion<string>()
                 .HasMaxLength(55);
 
-
+            // ── Relationships ────────────────────────────────────────────
             modelBuilder.Entity<Lead>()
                 .HasOne(l => l.AssignedTo)
                 .WithMany(u => u.AssignedLeads)
@@ -142,7 +157,57 @@ namespace ArielCRM.Infrastructure.Data
                 .HasForeignKey(l => l.ContactId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // TicketTask → AssignedUser (User.AssignedProjTickets)
+            modelBuilder.Entity<TicketTask>()
+                .HasOne(t => t.AssignedUser)
+                .WithMany(u => u.AssignedProjTickets)
+                .HasForeignKey(t => t.AssignToId)
+                .OnDelete(DeleteBehavior.Restrict);
 
+            // TicketTask → ReportedUser (User.ReportedProjTickets)
+            modelBuilder.Entity<TicketTask>()
+                .HasOne(t => t.ReportedUser)
+                .WithMany(u => u.ReportedProjTickets)
+                .HasForeignKey(t => t.ReportedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // TicketTask → Project (Project.Tasks)
+            modelBuilder.Entity<TicketTask>()
+                .HasOne(t => t.Project)
+                .WithMany(p => p.Tasks)
+                .HasForeignKey(t => t.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Project → ProjectLead (User.LedProjects)
+            modelBuilder.Entity<Project>()
+                .HasOne(p => p.ProjectLead)
+                .WithMany(u => u.LedProjects)
+                .HasForeignKey(p => p.ProjectLeadId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Project ↔ User many-to-many members
+            modelBuilder.Entity<Project>()
+                .HasMany(p => p.Members)
+                .WithMany(u => u.MemberProjects)
+                .UsingEntity<Dictionary<string, object>>(
+                    "project_members",
+                    j => j
+                        .HasOne<User>()
+                        .WithMany()
+                        .HasForeignKey("user_id")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    j => j
+                        .HasOne<Project>()
+                        .WithMany()
+                        .HasForeignKey("project_id")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    j =>
+                    {
+                        j.HasKey("project_id", "user_id");
+                        j.ToTable("project_members");
+                    });
+
+            // ── Indexes ──────────────────────────────────────────────────
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
                 .IsUnique()
@@ -197,7 +262,26 @@ namespace ArielCRM.Infrastructure.Data
                 .HasDatabaseName("idx_activity_dt")
                 .IsDescending();
 
+            modelBuilder.Entity<Project>()
+                .HasIndex(p => p.ProjectKey)
+                .IsUnique()
+                .HasDatabaseName("idx_projects_key");
+
+            modelBuilder.Entity<Project>()
+                .HasIndex(p => p.ProjectLeadId)
+                .HasDatabaseName("idx_projects_lead");
+
+            modelBuilder.Entity<TicketTask>()
+                .HasIndex(t => t.ProjectId)
+                .HasDatabaseName("idx_tickettasks_project");
+
+            modelBuilder.Entity<TicketTask>()
+                .HasIndex(t => t.AssignToId)
+                .HasDatabaseName("idx_tickettasks_assigned");
+
+            modelBuilder.Entity<TicketTask>()
+                .HasIndex(t => t.ReportedById)
+                .HasDatabaseName("idx_tickettasks_reported");
         }
     }
-
 }

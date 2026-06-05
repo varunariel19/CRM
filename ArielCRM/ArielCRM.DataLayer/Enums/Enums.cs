@@ -5,7 +5,8 @@
             Admin,
             Manager,
             BDE,
-            SalesExecutive,
+            Engineer,
+            HR,
             SupportAgent
         }
 
@@ -52,10 +53,10 @@
 
         public enum TicketStatus
         {
-            Open,
+            Todo,
             InProgress,
-            Resolved,
-            Closed
+            Review,
+            Done
         }
 
         public enum TicketPriority
@@ -72,5 +73,19 @@
             Contact,
             Deal,
             Ticket
-        }
+    }
+
+
+        public enum TicketType {
+          Bug,
+          Feature,
+          Task,
+          Improvement,
+          Documentation
+    }
+
+      
+     
+
+
 }

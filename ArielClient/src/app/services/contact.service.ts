@@ -28,6 +28,6 @@ export class ContactService {
     }
 
     deleteContact(id: string): Observable<void> {
-        return this.http.delete<void>(endpoints.deleteContact(id));
+        return this.http.delete<void>(endpoints.deleteContact(id) , { withCredentials: true });
     }
 }

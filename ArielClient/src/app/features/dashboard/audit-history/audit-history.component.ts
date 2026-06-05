@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HistoryFilterDto, HistoryResponseDto, HistoryService } from '../../../core/services/history.service';
+import { HistoryState } from '../../../state/history.state';
 
 @Component({
   selector: 'app-audit-history',
@@ -10,20 +12,16 @@ import { HistoryFilterDto, HistoryResponseDto, HistoryService } from '../../../c
   templateUrl: './audit-history.component.html',
   styleUrls: ['./audit-history.component.scss']
 })
+export class AuditHistoryComponent {
 
-export class AuditHistoryComponent implements OnInit {
-
-  logs: HistoryResponseDto[] = [];
+  historyState = inject(HistoryState);
   totalCount = 0;
   totalPages = 1;
   isLoading = false;
 
-  filter: HistoryFilterDto = {
-    page: 1,
-    pageSize: 15
-  };
+  filter: HistoryFilterDto = { page: 1, pageSize: 15 };
 
-  selectedLog: HistoryResponseDto | null = null;
+  selectedLogDiffHtml: SafeHtml = '';
 
   confirmModal = {
     visible: false,
@@ -32,24 +30,30 @@ export class AuditHistoryComponent implements OnInit {
     onConfirm: () => { }
   };
 
-  constructor(private historyService: HistoryService) { }
+  constructor(
+    private historyService: HistoryService,
+    private sanitizer: DomSanitizer
+  ) { }
 
-  ngOnInit(): void {
-    this.loadLogs();
+  get logs() {
+    return this.historyState.recentHistory();
   }
+
+  get selectedLog()  {
+     return this.historyState.selectedLog();
+  }
+
 
   loadLogs(): void {
     this.isLoading = true;
     this.historyService.getAll(this.filter).subscribe({
       next: (res) => {
-        this.logs = res.items;
+        this.historyState.setHistoryLogs(res.items);
         this.totalCount = res.totalCount;
         this.totalPages = res.totalPages;
         this.isLoading = false;
       },
-      error: () => {
-        this.isLoading = false;
-      }
+      error: () => { this.isLoading = false; }
     });
   }
 
@@ -69,11 +73,14 @@ export class AuditHistoryComponent implements OnInit {
   }
 
   openDetail(log: HistoryResponseDto): void {
-    this.selectedLog = log;
+    this.historyState.setSelectedLog(log);
+    const raw = this.renderDiff(log.previousState ?? null, log.modifiedData ?? null);
+    this.selectedLogDiffHtml = this.sanitizer.bypassSecurityTrustHtml(raw);
   }
 
   closeDetail(): void {
-    this.selectedLog = null;
+    this.historyState.setSelectedLog(null);
+    this.selectedLogDiffHtml = '';
   }
 
   confirmRevert(log: HistoryResponseDto): void {
@@ -131,20 +138,12 @@ export class AuditHistoryComponent implements OnInit {
     this.confirmModal.visible = false;
   }
 
-  formatJson(raw: string): string {
-    try {
-      return JSON.stringify(JSON.parse(raw), null, 2);
-    } catch {
-      return raw;
-    }
-  }
-
   getActionClass(action: string): string {
     switch (action?.toLowerCase()) {
-      case 'create': return 'badge-create';
-      case 'update': return 'badge-update';
-      case 'delete': return 'badge-delete';
-      default: return 'badge-default';
+      case 'create': return 'action-create';
+      case 'update': return 'action-update';
+      case 'delete': return 'action-delete';
+      default: return 'action-default';
     }
   }
 
@@ -152,7 +151,70 @@ export class AuditHistoryComponent implements OnInit {
     return revert?.toLowerCase() === 'none' ? 'revert-none' : '';
   }
 
+  getChangedFieldCount(modifiedData: string | null): number {
+    if (!modifiedData) return 0;
+    try {
+      return Object.keys(JSON.parse(modifiedData)).length;
+    } catch {
+      return 0;
+    }
+  }
+
   min(a: number, b: number): number {
     return Math.min(a, b);
+  }
+
+  private renderDiff(previousJson: string | null, diffJson: string | null): string {
+    if (!diffJson) return '';
+    try {
+      const prev = previousJson ? JSON.parse(previousJson) : {};
+      const diff = JSON.parse(diffJson);
+      const entries = Object.entries(diff);
+      if (entries.length === 0) return '';
+
+      const rows = entries.map(([key, newVal]) => {
+        const oldVal = prev[key] !== undefined ? String(prev[key]) : null;
+        const newStr = String(newVal);
+
+        const oldCell = oldVal !== null
+          ? `<span class="diff-old">${this.escHtml(oldVal)}</span>`
+          : `<em class="diff-empty">not set</em>`;
+
+        const newCell = `<span class="diff-new">${this.escHtml(newStr)}</span>`;
+
+        return `
+          <tr class="diff-row">
+            <td class="diff-field">${this.escHtml(this.toLabel(key))}</td>
+            <td class="diff-val">${oldCell}</td>
+            <td class="diff-arrow">→</td>
+            <td class="diff-val">${newCell}</td>
+          </tr>`;
+      }).join('');
+
+      return `
+        <table class="diff-table">
+          <thead>
+            <tr class="diff-head">
+              <th>Field</th>
+              <th>Previous</th>
+              <th></th>
+              <th>Updated</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    } catch {
+      return '';
+    }
+  }
+
+  private toLabel(key: string): string {
+    return key.replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  private escHtml(s: string): string {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 }

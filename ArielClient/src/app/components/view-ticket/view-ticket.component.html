@@ -1,0 +1,233 @@
+<div class="ticket-overlay" *ngIf="isOpen" (click)="close()">
+
+  <div class="ticket-modal" (click)="$event.stopPropagation()">
+
+    <!-- LEFT SIDE -->
+    <div class="ticket-content">
+
+      <!-- HEADER -->
+      <div class="ticket-header">
+
+        <div class="header-left">
+
+          <div class="avatar">
+            <img src="https://i.pravatar.cc/100?img=12" alt="">
+          </div>
+
+          <div>
+            <h2>{{ ticket.title }}</h2>
+            <span>#{{ ticket.id }}</span>
+
+            <div class="ticket-tags">
+              <span class="tag todo">{{ ticket.status }}</span>
+              <span class="tag feature">{{ ticket.type }}</span>
+              <span class="tag high">{{ ticket.priority }}</span>
+            </div>
+          </div>
+
+        </div>
+
+        <button class="close-btn" (click)="close()">✕</button>
+
+      </div>
+
+      <!-- DESCRIPTION -->
+      <div class="section">
+
+        <h4>Description</h4>
+
+        <!-- VIEW MODE: render stored HTML safely -->
+        <div *ngIf="!isEditingDescription" class="description-view" [innerHTML]="safeDescription">
+        </div>
+
+        <div *ngIf="isEditingDescription" class="editor-wrapper">
+
+          <p-editor [(ngModel)]="htmlContent" [style]="{ height: '300px' }">
+          </p-editor>
+
+          <div class="editor-actions">
+            <button class="btn-cancel" (click)="cancelEditing()">Cancel</button>
+            <button class="btn-save" (click)="saveDescription()">Save Changes</button>
+          </div>
+
+        </div>
+
+        <div class="actions" *ngIf="!isEditingDescription">
+          <button (click)="startEditing()">Edit</button>
+        </div>
+
+      </div>
+
+      <!-- AI SUMMARY -->
+      <div class="summary-card" [class.ai-glow]="isAiGlowing">
+
+        <div class="summary-header">
+          <h4>✨ AI Summary</h4>
+
+          <button (click)="generateSummary()" [disabled]="isGeneratingSummary">
+            <span *ngIf="!isGeneratingSummary">Generate</span>
+            <span *ngIf="isGeneratingSummary" class="generating-text">
+              <span class="dot-1">.</span><span class="dot-2">.</span><span class="dot-3">.</span>
+            </span>
+          </button>
+        </div>
+
+        <ul>
+          <li *ngFor="let item of summaryPoints">{{ item }}</li>
+        </ul>
+
+      </div>
+
+      <!-- ACTIVITY -->
+      <div class="activity-section">
+
+        <div class="activity-header">
+          <h3>Activity</h3>
+
+          <div class="tabs">
+            <button [class.active]="activeTab==='all'" (click)="activeTab='all'">All</button>
+            <button [class.active]="activeTab==='comments'" (click)="activeTab='comments'">Comments</button>
+            <button [class.active]="activeTab==='history'" (click)="activeTab='history'">History</button>
+          </div>
+        </div>
+
+        <!-- COMMENT BOX -->
+        <div class="comment-box">
+
+          <textarea rows="4" placeholder="Write a comment..." [(ngModel)]="newComment"
+            (keydown.enter)="$event.preventDefault(); submitComment()">
+          </textarea>
+
+          <div class="quick-replies">
+            <button (click)="insertQuickReply('Can you suggest a reply for this issue?')">Suggest a reply</button>
+            <button (click)="insertQuickReply('Who is currently working on this ticket?')">Who is working on
+              this?</button>
+            <button (click)="insertQuickReply('Can I get more information about this issue?')">Can I get more
+              info?</button>
+          </div>
+
+          <div class="comment-footer">
+            <small>Press Enter to submit</small>
+            <button class="comment-btn" (click)="submitComment()">Comment</button>
+          </div>
+
+        </div>
+
+        <!-- COMMENTS -->
+        <div class="comment-list">
+
+          <div class="comment-item" *ngFor="let comment of comments; let i = index">
+
+            <div class="comment-avatar">
+              <img src="https://i.pravatar.cc/100?img=11" alt="">
+            </div>
+
+            <div class="comment-body">
+
+              <!-- VIEW MODE -->
+              <ng-container *ngIf="editingCommentIndex !== i">
+                <div class="comment-top">
+                  <strong>{{ comment.user }}</strong>
+                  <div class="comment-actions">
+                    <a (click)="startEditingComment(i)">Edit</a>
+                  </div>
+                </div>
+                <small>{{ comment.date }}<span *ngIf="comment.editedAt" class="edited-badge"> · edited</span></small>
+                <p>{{ comment.message }}</p>
+              </ng-container>
+
+              <!-- EDIT MODE -->
+              <ng-container *ngIf="editingCommentIndex === i">
+                <div class="comment-top">
+                  <strong>{{ comment.user }}</strong>
+                </div>
+                <small>{{ comment.date }}</small>
+
+                <div class="comment-edit-box">
+                  <textarea rows="3" [(ngModel)]="editingCommentText" (keydown)="onCommentKeydown($event, i)">
+                  </textarea>
+                  <div class="comment-edit-footer">
+                    <small>Shift+Enter for new line · Esc to cancel</small>
+                    <div class="comment-edit-btns">
+                      <button class="btn-cancel" (click)="cancelCommentEdit()">Cancel</button>
+                      <button class="btn-save" (click)="saveCommentEdit(i)">Save</button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="ticket-sidebar">
+
+      <div class="sidebar-header">
+        <h3>TICKET DETAILS</h3>
+      </div>
+
+      <div class="detail-card">
+        <label>Assigned To</label>
+        <select [(ngModel)]="ticket.assignedTo">
+          <option>User</option>
+          <option>Admin</option>
+        </select>
+      </div>
+
+      <div class="detail-card">
+        <label>Reported By</label>
+        <div class="user-row">
+          <img src="https://i.pravatar.cc/100?img=22">
+          <span>{{ ticket.reportedBy }}</span>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <label>Status</label>
+        <select [(ngModel)]="ticket.status">
+          <option>TODO</option>
+          <option>IN PROGRESS</option>
+          <option>DONE</option>
+        </select>
+      </div>
+
+      <div class="detail-card">
+        <label>Priority</label>
+        <select [(ngModel)]="ticket.priority">
+          <option>High</option>
+          <option>Medium</option>
+          <option>Low</option>
+        </select>
+      </div>
+
+      <div class="detail-card">
+        <label>Type</label>
+        <select [(ngModel)]="ticket.type">
+          <option>FEATURE</option>
+          <option>BUG</option>
+        </select>
+      </div>
+
+      <div class="dates">
+        <div>
+          <span>Created</span>
+          <p>{{ ticket.createdAt }}</p>
+        </div>
+        <div>
+          <span>Updated</span>
+          <p>{{ ticket.updatedAt }}</p>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

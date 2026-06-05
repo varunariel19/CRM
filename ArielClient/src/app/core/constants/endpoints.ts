@@ -52,7 +52,11 @@ export const endpoints = {
 
     // history
 
-    history : `${BASE_URL}/api/history`
+    history: `${BASE_URL}/api/history`,
+
+
+    AIUrl: 'https://api.groq.com/openai/v1/chat/completions',
+    groqApiKey: ``,
 
 }
 

@@ -159,3 +159,18 @@ Now go ahead and implement this fully.
 
 
 Updated deal 'Data Warehouse Modernization Project'
+
+
+
+{"Id":"76f03544-6060-44e7-920b-147652692e3c",
+"Title":"Data Warehouse Modernization Project",
+"Value":14000,
+"Stage":0,
+"CloseDate":"2026-07-30",
+"AssignedToId":"37340583-80f0-436f-9659-3a057636fbac",
+"ContactId":"a171110d-043b-4a36-8322-f3ad885d1c28",
+"CreatedAt":"2026-06-02T09:52:08.8230779",
+"AssignedTo":null,
+"Contact":null,
+"Tasks":[]
+}

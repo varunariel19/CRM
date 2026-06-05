@@ -19,7 +19,6 @@ import { ContactService } from '../../services/contact.service';
 import { DealService } from '../../services/deal.service';
 
 import { TeamMember } from '../../core/types/global.type';
-import { Contact } from '../../core/types/contact.type';
 import { Deal } from '../../core/types/deal.type';
 import { LeadState } from '../../state/lead.state';
 import { ContactState } from '../../state/contact.state';
@@ -32,6 +31,10 @@ import { TaskState } from '../../state/task.state';
 import { MeetingService } from '../../services/meeting.service';
 import { MeetingState } from '../../state/meeting.state';
 import { AuditHistoryComponent } from '../../features/dashboard/audit-history/audit-history.component';
+import { HistoryService } from '../../core/services/history.service';
+import { HistoryState } from '../../state/history.state';
+import { TaskManagementComponent } from '../../features/dashboard/task-management/task-management.component';
+import { ProjectsComponent } from '../../features/dashboard/projects/projects.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -46,7 +49,9 @@ import { AuditHistoryComponent } from '../../features/dashboard/audit-history/au
     CustomerTicketsComponent,
     AppointmentSchedulerComponent,
     TeamMembersComponent,
-    AuditHistoryComponent
+    AuditHistoryComponent,
+    TaskManagementComponent,
+    ProjectsComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
@@ -61,13 +66,14 @@ export class DashboardComponent implements OnInit {
   dealState = inject(DealState);
   ticketState = inject(TicketState);
   taskState = inject(TaskState);
-
+  historyState = inject(HistoryState);
 
   leadService = inject(LeadService);
   contactService = inject(ContactService);
   dealService = inject(DealService);
   ticketService = inject(TicketService);
   meetingService = inject(MeetingService);
+  historyService = inject(HistoryService);
 
   selectedMenu = this.menuState.selectedMenu;
 
@@ -137,11 +143,19 @@ export class DashboardComponent implements OnInit {
     });
 
 
-
     this.meetingService.getAllMeetings().subscribe({
       next: (meetings) => {
         this.meetingState.setMeetings(meetings);
       },
+    });
+
+    this.historyState.setLoading(true);
+    this.historyService.getAll({ page: 1, pageSize: 10 }).subscribe({
+      next: (res) => {
+        this.historyState.setLoading(false);
+        this.historyState.setHistoryLogs(res.items);
+      },
+
     });
   }
 }

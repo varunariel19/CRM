@@ -44,8 +44,16 @@
         </div>
 
         <div *ngSwitchCase="'audit-history'">
-          <!-- create this one  -->
           <app-audit-history />
+        </div>
+
+        <div *ngSwitchCase="'projects'">
+           <!-- Create this component -->
+            <app-projects></app-projects>
+        </div>
+
+        <div *ngSwitchCase="'task-management'">
+        <app-task-management/>
         </div>
 
         <div *ngSwitchDefault>

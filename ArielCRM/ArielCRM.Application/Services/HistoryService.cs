@@ -22,18 +22,26 @@ namespace ArielCRM.Application.Services
                 WriteIndented = false
             };
 
-        public async Task LogAsync(LogHistoryRequest request)
+            public async Task LogAsync(LogHistoryRequest request)
             {
+                var userId = _httpContext.HttpContext?.User?
+                    .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (string.IsNullOrWhiteSpace(userId))
+                    throw new UnauthorizedAccessException("User ID not found.");
+
+                var actionType = Enum.Parse<CRMActionType>(request.ActionType, true);
+
                 string? modifiedData = null;
 
-            var userId = _httpContext.HttpContext?.User?
-                         .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (actionType == CRMActionType.Update)
+                {
+                    modifiedData = HtmlDiffHelper.GenerateDiff(
+                        request.PreviousState,
+                        request.UpdatedState);
+                }
 
-
-            if (request.ActionType == CRMActionType.Update)
-                    modifiedData = HtmlDiffHelper.GenerateDiff(request.PreviousState, request.UpdatedState);
-
-                var revertType = request.ActionType switch
+                var revertType = actionType switch
                 {
                     CRMActionType.Create => CRMRevertType.Delete,
                     CRMActionType.Delete => CRMRevertType.Create,
@@ -46,31 +54,30 @@ namespace ArielCRM.Application.Services
                     EntityName = request.EntityName,
                     EntityId = request.EntityId,
                     Title = request.Title,
-                    ActionType = request.ActionType,
+                    ActionType = actionType,
                     RevertType = revertType,
                     ModifiedData = modifiedData,
                     PreviousState = request.PreviousState,
                     UpdatedState = request.UpdatedState,
-                    InitiatedById = userId!,
+                    InitiatedById = userId,
                     InitiatedAt = DateTime.UtcNow
                 };
 
                 await _repo.AddAsync(history);
                 await _repo.SaveChangesAsync();
             }
-
-
+          
             public async Task<PaginatedHistoryDto> GetAllAsync(HistoryFilterDto filter)
-            {
-                var (items, total) = await _repo.GetAllAsync(filter);
-                return new PaginatedHistoryDto
-                {
-                    Items = items.Select(Map),
-                    TotalCount = total,
-                    Page = filter.Page,
-                    PageSize = filter.PageSize
-                };
-            }
+                    {
+                        var (items, total) = await _repo.GetAllAsync(filter);
+                        return new PaginatedHistoryDto
+                        {
+                            Items = items.Select(Map),
+                            TotalCount = total,
+                            Page = filter.Page,
+                            PageSize = filter.PageSize
+                        };
+                    }
 
             public async Task<IEnumerable<HistoryResponseDto>> GetByEntityAsync(string entityName, string entityId)
             {
@@ -162,7 +169,7 @@ namespace ArielCRM.Application.Services
                     EntityName = log.EntityName,
                     EntityId = log.EntityId,
                     Title = $"Reverted: deleted {log.EntityName} '{log.EntityId}' (undid CREATE)",
-                    ActionType = CRMActionType.Delete,
+                    ActionType = CRMActionType.Delete.ToString(),
                     PreviousState = log.UpdatedState
                 });
             }
@@ -179,7 +186,7 @@ namespace ArielCRM.Application.Services
                     EntityName = log.EntityName,
                     EntityId = log.EntityId,
                     Title = $"Reverted: re-created {log.EntityName} '{log.EntityId}' (undid DELETE)",
-                    ActionType = CRMActionType.Create,
+                    ActionType = CRMActionType.Create.ToString(),
                     UpdatedState = log.PreviousState
                 });
             }
@@ -196,7 +203,7 @@ namespace ArielCRM.Application.Services
                     EntityName = log.EntityName,
                     EntityId = log.EntityId,
                     Title = $"Reverted: restored {log.EntityName} '{log.EntityId}' to previous state (undid UPDATE)",
-                    ActionType = CRMActionType.Update,
+                    ActionType = CRMActionType.Update.ToString(),
                     PreviousState = log.UpdatedState,
                     UpdatedState = log.PreviousState
                 });

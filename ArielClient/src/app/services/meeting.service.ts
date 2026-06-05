@@ -15,10 +15,10 @@ export class MeetingService {
     }
 
     createMeeting(meeting: CreateMeetingPayload): Observable<Meeting> {
-        return this.http.post<Meeting>(endpoints.meetings, meeting);
+        return this.http.post<Meeting>(endpoints.meetings, meeting , { withCredentials: true });
     }
 
     deleteMeeting(id: string): Observable<void> {
-        return this.http.delete<void>(`${endpoints.meetings}/${id}`);
+        return this.http.delete<void>(`${endpoints.meetings}/${id}` , { withCredentials: true });
     }
 }

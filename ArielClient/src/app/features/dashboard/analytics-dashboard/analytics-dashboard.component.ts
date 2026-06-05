@@ -13,6 +13,7 @@ import { TaskState } from '../../../state/task.state';
 import { MeetingState } from '../../../state/meeting.state';
 import { HistoryResponseDto, HistoryService } from '../../../core/services/history.service';
 import { ThemeService } from '../../../core/services/theme.service';
+import { HistoryState } from '../../../state/history.state';
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -20,7 +21,7 @@ import { ThemeService } from '../../../core/services/theme.service';
   templateUrl: './analytics-dashboard.component.html',
   styleUrl: './analytics-dashboard.component.scss',
 })
-export class AnalyticsDashboardComponent implements OnInit {
+export class AnalyticsDashboardComponent  {
 
   leadState    = inject(LeadState);
   dealState    = inject(DealState);
@@ -29,10 +30,10 @@ export class AnalyticsDashboardComponent implements OnInit {
   taskState    = inject(TaskState);
   meetingState = inject(MeetingState);
   themeService = inject(ThemeService);
+  historyState = inject(HistoryState);
 
   barChartType: ChartType = 'bar';
 
-  // ── Theme-aware helpers ──────────────────────────────────────
   private get gridColor(): string {
     return this.themeService.isDark()
       ? 'rgba(255,255,255,0.08)'
@@ -49,7 +50,6 @@ export class AnalyticsDashboardComponent implements OnInit {
       : 'rgba(0,0,0,0.10)';
   }
 
-  // ── Bar chart options (getter — re-evaluates on every CD) ────
   get barChartOptions(): ChartConfiguration<'bar'>['options'] {
     return {
       responsive: true,
@@ -92,7 +92,6 @@ export class AnalyticsDashboardComponent implements OnInit {
     };
   }
 
-  // ── Doughnut chart options (getter) ──────────────────────────
   get doughnutChartOptions(): ChartOptions<'doughnut'> {
     return {
       responsive: true,
@@ -105,14 +104,6 @@ export class AnalyticsDashboardComponent implements OnInit {
       }
     };
   }
-
-  constructor(private historyService: HistoryService) { }
-
-  ngOnInit(): void {
-    this.loadRecentHistory();
-  }
-
-  // ── rest of your code unchanged below ───────────────────────
 
   get leads() {
     return this.leadState.leads();
@@ -213,28 +204,16 @@ export class AnalyticsDashboardComponent implements OnInit {
     };
   }
 
+  get recentHistory() {
+     return this.historyState.recentHistory() ?? [];
+  }
+
   formatTime(time: string): string {
     if (!time) return '';
     const [hours, minutes] = time.split(':').map(Number);
     const date = new Date();
     date.setHours(hours, minutes);
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  }
-
-  recentHistory: HistoryResponseDto[] = [];
-  isLoadingHistory = false;
-
-  loadRecentHistory(): void {
-    this.isLoadingHistory = true;
-    this.historyService.getAll({ page: 1, pageSize: 10 }).subscribe({
-      next: (res) => {
-        this.recentHistory = res.items;
-        this.isLoadingHistory = false;
-      },
-      error: () => {
-        this.isLoadingHistory = false;
-      }
-    });
   }
 
   getActionClass(actionType: string): string {

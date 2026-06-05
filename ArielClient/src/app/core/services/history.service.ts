@@ -69,6 +69,6 @@ export class HistoryService {
     }
 
     revert(id: string): Observable<{ message: string }> {
-        return this.http.post<{ message: string }>(`${this.baseUrl}/${id}/revert`, {});
+        return this.http.post<{ message: string }>(`${this.baseUrl}/${id}/revert`, {}, { withCredentials: true });
     }
-}
+}   

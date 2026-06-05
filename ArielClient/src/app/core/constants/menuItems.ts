@@ -37,9 +37,21 @@ export const menuItems = [
   },
 
   {
+    icon: 'fas fa-folder-open',
+    label: 'Projects',
+    route: 'projects',
+  },
+
+  {
     icon: 'fas fa-users',
     label: 'Team Members',
     route: 'team-members',
+  },
+
+  {
+    icon: 'fas fa-tasks',
+    label: 'Task Management',
+    route: 'task-management',
   },
 
   {

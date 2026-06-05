@@ -268,7 +268,7 @@
         <span class="view-link cursor-pointer" (click)="navigateMenuOptions(7)">View All</span>
       </div>
 
-      @if (isLoadingHistory) {
+      @if (this.historyState.isLoading()) {
       <div class="empty-state">
         <i class="fas fa-spinner fa-spin"></i>
         <p>Loading activity...</p>

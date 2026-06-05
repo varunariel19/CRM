@@ -29,7 +29,6 @@
         <option value="Meeting">Meeting</option>
       </select>
     </div>
-
     <div class="filter-item">
       <i class="fas fa-bolt"></i>
       <select [(ngModel)]="filter.actionType" (change)="applyFilters()">
@@ -39,17 +38,14 @@
         <option value="Delete">Delete</option>
       </select>
     </div>
-
     <div class="filter-item">
       <i class="fas fa-calendar"></i>
-      <input type="date" [(ngModel)]="filter.from" (change)="applyFilters()" placeholder="From" />
+      <input type="date" [(ngModel)]="filter.from" (change)="applyFilters()" />
     </div>
-
     <div class="filter-item">
       <i class="fas fa-calendar"></i>
-      <input type="date" [(ngModel)]="filter.to" (change)="applyFilters()" placeholder="To" />
+      <input type="date" [(ngModel)]="filter.to" (change)="applyFilters()" />
     </div>
-
     <button class="btn-reset" (click)="resetFilters()">
       <i class="fas fa-rotate-left"></i> Reset
     </button>
@@ -69,10 +65,9 @@
   } @else {
 
     <div class="timeline">
-
       @for (log of logs; track log.id; let i = $index) {
 
-        @if (i === 0 ) {
+        @if (i === 0) {
           <div class="date-divider">
             <span>{{ log.initiatedAt | date:'MMMM d, yyyy' }}</span>
           </div>
@@ -80,33 +75,31 @@
 
         <div class="timeline-row">
 
-          <!-- LEFT: time -->
           <div class="timeline-time">
             {{ log.initiatedAt | date:'hh:mm a' }}
           </div>
 
-          <!-- CENTER: dot + line -->
           <div class="timeline-track">
             <div class="track-dot" [ngClass]="getActionClass(log.actionType)"></div>
             <div class="track-line"></div>
           </div>
 
-          <!-- RIGHT: card -->
           <div class="timeline-card" (click)="openDetail(log)">
-
             <div class="card-top">
               <div class="card-left">
                 <span class="action-pill" [ngClass]="getActionClass(log.actionType)">
                   {{ log.actionType }}
                 </span>
                 <span class="entity-label">{{ log.entityName }}</span>
+                @if (log.actionType === 'Update' && getChangedFieldCount(log.modifiedData ?? null) > 0) {
+                  <span class="fields-badge">
+                    {{ getChangedFieldCount(log.modifiedData ?? null) }} field{{ getChangedFieldCount(log.modifiedData ?? null) !== 1 ? 's' : '' }} changed
+                  </span>
+                }
               </div>
               <div class="card-actions" (click)="$event.stopPropagation()">
-                <button
-                  class="icon-btn"
-                  (click)="confirmRevert(log)"
-                  [disabled]="log.revertType === 'None'"
-                  title="Revert">
+                <button class="icon-btn" (click)="confirmRevert(log)"
+                  [disabled]="log.revertType === 'None'" title="Revert">
                   <i class="fas fa-rotate-left"></i>
                 </button>
                 <button class="icon-btn danger" (click)="confirmDelete(log.id)" title="Delete">
@@ -127,18 +120,17 @@
                 {{ log.revertType }}
               </span>
             </div>
-
           </div>
 
         </div>
-
       }
-
     </div>
 
     <!-- PAGINATION -->
     <div class="pagination">
-      <span class="page-info">{{ (filter.page! - 1) * filter.pageSize! + 1 }}–{{ min(filter.page! * filter.pageSize!, totalCount) }} of {{ totalCount }} entries</span>
+      <span class="page-info">
+        {{ (filter.page! - 1) * filter.pageSize! + 1 }}–{{ min(filter.page! * filter.pageSize!, totalCount) }} of {{ totalCount }} entries
+      </span>
       <div class="page-btns">
         <button (click)="changePage(filter.page! - 1)" [disabled]="filter.page === 1">
           <i class="fas fa-chevron-left"></i>
@@ -162,59 +154,56 @@
 
       <div class="modal-head">
         <div class="modal-title-row">
-          <span class="action-pill" [ngClass]="getActionClass(selectedLog.actionType)">{{ selectedLog.actionType }}</span>
+          <span class="action-pill" [ngClass]="getActionClass(selectedLog.actionType)">
+            {{ selectedLog.actionType }}
+          </span>
           <span class="entity-label">{{ selectedLog.entityName }}</span>
         </div>
-        <button class="close-btn" (click)="closeDetail()"><i class="fas fa-times"></i></button>
+        <button class="close-btn" (click)="closeDetail()">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
       <div class="modal-body">
 
-        <p class="modal-log-title">{{ selectedLog.title }}</p>
+        <div class="log-title-banner">
+          <i class="fas fa-circle-info"></i>
+          <span>{{ selectedLog.title }}</span>
+        </div>
 
-        <div class="meta-row">
-          <div class="meta-chip">
-            <i class="fas fa-user-circle"></i>
-            {{ selectedLog.initiatedByName || 'System' }}
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span class="meta-label"><i class="fas fa-user-circle"></i> Performed by</span>
+            <span class="meta-value">{{ selectedLog.initiatedByName || 'System' }}</span>
           </div>
-          <div class="meta-chip">
-            <i class="fas fa-clock"></i>
-            {{ selectedLog.initiatedAt | date:'MMM d, y · hh:mm a' }}
+          <div class="meta-item">
+            <span class="meta-label"><i class="fas fa-clock"></i> Timestamp</span>
+            <span class="meta-value">{{ selectedLog.initiatedAt | date:'MMM d, y · hh:mm a' }}</span>
           </div>
-          <div class="meta-chip">
-            <i class="fas fa-fingerprint"></i>
-            <span class="mono">{{ selectedLog.entityId }}</span>
+          <div class="meta-item">
+            <span class="meta-label"><i class="fas fa-fingerprint"></i> Entity ID</span>
+            <span class="meta-value mono">{{ selectedLog.entityId }}</span>
           </div>
-          <div class="meta-chip" [ngClass]="getRevertClass(selectedLog.revertType)">
-            <i class="fas fa-arrow-rotate-left"></i>
-            {{ selectedLog.revertType }}
+          <div class="meta-item">
+            <span class="meta-label"><i class="fas fa-arrow-rotate-left"></i> Revert Status</span>
+            <span class="meta-value revert-badge" [ngClass]="getRevertClass(selectedLog.revertType)">
+              {{ selectedLog.revertType }}
+            </span>
           </div>
         </div>
 
-        @if (selectedLog.modifiedData) {
-          <div class="section-block">
-            <h4><i class="fas fa-pen-to-square"></i> Modified Fields</h4>
-            <div class="diff-box" [innerHTML]="selectedLog.modifiedData"></div>
+        @if (selectedLogDiffHtml) {
+          <div class="diff-section">
+            <div class="diff-section-header">
+              <i class="fas fa-pen-to-square"></i>
+              <span>Modified Fields</span>
+            </div>
+            <div class="diff-wrap" [innerHTML]="selectedLogDiffHtml"></div>
           </div>
-        }
-
-        @if (selectedLog.previousState || selectedLog.updatedState) {
-          <div class="states-row">
-
-            @if (selectedLog.previousState) {
-              <div class="section-block">
-                <h4><i class="fas fa-circle-xmark"></i> Previous State</h4>
-                <pre class="json-box prev">{{ formatJson(selectedLog.previousState) }}</pre>
-              </div>
-            }
-
-            @if (selectedLog.updatedState) {
-              <div class="section-block">
-                <h4><i class="fas fa-circle-check"></i> Updated State</h4>
-                <pre class="json-box updated">{{ formatJson(selectedLog.updatedState) }}</pre>
-              </div>
-            }
-
+        } @else if (selectedLog.actionType !== 'Update') {
+          <div class="no-diff">
+            <i class="fas fa-circle-check"></i>
+            <span>No field-level changes recorded for this action.</span>
           </div>
         }
 
@@ -237,21 +226,17 @@
 @if (confirmModal.visible) {
   <div class="overlay" (click)="cancelConfirm()">
     <div class="modal confirm-modal" (click)="$event.stopPropagation()">
-
       <div class="modal-head">
         <h2>{{ confirmModal.title }}</h2>
         <button class="close-btn" (click)="cancelConfirm()"><i class="fas fa-times"></i></button>
       </div>
-
       <div class="modal-body">
         <p class="confirm-msg">{{ confirmModal.message }}</p>
       </div>
-
       <div class="modal-foot">
         <button class="btn-secondary" (click)="cancelConfirm()">Cancel</button>
         <button class="btn-confirm-danger" (click)="confirmModal.onConfirm()">Yes, Confirm</button>
       </div>
-
     </div>
   </div>
 }

@@ -4,6 +4,8 @@ using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using Microsoft.EntityFrameworkCore;
 using ArielCRM.DataLayer.Enums;
+
+
 namespace ArielCRM.Infrastructure.Repositories
 {
     public class LeadRepository(AppDbContext context) : ILeadRepository
@@ -53,6 +55,7 @@ namespace ArielCRM.Infrastructure.Repositories
         {
             var lead = await _context.Leads
                 .Include(l => l.AssignedTo)
+                .Include(c => c.Contact)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             return lead is null ? null : MapToDto(lead);
@@ -84,32 +87,40 @@ namespace ArielCRM.Infrastructure.Repositories
             if (dto.Source is not null) lead.Source = dto.Source.Value;
             if (dto.AssignedToId is not null) lead.AssignedToId = dto.AssignedToId;
 
-            if (dto.Status is LeadStatus.Converted && lead.Status != LeadStatus.Converted)
+            if (dto.Status is not null)
             {
-                if (lead.ContactId is null)
+                if (dto.Status == LeadStatus.Converted && lead.Status != LeadStatus.Converted)
                 {
-                    var contact = new Contact
+                    if (lead.ContactId is null)
                     {
-                        Id = Guid.NewGuid().ToString(),
-                        Name = lead.Name,
-                        Company = lead.Company,
-                        Email = lead.Email,
-                        Phone = lead.Phone,
-                        CreatedAt = DateTime.UtcNow,
-                    };
+                        var contact = new Contact
+                        {
+                            Id = Guid.NewGuid().ToString(),
+                            Name = lead.Name,
+                            Company = lead.Company,
+                            Email = lead.Email,
+                            Phone = lead.Phone,
+                            CreatedAt = DateTime.UtcNow,
+                        };
 
-                    _context.Contacts.Add(contact);
+                        _context.Contacts.Add(contact);
+                        lead.ContactId = contact.Id;
+                        lead.Contact = contact; 
+                    }
 
-                    lead.ContactId = contact.Id;
-                    lead.Status = dto.Status.Value;
-                    await _context.SaveChangesAsync();
-                    return MapToResponseDto(lead);
+                    lead.Status = LeadStatus.Converted;
+                }
+                else
+                {
+                    lead.Status = dto.Status.Value; 
                 }
             }
 
-            await _context.SaveChangesAsync();
-            return null;
+            await _context.SaveChangesAsync(); 
 
+            return lead.Contact is not null
+                ? MapToResponseDto(lead)
+                : MapToDto(lead);
         }
 
 

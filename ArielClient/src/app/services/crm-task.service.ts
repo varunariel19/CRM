@@ -39,14 +39,14 @@ export class CrmTaskService {
     }
 
     create(dto: CreateCrmTaskDto): Observable<CrmTaskDto> {
-        return this.http.post<CrmTaskDto>(endpoints.tasks, dto);
+        return this.http.post<CrmTaskDto>(endpoints.tasks, dto , { withCredentials: true });
     }
 
     delete(id: string): Observable<void> {
-        return this.http.delete<void>(`${endpoints.tasks}/${id}`);
+        return this.http.delete<void>(`${endpoints.tasks}/${id}` , { withCredentials: true });
     }
 
     updateStatus(id: string, status: string): Observable<void> {
-        return this.http.patch<void>(`${endpoints.tasks}/update-status`, { id, status });
+        return this.http.patch<void>(`${endpoints.tasks}/update-status`, { id, status } , { withCredentials: true });
     }
 }

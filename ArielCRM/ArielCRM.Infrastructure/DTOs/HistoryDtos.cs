@@ -57,7 +57,7 @@ namespace ArielCRM.Infrastructure.DTOs
             public string EntityName { get; set; } = string.Empty;
             public string EntityId { get; set; } = string.Empty;
             public string Title { get; set; } = string.Empty;
-            public CRMActionType ActionType { get; set; }
+            public string ActionType { get; set; } = string.Empty;
 
             public string? PreviousState { get; set; }
 

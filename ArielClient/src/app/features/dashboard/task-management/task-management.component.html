@@ -1,0 +1,325 @@
+<div class="pipeline-wrapper">
+
+  <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal($event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Create New Task</h2>
+        <button class="modal-close" (click)="showCreateModal = false">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group full-width">
+          <label>Task Title <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="newTask.title" placeholder="e.g. Implement login page" />
+        </div>
+        <div class="form-group full-width">
+          <label>Description</label>
+          <textarea [(ngModel)]="newTask.description" rows="2" placeholder="Brief description..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Project <span class="required">*</span></label>
+            <select [(ngModel)]="newTask.projectId">
+              <option value="" disabled>Select Project</option>
+              <option *ngFor="let p of allProjects()" [value]="p.id">{{ p.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assignee <span class="required">*</span></label>
+            <select [(ngModel)]="newTask.assigneeId">
+              <option value="" disabled>Select Assignee</option>
+              <option *ngFor="let m of allMembers()" [value]="m.id">{{ m.name }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Priority</label>
+            <select [(ngModel)]="newTask.priority">
+              <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select [(ngModel)]="newTask.type">
+              <option *ngFor="let t of types" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" [(ngModel)]="newTask.dueDate" />
+          </div>
+          <div class="form-group">
+            <label>Story Points</label>
+            <input type="number" [(ngModel)]="newTask.storyPoints" min="1" max="100" />
+          </div>
+        </div>
+        <div class="form-group full-width">
+          <label>Tags <span class="hint">(comma separated)</span></label>
+          <input type="text" [(ngModel)]="newTask.tags" placeholder="e.g. auth, backend, urgent" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
+        <button class="btn-register" (click)="submitTask()">Create Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ EDIT MODAL ═══════════════════ -->
+  <div class="modal-overlay" *ngIf="showEditModal && editTask" (click)="closeEditModal($event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Edit Task</h2>
+        <button class="modal-close" (click)="showEditModal = false; editTask = null">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group full-width">
+          <label>Task Title <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="editTask.title" />
+        </div>
+        <div class="form-group full-width">
+          <label>Description</label>
+          <textarea [(ngModel)]="editTask.description" rows="2"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Status</label>
+            <select [(ngModel)]="editTask.status">
+              <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select [(ngModel)]="editTask.priority">
+              <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Type</label>
+            <select [(ngModel)]="editTask.type">
+              <option *ngFor="let t of types" [value]="t">{{ t }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assignee</label>
+            <select [(ngModel)]="editTask.assigneeId">
+              <option *ngFor="let m of allMembers()" [value]="m.id">{{ m.name }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" [(ngModel)]="editTask.dueDate" />
+          </div>
+          <div class="form-group">
+            <label>Story Points</label>
+            <input type="number" [(ngModel)]="editTask.storyPoints" min="1" />
+          </div>
+        </div>
+        <div class="form-group full-width">
+          <label>Tags <span class="hint">(comma separated)</span></label>
+          <input type="text" [(ngModel)]="editTask.tags" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="showEditModal = false; editTask = null">Cancel</button>
+        <button class="btn-register" (click)="submitEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ HEADER ═══════════════════ -->
+  <div class="pipeline-header">
+    <div class="header-left">
+      <h2>
+        <i class="fas fa-layer-group"></i>
+        Task Board
+      </h2>
+      <p>Manage and track all tasks across projects and sprints.</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-export" (click)="exportCSV()">
+        <i class="fas fa-download"></i>
+        Export CSV
+      </button>
+      <button class="new-deal-btn" (click)="showCreateModal = true">
+        <i class="fas fa-plus"></i>
+        New Task
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ FILTER BAR ═══════════════════ -->
+  <div class="filter-bar">
+
+    <!-- Project selector -->
+    <div class="filter-group">
+      <label><i class="fas fa-folder"></i> Project</label>
+      <select [ngModel]="selectedProjectId()" (ngModelChange)="selectedProjectId.set($event); onProjectChange()">
+        <option value="">All Projects</option>
+        <option *ngFor="let p of allProjects()" [value]="p.id">{{ p.name }}</option>
+      </select>
+    </div>
+
+    <!-- Member filter (shows project members) -->
+    <div class="filter-group" [class.disabled]="filterByMe()">
+      <label><i class="fas fa-users"></i> Member</label>
+      <select [ngModel]="selectedMemberId()" (ngModelChange)="selectedMemberId.set($event)" [disabled]="filterByMe()">
+        <option value="">All Members</option>
+        <option *ngFor="let m of projectMembers" [value]="m.id">{{ m.name }}</option>
+      </select>
+    </div>
+
+    <!-- Priority filter -->
+    <div class="filter-group">
+      <label><i class="fas fa-flag"></i> Priority</label>
+      <select [ngModel]="selectedPriority()" (ngModelChange)="selectedPriority.set($event)">
+        <option value="">All Priorities</option>
+        <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+      </select>
+    </div>
+
+    <!-- By Me toggle -->
+    <button
+      class="btn-by-me"
+      [class.active]="filterByMe()"
+      (click)="filterByMe.set(!filterByMe()); selectedMemberId.set('')"
+    >
+      <i class="fas fa-user-check"></i>
+      Assigned to Me
+    </button>
+
+    <!-- Clear -->
+    <button class="btn-clear" *ngIf="hasActiveFilters" (click)="clearFilters()">
+      <i class="fas fa-times"></i>
+      Clear Filters
+    </button>
+
+    <!-- Active filter chips -->
+    <div class="filter-chips">
+      <span class="chip" *ngIf="selectedProjectId()">
+        <i class="fas fa-folder"></i>
+        {{ allProjects().find(p => p.id === selectedProjectId())?.name }}
+      </span>
+      <span class="chip chip-blue" *ngIf="filterByMe()">
+        <i class="fas fa-user"></i> My Tasks
+      </span>
+      <span class="chip chip-orange" *ngIf="selectedPriority()">
+        <i class="fas fa-flag"></i> {{ selectedPriority() }}
+      </span>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════ BOARD ═══════════════════ -->
+  <div class="pipeline-board">
+
+    <div class="pipeline-column" *ngFor="let col of columns">
+
+      <div class="column-header">
+        <div class="column-title">
+          <div class="column-dot" [style.background]="col.color"></div>
+          <h3>{{ col.title }}</h3>
+          <span>{{ getColumnTasks(col.key).length }}</span>
+        </div>
+        <strong class="col-points">{{ getTotalPoints(getColumnTasks(col.key)) }} pts</strong>
+      </div>
+
+      <div class="deal-list"
+        (dragover)="allowDrop($event)"
+        (drop)="dropTask($event, col.key)"
+      >
+
+        <div *ngIf="getColumnTasks(col.key).length === 0" class="empty-state">
+          No tasks here.
+        </div>
+
+        <div
+          class="deal-card"
+          *ngFor="let task of getColumnTasks(col.key)"
+          draggable="true"
+          (click)="viewTicket()"
+          (dragstart)="dragTask($event, task, col.key)"
+        >
+          <!-- Top row: ID + Priority badge -->
+          <div class="task-top" >
+            <span class="task-id">{{ task.id }}</span>
+            <span
+              class="priority-badge"
+              [style.color]="priorityMeta(task.priority).color"
+              [style.background]="priorityMeta(task.priority).bg"
+            >
+              {{ priorityMeta(task.priority).icon }} {{ task.priority }}
+            </span>
+          </div>
+
+          <!-- Title -->
+          <h3>{{ task.title }}</h3>
+
+          <!-- Project -->
+          <p class="company">
+            <i class="fas fa-folder-open"></i>
+            {{ projectName(task.projectId) }}
+          </p>
+
+          <!-- Info row -->
+          <div class="deal-info">
+            <div>
+              <span>TYPE</span>
+              <p>
+                <span
+                  class="type-badge"
+                  [style.color]="typeMeta(task.type).color"
+                  [style.background]="typeMeta(task.type).bg"
+                >{{ task.type }}</span>
+              </p>
+            </div>
+            <div>
+              <span>Due Date</span>
+              <p>
+                <i class="fas fa-calendar"></i>
+                {{ task.dueDate }}
+              </p>
+            </div>
+            <div>
+              <span>Points</span>
+              <p><i class="fas fa-star"></i> {{ task.storyPoints }}</p>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="task-tags" *ngIf="task.tags.length">
+            <span class="tag" *ngFor="let tag of task.tags">{{ tag }}</span>
+          </div>
+
+          <!-- Footer: assignee + actions -->
+          <div class="deal-footer">
+            <div class="owner">
+              <div class="avatar">{{ initials(task.assignee?.name ?? '?') }}</div>
+              {{ task.assignee?.name ?? '—' }}
+            </div>
+            <div class="deal-actions">
+              <i class="fas fa-pen"           title="Edit"       (click)="openEditModal(task)"></i>
+              <i class="fas fa-chevron-left"  title="Move Left"  (click)="moveLeft(col.key, task)"></i>
+              <i class="fas fa-chevron-right" title="Move Right" (click)="moveRight(col.key, task)"></i>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<app-view-ticket [isOpen]="showTicketModal" (closeModal)="closeModal()"></app-view-ticket>
