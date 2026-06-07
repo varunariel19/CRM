@@ -1,11 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../../services/auth.service';
-import { TeamMember, UserRole } from '../../../core/types/global.type';
-import { FILTER_TABS, ROLE_COLORS, ROLE_LABELS, ROLES } from '../../../core/constants/user';
-import { AuthState } from '../../../state/auth.state';
-
+import { GlobalState } from '../../../state/global.state';
+import { TeamState } from '../../../state/team.state';
+import { CreateTeamMemberDto, TeamMember } from '../../../core/types/global.type';
+import { TeamService } from '../../../services/team.service';
+import { getAvatarColor } from '../../../utils';
+import { PermissionService } from '../../../core/services/permission.service';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 @Component({
   selector: 'app-team-members',
@@ -14,180 +16,203 @@ import { AuthState } from '../../../state/auth.state';
   templateUrl: './team-members.component.html',
   styleUrl: './team-members.component.css',
 })
-export class TeamMembersComponent {
+export class TeamMembersComponent implements OnInit {
+  teamState = inject(TeamState);
+  globalState = inject(GlobalState);
+  teamService = inject(TeamService);
+  permissionService = inject(PermissionService);
+  perm = inject(PermissionFacade);
+  searchQuery = signal('');
+  filterDepartment = signal('');
+  filterDesignation = signal('');
+  viewMode = signal<'grid' | 'list'>('grid');
 
-  authService = inject(AuthService);
-  authState = inject(AuthState);
+  showAddModal = signal(false);
+  showProfileModal = signal(false);
+  selectedMember = signal<TeamMember | null>(null);
+  isSubmitting = signal(false);
+  formError = signal('');
 
-  showModal = false;
-
-  members: TeamMember[] = this.authState.teamMembers() ?? [];
-
-  filterRole = signal<UserRole | 'All'>('All');
-
-  searchQuery = '';
-
-  roles = ROLES;
-
-  filterTabs = FILTER_TABS;
-
-  roleLabels = ROLE_LABELS;
-
-  roleColors = ROLE_COLORS;
-
-  newMember = {
+  newMember: CreateTeamMemberDto = {
     name: '',
     email: '',
-    role: 'BDE' as UserRole,
+    departmentId: '',
+    designationId: '',
+    accessLevelId: '',
+    profileImage: '',
   };
 
-  formError = '';
 
-  formSuccess = '';
+  filteredMembers = computed(() => {
+    const members = this.teamState.teamMembers();
+    const q = this.searchQuery().toLowerCase().trim();
+    const dept = this.filterDepartment();
+    const desig = this.filterDesignation();
 
-  get filteredMembers(): TeamMember[] {
-    return this.members.filter(m => {
-
-      const matchRole =
-        this.filterRole() === 'All' ||
-        m.role === this.filterRole();
-
-      const q = this.searchQuery.toLowerCase();
-
-      const matchSearch =
+    return members.filter((m) => {
+      const matchesSearch =
         !q ||
         m.name.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q);
-
-      return matchRole && matchSearch;
+        m.email.toLowerCase().includes(q) ||
+        m.designationId.toLowerCase().includes(q);
+      const matchesDept = !dept || m.departmentId === dept;
+      const matchesDesig = !desig || m.designationId === desig;
+      return matchesSearch && matchesDept && matchesDesig;
     });
+  });
+
+  get departments() {
+    return this.globalState.departments();
   }
 
-  get groupedMembers(): Record<string, TeamMember[]> {
-
-    const groups: Record<string, TeamMember[]> = {};
-
-    for (const role of this.roles) {
-
-      const list = this.filteredMembers.filter(
-        m => m.role === role
-      );
-
-      if (list.length) {
-        groups[role] = list;
-      }
-    }
-
-    return groups;
+  get designations() {
+    return this.globalState.designations();
   }
 
-  get groupedKeys(): UserRole[] {
-    return Object.keys(this.groupedMembers) as UserRole[];
+  get teamMemberList() {
+    return this.filteredMembers();
   }
 
-  countByRole(role: UserRole | 'All'): number {
 
-    if (role === 'All') {
-      return this.members.length;
-    }
-
-    return this.members.filter(
-      m => m.role === role
-    ).length;
+  get accessLevels() {
+    return this.globalState.accessLevels();
   }
 
-  setFilter(role: UserRole | 'All'): void {
-    this.filterRole.set(role);
+  get loading() {
+    return this.teamState.loading();
   }
 
-  openModal(): void {
+  ngOnInit(): void {
+    this.teamService.handleGetList().subscribe();
+  }
 
+  onSearchChange(value: string): void {
+    this.searchQuery.set(value);
+  }
+
+  onDepartmentChange(id: string): void {
+    this.filterDepartment.set(id);
+  }
+
+  onDesignationChange(id: string): void {
+    this.filterDesignation.set(id);
+  }
+
+  clearFilters(): void {
+    this.searchQuery.set('');
+    this.filterDepartment.set('');
+    this.filterDesignation.set('');
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!(this.searchQuery() || this.filterDepartment() || this.filterDesignation());
+  }
+
+  toggleViewMode(): void {
+    this.viewMode.set(this.viewMode() === 'grid' ? 'list' : 'grid');
+  }
+
+  openAddModal(): void {
     this.newMember = {
       name: '',
       email: '',
-      role: 'BDE',
+      departmentId: '',
+      designationId: '',
+      accessLevelId: '',
+      profileImage: '',
     };
-
-    this.formError = '';
-    this.formSuccess = '';
-    this.showModal = true;
+    this.formError.set('');
+    this.showAddModal.set(true);
   }
 
-  closeModal(): void {
-    this.showModal = false;
+  closeAddModal(): void {
+    this.showAddModal.set(false);
+    this.formError.set('');
   }
 
-  addMember(): void {
+  openProfile(member: TeamMember): void {
+    this.selectedMember.set(member);
+    this.showProfileModal.set(true);
+  }
 
-    this.formError = '';
-    this.formSuccess = '';
+  closeProfile(): void {
+    this.showProfileModal.set(false);
+    this.selectedMember.set(null);
+  }
 
-    if (
-      !this.newMember.name ||
-      !this.newMember.email
-    ) {
-      this.formError = 'Name and email are required.';
-      return;
+  validateForm(): boolean {
+    if (!this.newMember.name.trim()) {
+      this.formError.set('Name is required.');
+      return false;
     }
-
-    if (
-      this.members.some(
-        m => m.email === this.newMember.email
-      )
-    ) {
-      this.formError = 'A member with this email already exists.';
-      return;
+    if (!this.newMember.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.newMember.email)) {
+      this.formError.set('A valid email is required.');
+      return false;
     }
-
-    const payload = {
-      name: this.newMember.name,
-      email: this.newMember.email,
-      role: this.newMember.role,
-    };
-
-    this.authService
-      .registerTeamMember(payload)
-      .subscribe({
-        next: (res: any) => {
-          this.members.push({
-            id: res.id ?? Date.now().toString(),
-            name: this.newMember.name,
-            email: this.newMember.email,
-            role: this.newMember.role,
-            createdAt: new Date()
-              .toISOString()
-              .slice(0, 10),
-          });
-
-          this.formSuccess =
-            `${this.newMember.name} added successfully.`;
-
-          setTimeout(() => {
-            this.closeModal();
-          }, 1200);
-        },
-
-        error: (err) => {
-          this.formError =
-            err?.error?.message ||
-            'Failed to create team member.';
-        }
-      });
+    if (!this.newMember.departmentId) {
+      this.formError.set('Department is required.');
+      return false;
+    }
+    if (!this.newMember.designationId) {
+      this.formError.set('Designation is required.');
+      return false;
+    }
+    if (!this.newMember.accessLevelId) {
+      this.formError.set('Access level is required.');
+      return false;
+    }
+    return true;
   }
 
-  removeMember(id: string): void {
-    this.members = this.members.filter(
-      m => m.id !== id
-    );
+  handleAddMember(): void {
+    this.formError.set('');
+    if (!this.validateForm()) return;
+
+    this.isSubmitting.set(true);
+    this.teamService.handleCreateTeamMember({ ...this.newMember }).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
+        this.closeAddModal();
+      },
+      error: () => {
+        this.isSubmitting.set(false);
+        this.formError.set('Failed to add member. Please try again.');
+      },
+    });
+  }
+
+  handleDeleteMember(id: string, event: Event): void {
+    event.stopPropagation();
+    if (confirm('Remove this team member?')) {
+      this.teamService.handleDeleteTeamMember(id).subscribe();
+    }
   }
 
   getInitials(name: string): string {
     return name
       .split(' ')
-      .map(w => w[0])
-      .slice(0, 2)
+      .map((n) => n[0])
       .join('')
-      .toUpperCase();
+      .toUpperCase()
+      .slice(0, 2);
   }
+
+  getAvatarColor(name: string): string {
+    return getAvatarColor(name);
+  }
+
+  formatDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+
+  canDelete(level: number) {
+    return this.permissionService.canManage(level);
+  }
+
 
 }

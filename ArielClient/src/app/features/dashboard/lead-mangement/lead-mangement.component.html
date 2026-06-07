@@ -155,10 +155,12 @@
         <option>All Sources</option>
       </select>
 
+      @if(perm.leads.canCreate()) {
       <button class="create-btn" (click)="showCreateModal = true">
         <i class="fas fa-plus"></i>
         Create Lead
       </button>
+      }
     </div>
   </div>
 
@@ -171,7 +173,9 @@
       <div>SOURCE</div>
       <div>CRM STATUS STATE</div>
       <div>ASSIGNEE</div>
+      @if(perm.leads.canEditOrDel()) {
       <div>ACTIONS</div>
+      }
     </div>
 
     <div class="table-row" *ngFor="let lead of leadList; let rowIndex = index">
@@ -192,7 +196,7 @@
 
       <div class="crm-status-container">
         <div class="dropdown-wrap">
-          <button type="button" class="status-select" [ngClass]="statusClass(lead.status)"
+          <button type="button" class="status-select" [disabled]="!perm.leads.canEdit()" [ngClass]="statusClass(lead.status)"
             (click)="toggleStatus(rowIndex)">
             <span class="status-dot"></span>
             <span>{{ lead.status }}</span>
@@ -200,8 +204,8 @@
           </button>
 
           <div class="dropdown-menu status-menu" *ngIf="openStatusIndex === rowIndex">
-            <button type="button" class="dropdown-option" *ngFor="let status of statusOptions"
-              [ngClass]="status.className" (click)="setStatus(lead, status.value)">
+            <button type="button" class="dropdown-option" [disabled]="!perm.leads.canEdit()"
+              *ngFor="let status of statusOptions" [ngClass]="status.className" (click)="setStatus(lead, status.value)">
               <span class="status-dot"></span>
               <span>{{ status.label }}</span>
             </button>
@@ -212,14 +216,14 @@
       </div>
 
       <div class="dropdown-wrap assignee-wrap">
-        <button type="button" class="assignee" (click)="toggleAssignee(rowIndex)">
+        <button type="button" class="assignee" [disabled]="!perm.leads.canEdit()" (click)="toggleAssignee(rowIndex)">
           <i class="fas fa-user"></i>
           <span>{{ getAssigneeName(lead.assignedToId) }}</span>
           <i class="fas fa-chevron-down"></i>
         </button>
 
         <div class="dropdown-menu assignee-menu" *ngIf="openAssigneeIndex === rowIndex">
-          <button type="button" class="dropdown-option assignee-option" *ngFor="let member of teamMembers"
+          <button type="button" class="dropdown-option assignee-option" [disabled]="!perm.leads.canEdit()" *ngFor="let member of teamMembers"
             (click)="setAssignee(lead, member.id)">
             <span class="member-dot">{{ member.name.charAt(0) }}</span>
             <span>{{ member.name }}</span>
@@ -232,12 +236,17 @@
       </div>
 
       <div class="actions">
+        @if(perm.leads.canEdit()) {
         <button class="action-btn edit-btn" (click)="openEditModal(lead)">
           <i class="fas fa-pen"></i>
         </button>
+        }
+
+        @if(perm.leads.canDelete()) {
         <button class="action-btn delete-btn" (click)="deleteLead(lead.id)">
           <i class="fas fa-trash"></i>
         </button>
+        }
       </div>
 
     </div>

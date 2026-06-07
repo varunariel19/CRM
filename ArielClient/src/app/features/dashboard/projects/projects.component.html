@@ -1,11 +1,11 @@
 <div class="projects-container">
 
-  <!-- Page Header -->
   <div class="page-header">
     <div class="header-left">
       <div class="header-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
         </svg>
       </div>
       <div>
@@ -13,15 +13,16 @@
         <p class="page-subtitle">Manage and track all company projects</p>
       </div>
     </div>
-    <button class="btn-new-project">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    <button class="btn-new-project" (click)="openCreateModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
       </svg>
       New Project
     </button>
   </div>
 
-  <!-- Stats Bar -->
   <div class="stats-bar">
     <div class="stat-chip" [class.active]="filterStatus() === 'all'" (click)="filterStatus.set('all')">
       <span class="stat-dot dot-all"></span>
@@ -33,147 +34,110 @@
       <span class="stat-label">Active</span>
       <span class="stat-count">{{ statusCounts().active }}</span>
     </div>
-    <div class="stat-chip" [class.active]="filterStatus() === 'planning'" (click)="filterStatus.set('planning')">
-      <span class="stat-dot dot-planning"></span>
-      <span class="stat-label">Planning</span>
-      <span class="stat-count">{{ statusCounts().planning }}</span>
-    </div>
-    <div class="stat-chip" [class.active]="filterStatus() === 'on-hold'" (click)="filterStatus.set('on-hold')">
+    <div class="stat-chip" [class.active]="filterStatus() === 'inactive'" (click)="filterStatus.set('inactive')">
       <span class="stat-dot dot-hold"></span>
-      <span class="stat-label">On Hold</span>
-      <span class="stat-count">{{ statusCounts().onHold }}</span>
-    </div>
-    <div class="stat-chip" [class.active]="filterStatus() === 'completed'" (click)="filterStatus.set('completed')">
-      <span class="stat-dot dot-completed"></span>
-      <span class="stat-label">Completed</span>
-      <span class="stat-count">{{ statusCounts().completed }}</span>
+      <span class="stat-label">Inactive</span>
+      <span class="stat-count">{{ statusCounts().inactive }}</span>
     </div>
   </div>
 
-  <!-- Toolbar -->
   <div class="toolbar">
     <div class="search-wrap">
-      <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
       </svg>
-      <input
-        type="text"
-        class="search-input"
-        placeholder="Search projects, clients, tags…"
-        [ngModel]="searchQuery()"
-        (ngModelChange)="searchQuery.set($event)"
-      />
-    </div>
-    <div class="filter-group">
-      <select class="filter-select" [ngModel]="filterPriority()" (ngModelChange)="filterPriority.set($event)">
-        <option value="all">All Priorities</option>
-        <option value="critical">Critical</option>
-        <option value="high">High</option>
-        <option value="medium">Medium</option>
-        <option value="low">Low</option>
-      </select>
+      <input type="text" class="search-input" placeholder="Search projects, keys…" [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)" />
     </div>
   </div>
 
-  <!-- Projects Grid -->
-  <div class="projects-grid" *ngIf="filteredProjects().length > 0; else emptyState">
-    <div
-      class="project-card"
-      *ngFor="let project of filteredProjects()"
-      (click)="openProject(project)"
-      [style.--project-color]="project.color"
-    >
-      <!-- Folder Tab -->
-      <div class="folder-tab"></div>
+  <div class="loading-state" *ngIf="loading()">
+    <span>Loading projects…</span>
+  </div>
 
-      <!-- Card Body -->
+  <div class="projects-grid" *ngIf="!loading() && filteredProjects().length > 0; else emptyState">
+    <div class="project-card" *ngFor="let project of filteredProjects()" (click)="openProject(project)">
+      <div class="folder-tab"></div>
       <div class="card-body">
 
-        <!-- Card Top -->
         <div class="card-top">
-          <div class="folder-icon-wrap" [style.background]="project.color + '18'">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" [attr.stroke]="project.color">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          <div class="folder-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
             </svg>
           </div>
-          <div class="card-badges">
-            <span class="priority-badge" [class]="getPriorityClass(project.priority)">
-              {{ project.priority }}
-            </span>
-            <span class="status-badge" [class]="getStatusClass(project.status)">
-              {{ project.status === 'on-hold' ? 'On Hold' : (project.status | titlecase) }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Title & Client -->
-        <div class="card-title-group">
-          <h3 class="card-title">{{ project.title }}</h3>
-          <span class="card-client">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
-            {{ project.client }}
+          <span class="status-badge" [class.status-active]="project.isActive" [class.status-hold]="!project.isActive">
+            {{ project.isActive ? 'Active' : 'Inactive' }}
           </span>
         </div>
 
-        <!-- Tags -->
-        <div class="card-tags">
-          <span class="tag" *ngFor="let tag of project.tags">{{ tag }}</span>
+        <div class="card-title-group">
+          <h3 class="card-title">{{ project.name }}</h3>
+          <span class="card-client">
+            <i class="fa-solid fa-key"></i>
+            {{ project.projectKey }}
+          </span>
+          <span class="card-client" *ngIf="project.client; else internalCardBadge">
+            <i class="fa-solid fa-building"></i>
+            {{ project.client.companyName || project.client.name }}
+          </span>
+          <ng-template #internalCardBadge>
+            <span class="internal-badge">
+              <i class="fa-solid fa-shield-halved"></i>
+              Internal
+            </span>
+          </ng-template>
         </div>
 
-        <!-- Progress -->
         <div class="progress-section">
           <div class="progress-header">
             <span class="progress-label">Progress</span>
-            <span class="progress-pct" [style.color]="project.color">{{ project.progress }}%</span>
+            <span class="progress-pct">{{ getProgressPercent(project) }}%</span>
           </div>
           <div class="progress-track">
-            <div
-              class="progress-fill"
-              [style.width.%]="project.progress"
-              [style.background]="project.color"
-            ></div>
+            <div class="progress-fill" [style.width.%]="getProgressPercent(project)"></div>
           </div>
         </div>
 
-        <!-- Card Footer -->
         <div class="card-footer">
-          <!-- Members Stack -->
           <div class="members-stack">
-            <div
-              class="member-avatar"
-              *ngFor="let m of project.members.slice(0, 4); let i = index"
-              [style.z-index]="10 - i"
-              [title]="m.name"
-            >
-              {{ m.initials }}
+            <div class="member-avatar" *ngFor="let m of project.members.slice(0, 4); let i = index"
+              [style.z-index]="10 - i" [title]="m.name">
+              {{ getInitials(m.name) }}
             </div>
             <div class="member-avatar extra" *ngIf="project.members.length > 4">
               +{{ project.members.length - 4 }}
             </div>
           </div>
-
-          <!-- Deadline -->
-          <div class="deadline-chip" [class.overdue]="isOverdue(project.deadline)">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          <div class="deadline-chip" *ngIf="project.endDate" [class.overdue]="isOverdue(project.endDate)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-            {{ formatDaysLeft(project.deadline) }}
+            {{ formatDaysLeft(project.endDate) }}
           </div>
         </div>
 
-        <!-- Bottom Metrics Row -->
         <div class="metrics-row">
           <div class="metric">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
             </svg>
             <span>{{ project.tasksCompleted }}/{{ project.tasksTotal }} tasks</span>
           </div>
           <div class="metric">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
             <span>{{ project.documents.length }} docs</span>
           </div>
@@ -181,22 +145,23 @@
 
       </div>
 
-      <!-- Hover Arrow -->
       <div class="card-hover-arrow">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
         </svg>
       </div>
 
     </div>
   </div>
 
-  <!-- Empty State -->
   <ng-template #emptyState>
-    <div class="empty-state">
+    <div class="empty-state" *ngIf="!loading()">
       <div class="empty-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
         </svg>
       </div>
       <p class="empty-title">No projects found</p>
@@ -207,37 +172,26 @@
 </div>
 
 
-<!-- ===================== DETAIL MODAL ===================== -->
 <div class="modal-overlay" *ngIf="isModalOpen() && selectedProject()" (click)="onOverlayClick($event)">
   <div class="modal-panel" *ngIf="selectedProject() as proj">
 
-    <!-- Modal Header -->
-    <div class="modal-header" [style.--project-color]="proj.color">
-      <div class="modal-header-bg" [style.background]="'linear-gradient(135deg, ' + proj.color + '22 0%, transparent 60%)'"></div>
-
+    <div class="modal-header">
       <div class="modal-header-content">
-        <div class="modal-folder-icon" [style.background]="proj.color + '20'" [style.border-color]="proj.color + '40'">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" [attr.stroke]="proj.color">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-          </svg>
-        </div>
-
         <div class="modal-title-block">
-          <div class="modal-badges">
-            <span class="priority-badge" [class]="getPriorityClass(proj.priority)">{{ proj.priority }}</span>
-            <span class="status-badge" [class]="getStatusClass(proj.status)">{{ proj.status === 'on-hold' ? 'On Hold' : (proj.status | titlecase) }}</span>
-          </div>
-          <h2 class="modal-title">{{ proj.title }}</h2>
+          <span class="status-badge" [class.status-active]="proj.isActive" [class.status-hold]="!proj.isActive">
+            {{ proj.isActive ? 'Active' : 'Inactive' }}
+          </span>
+          <h2 class="modal-title">{{ proj.name }}</h2>
           <p class="modal-client">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            {{ proj.client }}
-            <span class="modal-budget">· {{ proj.budget }}</span>
+            <i class="fa-solid fa-key"></i>
+            {{ proj.projectKey }}
           </p>
         </div>
-
         <button class="modal-close" (click)="closeModal()">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
@@ -245,22 +199,33 @@
       <div class="modal-progress-wrap">
         <div class="modal-progress-info">
           <span>Overall Progress</span>
-          <strong [style.color]="proj.color">{{ proj.progress }}%</strong>
+          <strong>{{ getProgressPercent(proj) }}%</strong>
         </div>
         <div class="modal-progress-track">
-          <div class="modal-progress-fill" [style.width.%]="proj.progress" [style.background]="proj.color"></div>
+          <div class="modal-progress-fill" [style.width.%]="getProgressPercent(proj)"></div>
         </div>
         <div class="modal-meta-chips">
-          <div class="meta-chip">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Start: {{ proj.startDate }}
+          <div class="meta-chip" *ngIf="proj.startDate">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Start: {{ proj.startDate | date:'mediumDate' }}
           </div>
-          <div class="meta-chip" [class.chip-overdue]="isOverdue(proj.deadline)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Due: {{ proj.deadline }} ({{ formatDaysLeft(proj.deadline) }})
+          <div class="meta-chip" *ngIf="proj.endDate" [class.chip-overdue]="isOverdue(proj.endDate)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            Due: {{ proj.endDate | date:'mediumDate' }} ({{ formatDaysLeft(proj.endDate) }})
           </div>
           <div class="meta-chip">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
             {{ proj.tasksCompleted }}/{{ proj.tasksTotal }} tasks done
           </div>
         </div>
@@ -270,42 +235,79 @@
     <!-- Tabs -->
     <div class="modal-tabs">
       <button class="tab-btn" [class.tab-active]="activeTab() === 'overview'" (click)="setTab('overview')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
         Overview
       </button>
       <button class="tab-btn" [class.tab-active]="activeTab() === 'members'" (click)="setTab('members')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
         Members
         <span class="tab-badge">{{ proj.members.length }}</span>
       </button>
       <button class="tab-btn" [class.tab-active]="activeTab() === 'documents'" (click)="setTab('documents')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+        </svg>
         Documents
         <span class="tab-badge">{{ proj.documents.length }}</span>
       </button>
     </div>
 
-    <!-- Tab Content -->
     <div class="modal-body">
 
-      <!-- Overview Tab -->
       <div *ngIf="activeTab() === 'overview'" class="tab-content">
+
         <div class="overview-description">
           <h4 class="section-label">Description</h4>
-          <p class="description-text">{{ proj.description }}</p>
+          <p class="description-text">{{ proj.description || 'No description provided.' }}</p>
         </div>
 
-        <div class="overview-tags">
-          <h4 class="section-label">Tags</h4>
-          <div class="tag-list">
-            <span class="tag" *ngFor="let tag of proj.tags">{{ tag }}</span>
+        <div class="overview-client">
+          <h4 class="section-label">Client</h4>
+          <div class="client-card" *ngIf="proj.client; else internalProject">
+            <div class="client-avatar">
+              {{ getInitials(proj.client.companyName || proj.client.name) }}
+            </div>
+            <div class="client-info">
+              <span class="client-name">{{ proj.client.companyName || proj.client.name }}</span>
+              <span class="client-contact">
+                <i class="fa-solid fa-user"></i> {{ proj.client.name }}
+              </span>
+              <a class="client-email" [href]="'mailto:' + proj.client.email">
+                <i class="fa-solid fa-envelope"></i> {{ proj.client.email }}
+              </a>
+            </div>
           </div>
+          <ng-template #internalProject>
+            <div class="internal-card">
+              <div class="stat-icon-wrap blue">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div>
+                <span class="client-name">Internal Project</span>
+                <span class="client-contact">No external client — managed internally</span>
+              </div>
+            </div>
+          </ng-template>
         </div>
 
         <div class="overview-stats">
           <div class="stat-box">
             <div class="stat-icon-wrap blue">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 11 12 14 22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
             </div>
             <div>
               <div class="stat-box-value">{{ proj.tasksCompleted }}</div>
@@ -314,7 +316,10 @@
           </div>
           <div class="stat-box">
             <div class="stat-icon-wrap orange">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
             </div>
             <div>
               <div class="stat-box-value">{{ proj.tasksTotal - proj.tasksCompleted }}</div>
@@ -323,16 +328,22 @@
           </div>
           <div class="stat-box">
             <div class="stat-icon-wrap green">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+              </svg>
             </div>
             <div>
               <div class="stat-box-value">{{ proj.members.length }}</div>
-              <div class="stat-box-label">Team Members</div>
+              <div class="stat-box-label">Members</div>
             </div>
           </div>
           <div class="stat-box">
             <div class="stat-icon-wrap purple">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
             </div>
             <div>
               <div class="stat-box-value">{{ proj.documents.length }}</div>
@@ -340,58 +351,147 @@
             </div>
           </div>
         </div>
+
+        <div class="overview-description" *ngIf="proj.projectLead">
+          <h4 class="section-label">Project Lead</h4>
+          <div class="member-row">
+            <div class="member-avatar-lg">{{ getInitials(proj.projectLead.name) }}</div>
+            <div class="member-info">
+              <span class="member-name">{{ proj.projectLead.name }}</span>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <!-- Members Tab -->
       <div *ngIf="activeTab() === 'members'" class="tab-content">
         <div class="members-list">
           <div class="member-row" *ngFor="let member of proj.members">
-            <div class="member-avatar-lg" [style.background]="proj.color + '22'" [style.color]="proj.color" [style.border-color]="proj.color + '40'">
-              {{ member.initials }}
-            </div>
+            <div class="member-avatar-lg">{{ getInitials(member.name) }}</div>
             <div class="member-info">
               <span class="member-name">{{ member.name }}</span>
-              <span class="member-role">{{ member.role }}</span>
-            </div>
-            <div class="member-actions">
-              <button class="member-action-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
-                </svg>
-              </button>
             </div>
           </div>
         </div>
-        <button class="btn-add-member">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Member
-        </button>
       </div>
 
-      <!-- Documents Tab -->
       <div *ngIf="activeTab() === 'documents'" class="tab-content">
         <div class="documents-list">
           <div class="document-row" *ngFor="let doc of proj.documents">
-            <div class="doc-icon">{{ getDocIcon(doc.type) }}</div>
+            <div class="doc-icon">{{ getDocIcon(doc.fileName) }}</div>
             <div class="doc-info">
-              <span class="doc-name">{{ doc.name }}</span>
-              <span class="doc-meta">{{ doc.size }} · Uploaded by {{ doc.uploadedBy }} · {{ doc.uploadedAt }}</span>
+              <span class="doc-name">{{ doc.fileName }}</span>
+              <span class="doc-meta">Uploaded: {{ doc.uploadedAt | date:'mediumDate' }}</span>
             </div>
             <div class="doc-actions">
-              <button class="doc-action-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+              <a [href]="doc.fileUrl" target="_blank" class="doc-action-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-              </button>
+              </a>
             </div>
           </div>
         </div>
-        <button class="btn-add-member">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Upload Document
-        </button>
       </div>
 
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" *ngIf="isCreateModalOpen()" (click)="onCreateOverlayClick($event)">
+  <div class="modal-panel create-modal-panel" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <div class="modal-header-content">
+        <div class="modal-title-block">
+          <h2 class="modal-title">New Project</h2>
+          <p class="page-subtitle">Fill in the details to create a new project</p>
+        </div>
+        <button class="modal-close" (click)="closeCreateModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="modal-body">
+      <div class="create-form">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Project Name <span class="required">*</span></label>
+            <input type="text" class="form-input" placeholder="e.g. CRM Platform Redesign" [ngModel]="newProject().name"
+              (ngModelChange)="updateNewProject('name', $event)" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-input form-textarea" placeholder="Brief description of the project…" rows="3"
+              [ngModel]="newProject().description" (ngModelChange)="updateNewProject('description', $event)"></textarea>
+          </div>
+        </div>
+
+        <div class="form-row two-col">
+          <div class="form-group">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-input" [ngModel]="newProject().startDate"
+              (ngModelChange)="updateNewProject('startDate', $event)" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-input" [ngModel]="newProject().endDate"
+              (ngModelChange)="updateNewProject('endDate', $event)" />
+          </div>
+        </div>
+
+
+
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Documents <span class="form-hint">(optional)</span></label>
+            <div class="file-drop-zone" (click)="fileInput.click()" (dragover)="$event.preventDefault()"
+              (drop)="onFileDrop($event)">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span>Click to upload or drag & drop</span>
+              <span class="file-hint">PDF, DOC, XLS, PNG, JPG up to 20MB</span>
+              <input #fileInput type="file" multiple hidden (change)="onFileSelect($event)" />
+            </div>
+            <div class="selected-files" *ngIf="selectedFiles().length > 0">
+              <div class="selected-file" *ngFor="let f of selectedFiles(); let i = index">
+                <span class="selected-file-name">
+                  <i class="fa-solid fa-paperclip"></i>
+                  {{ f.name }}
+                </span>
+                <button class="remove-file-btn" (click)="removeFile(i)">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-cancel" (click)="closeCreateModal()">Cancel</button>
+          <button class="btn-submit" (click)="submitCreateProject()" [disabled]="isCreating()">
+            <span *ngIf="!isCreating()">
+              <i class="fa-solid fa-plus"></i>
+              Create Project
+            </span>
+            <span *ngIf="isCreating()">Creating…</span>
+          </button>
+        </div>
+
+      </div>
     </div>
 
   </div>

@@ -196,3 +196,16 @@
 .toggle-btn:hover {
   background: var(--active-bg);
 }
+
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  text-transform: uppercase;
+}

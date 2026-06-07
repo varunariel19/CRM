@@ -22,6 +22,57 @@ namespace ArielCRM.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.AccessLevel", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Access")
+                        .HasColumnType("int")
+                        .HasColumnName("access_level");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("access_levels");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.AccessLevelPermission", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AccessLevelId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("access_level_id");
+
+                    b.Property<string>("PermissionId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("permission_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PermissionId");
+
+                    b.HasIndex("AccessLevelId", "PermissionId")
+                        .IsUnique();
+
+                    b.ToTable("access_level_permissions");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.ActivityLog", b =>
                 {
                     b.Property<string>("Id")
@@ -359,6 +410,91 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.ToTable("deals");
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Department", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("departments");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Designation", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("DepartmentId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("department_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.ToTable("designations");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Documents", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("file_url");
+
+                    b.Property<string>("ProjectId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("project_id");
+
+                    b.Property<string>("UploadId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("upload_id");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("uploaded_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("documents");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Lead", b =>
                 {
                     b.Property<string>("Id")
@@ -535,6 +671,29 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.ToTable("notes");
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Permission", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("description");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("permissions");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Project", b =>
                 {
                     b.Property<string>("Id")
@@ -545,6 +704,11 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("DealId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("deal_id");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)")
@@ -566,8 +730,8 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.Property<string>("ProjectKey")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
                         .HasColumnName("project_key");
 
                     b.Property<string>("ProjectLeadId")
@@ -584,6 +748,10 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DealId")
+                        .IsUnique()
+                        .HasFilter("[deal_id] IS NOT NULL");
 
                     b.HasIndex("ProjectKey")
                         .IsUnique()
@@ -741,9 +909,27 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("id");
 
+                    b.Property<string>("AccessLevelId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("access_level_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("DepartmentId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("department_id");
+
+                    b.Property<string>("DesignationId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("designation_id");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -763,13 +949,18 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("password_hash");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("role");
+                    b.Property<string>("ProfileImage")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("profile_image");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AccessLevelId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasIndex("DesignationId");
 
                     b.HasIndex("Email")
                         .IsUnique()
@@ -791,6 +982,25 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("user_id");
 
                     b.ToTable("project_members", (string)null);
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.AccessLevelPermission", b =>
+                {
+                    b.HasOne("ArielCRM.DataLayer.Entities.AccessLevel", "AccessLevel")
+                        .WithMany("Permissions")
+                        .HasForeignKey("AccessLevelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ArielCRM.DataLayer.Entities.Permission", "Permission")
+                        .WithMany("AccessLevels")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AccessLevel");
+
+                    b.Navigation("Permission");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.ActivityLog", b =>
@@ -875,6 +1085,28 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("Contact");
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Designation", b =>
+                {
+                    b.HasOne("ArielCRM.DataLayer.Entities.Department", "Department")
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Department");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Documents", b =>
+                {
+                    b.HasOne("ArielCRM.DataLayer.Entities.Project", "Project")
+                        .WithMany("Documents")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Lead", b =>
                 {
                     b.HasOne("ArielCRM.DataLayer.Entities.User", "AssignedTo")
@@ -905,10 +1137,17 @@ namespace ArielCRM.Infrastructure.Migrations
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Project", b =>
                 {
+                    b.HasOne("ArielCRM.DataLayer.Entities.Deal", "Deal")
+                        .WithOne("Project")
+                        .HasForeignKey("ArielCRM.DataLayer.Entities.Project", "DealId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ArielCRM.DataLayer.Entities.User", "ProjectLead")
                         .WithMany("LedProjects")
                         .HasForeignKey("ProjectLeadId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Deal");
 
                     b.Navigation("ProjectLead");
                 });
@@ -957,6 +1196,33 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("ReportedUser");
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.User", b =>
+                {
+                    b.HasOne("ArielCRM.DataLayer.Entities.AccessLevel", "AccessLevel")
+                        .WithMany()
+                        .HasForeignKey("AccessLevelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ArielCRM.DataLayer.Entities.Department", "Department")
+                        .WithMany("Users")
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ArielCRM.DataLayer.Entities.Designation", "Designation")
+                        .WithMany("Users")
+                        .HasForeignKey("DesignationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AccessLevel");
+
+                    b.Navigation("Department");
+
+                    b.Navigation("Designation");
+                });
+
             modelBuilder.Entity("project_members", b =>
                 {
                     b.HasOne("ArielCRM.DataLayer.Entities.Project", null)
@@ -972,6 +1238,11 @@ namespace ArielCRM.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.AccessLevel", b =>
+                {
+                    b.Navigation("Permissions");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Contact", b =>
                 {
                     b.Navigation("Deals");
@@ -983,7 +1254,19 @@ namespace ArielCRM.Infrastructure.Migrations
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Deal", b =>
                 {
+                    b.Navigation("Project");
+
                     b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Department", b =>
+                {
+                    b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Designation", b =>
+                {
+                    b.Navigation("Users");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Lead", b =>
@@ -993,8 +1276,15 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("Tasks");
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Permission", b =>
+                {
+                    b.Navigation("AccessLevels");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Project", b =>
                 {
+                    b.Navigation("Documents");
+
                     b.Navigation("Tasks");
                 });
 

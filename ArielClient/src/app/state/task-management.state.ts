@@ -41,11 +41,7 @@ export interface TaskMember {
     name: string;
 }
 
-export interface Project {
-    id: string;
-    name: string;
-    memberIds: string[];
-}
+
 
 export interface CreateTaskPayload {
     title: string;

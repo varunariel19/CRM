@@ -13,6 +13,8 @@ import { ToastService } from '../../../core/services/toast.service';
 import { LoaderService } from '../../../core/services/loader.service';
 import { MenuState } from '../../../state/menu.state';
 import { TaskState } from '../../../state/task.state';
+import { TeamState } from '../../../state/team.state';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 const TASK_TYPE_MAP: Record<string, number> = {
   'Call Outreach': 0,
@@ -44,11 +46,12 @@ export class TasksFollowupsComponent implements OnInit {
   private crmTaskService = inject(CrmTaskService);
   leadState = inject(LeadState);
   dealState = inject(DealState);
-  authState = inject(AuthState);
+ teamState = inject(TeamState);
   toast = inject(ToastService);
   loader = inject(LoaderService);
   menuState = inject(MenuState);
   taskState = inject(TaskState);
+  perm = inject(PermissionFacade);
 
   activeTab: 'pending' | 'completed' | 'all' = 'all';
   showCreateModal = false;
@@ -95,7 +98,7 @@ export class TasksFollowupsComponent implements OnInit {
 
 
 
-  get teamMembers() { return this.authState.teamMembers().filter(member => member.role != "Admin"); }
+  get teamMembers() { return this.teamState.teamMembers();}
   get leads() { return this.leadState.leads(); }
   get deals() { return this.dealState.deals(); }
   get tasks() { return this.taskState.tasks(); }

@@ -1,10 +1,5 @@
-export type UserRole = 'Admin' | 'Manager' | 'SalesExecutive' | 'BDE' | 'SupportAgent';
-
-
-
 export type TaskStatus = 'Pending' | 'Completed';
 export type TaskType = 'Call' | 'Email' | 'Meeting' | 'Demo';
-
 
 
 export interface Meeting {
@@ -25,11 +20,35 @@ export interface ActivityLog {
 }
 
 
-
+// global.type.ts
 export interface TeamMember {
   id: string;
+  profileImage?: string;
   name: string;
   email: string;
-  role: UserRole;
+  departmentId: string;
+  designationId: string;
+  access: number;
   createdAt: string;
 }
+
+export interface CreateTeamMemberDto {
+  name: string;
+  email: string;
+  departmentId: string;
+  designationId: string;
+  accessLevelId: string;
+  profileImage?: string;
+}
+
+export interface UpdateTeamMemberDto {
+  name: string;
+  email: string;
+  departmentId: string;
+  designationId: string;
+  accessLevel: string;
+  profileImage?: string;
+}
+
+
+export type UserRole = 'hr' | 'admin' | 'employee';

@@ -4,15 +4,9 @@ using ArielCRM.Infrastructure.Interfaces.IRepository;
 
 namespace ArielCRM.Application.Services
 {
-
-    public class AdminService : IAdminService
+    public class AdminService(IAdminRepository adminRepository) : IAdminService
     {
-        private readonly IAdminRepository _adminRepository;
-
-        public AdminService(IAdminRepository adminRepository)
-        {
-            _adminRepository = adminRepository;
-        }
+        private readonly IAdminRepository _adminRepository = adminRepository;
 
         public async Task<IEnumerable<TeamMemberDto>> GetTeamMembersAsync()
         {

@@ -1,5 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { menuItems } from '../core/constants/menuItems';
+import { PermissionService } from '../core/services/permission.service';
+
 export interface ConfirmationModalConfig {
   title: string;
   message: string;
@@ -12,14 +14,25 @@ export interface ConfirmationModalConfig {
 })
 export class MenuState {
 
-  menus = signal(menuItems);
-  activeIndex = signal(0);
-  selectedMenu = signal(menuItems[0]);
+  private permissionService = inject(PermissionService);
 
+  readonly menus = computed(() =>
+    menuItems.filter(menu =>
+      this.permissionService.has(menu.permission)
+    )
+  );
+
+  activeIndex = signal(0);
+
+  // Derived from menus + activeIndex — no stale signal
+  readonly selectedMenu = computed(() => {
+    const menus = this.menus();
+    const index = Math.min(this.activeIndex(), menus.length - 1);
+    return menus[index] ?? null;
+  });
 
   setActiveMenu(index: number) {
     this.activeIndex.set(index);
-    this.selectedMenu.set(this.menus()[index]);
   }
 
   isOpen = signal(false);
@@ -47,5 +60,4 @@ export class MenuState {
   close() {
     this.isOpen.set(false);
   }
-
 }

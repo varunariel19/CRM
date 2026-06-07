@@ -1,5 +1,6 @@
 <div class="customer-wrapper">
 
+  <!-- CREATE MODAL -->
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
     <div class="modal-box">
 
@@ -51,6 +52,7 @@
     </div>
   </div>
 
+  <!-- EDIT MODAL -->
   <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal($event)">
     <div class="modal-box">
 
@@ -102,12 +104,16 @@
     </div>
   </div>
 
+  <!-- SIDEBAR -->
   <div class="clients-sidebar">
     <div class="sidebar-header">
       <h2>Clients directory ({{ clients.length }})</h2>
-      <button class="add-btn" (click)="showCreateModal = true">
-        <i class="fas fa-plus"></i>
-      </button>
+
+      @if(perm.customers.canCreate()) {
+        <button class="add-btn" (click)="showCreateModal = true">
+          <i class="fas fa-plus"></i>
+        </button>
+      }
     </div>
 
     <div class="search-box">
@@ -130,6 +136,7 @@
     </div>
   </div>
 
+  <!-- PROFILE SECTION -->
   <div class="profile-section" *ngIf="selectedClient">
     <div class="profile-header">
       <div class="profile-user">
@@ -143,12 +150,17 @@
       </div>
 
       <div class="profile-actions">
-        <button class="edit-btn" (click)="openEditModal()">
-          <i class="fas fa-pen"></i> Edit File
-        </button>
-        <button class="delete-btn" (click)="deleteClient(selectedClient.id)">
-          <i class="fas fa-trash"></i>
-        </button>
+        @if(perm.customers.canEdit()) {
+          <button class="edit-btn" (click)="openEditModal()">
+            <i class="fas fa-pen"></i> Edit File
+          </button>
+        }
+
+        @if(perm.customers.canDelete()) {
+          <button class="delete-btn" (click)="deleteClient(selectedClient.id)">
+            <i class="fas fa-trash"></i>
+          </button>
+        }
       </div>
     </div>
 
@@ -174,6 +186,7 @@
       </div>
     </div>
 
+    <!-- NOTES SECTION -->
     <div class="notes-section">
 
       <div class="notes-header">
@@ -204,24 +217,15 @@
 
             <div class="note-info">
               <div class="note-top">
-
-                <span class="note-author">
-                  {{ note.createdByName }}
-                </span>
-
-                <span class="note-time">
-                  {{ note.updatedAt | date:'dd MMM yyyy, h:mm a' }}
-                </span>
-
-
+                <span class="note-author">{{ note.createdByName }}</span>
+                <span class="note-time">{{ note.updatedAt | date:'dd MMM yyyy, h:mm a' }}</span>
               </div>
             </div>
 
-            <div class="note-actions" *ngIf="note.createdById === this.authState.userId()">
+            <div class="note-actions" *ngIf="note.createdById === authState.userId()">
               <button class="note-action-btn" (click)="startEdit(note)">
                 <i class="fas fa-pen"></i>
               </button>
-
               <button class="note-action-btn danger" (click)="deleteNote(note)">
                 <i class="fas fa-trash"></i>
               </button>
@@ -234,36 +238,30 @@
           </div>
 
           <div *ngIf="editingNote?.id === note.id" class="note-edit-box">
-
             <textarea [(ngModel)]="editingText" placeholder="Update note..." (keyup.escape)="cancelEdit()">
-  </textarea>
-
+            </textarea>
             <div class="edit-actions">
-              <button class="edit-cancel" (click)="cancelEdit()">
-                Cancel
-              </button>
-
+              <button class="edit-cancel" (click)="cancelEdit()">Cancel</button>
               <button class="edit-save" (click)="saveEditNote(note)">
-                <i class="fas fa-check"></i>
-                Save
+                <i class="fas fa-check"></i> Save
               </button>
             </div>
-
           </div>
 
         </div>
 
       </div>
 
-      <div class="note-input">
-
-        <input type="text" [(ngModel)]="newNote" placeholder="Write an internal note..." (keyup.enter)="addNote()" />
-
-        <button class="send-btn" (click)="addNote()">
-          <i class="fas fa-paper-plane"></i>
-        </button>
-
-      </div>
+      <!-- Note input restricted to CustomersCreate permission -->
+      @if(perm.customers.canCreate()) {
+        <div class="note-input">
+          <input type="text" [(ngModel)]="newNote" placeholder="Write an internal note..."
+            (keyup.enter)="addNote()" />
+          <button class="send-btn" (click)="addNote()">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      }
 
     </div>
 

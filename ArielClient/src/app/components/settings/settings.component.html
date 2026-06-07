@@ -1,0 +1,232 @@
+<div class="modal-overlay" (click)="onOverlayClick($event)">
+    <div class="modal">
+
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fa-solid fa-gear"></i>
+                <span>Settings</span>
+            </div>
+            <button class="close-btn" type="button" (click)="close.emit()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+
+            <div class="tabs">
+                @for (tab of tabs; track tab.key) {
+                <button class="tab-btn" [class.active]="activeTab() === tab.key" type="button"
+                    (click)="setTab(tab.key)">
+                    <i class="fa-solid {{ tab.icon }}"></i>
+                    <span>{{ tab.label }}</span>
+                </button>
+                }
+            </div>
+
+            <div class="tab-content">
+
+                <!-- ACCESS LEVELS -->
+                @if (activeTab() === 'roles') {
+                @if (!selectedRoleId()) {
+                <div class="section">
+                    <div class="section-header">
+                        <h3>Access Levels</h3>
+                    </div>
+                    <div class="list">
+                        @for (role of lookupState.accessLevels(); track role.id) {
+                        <div class="list-item">
+                            <div class="item-info">
+                                <i class="fa-solid fa-shield-halved item-icon"></i>
+                                <div class="item-text">
+                                    <span class="item-code">{{ role.name }}</span>
+                                    <span class="item-desc">{{ role.permissions.length }} permissions assigned</span>
+                                </div>
+                            </div>
+                            <button class="edit-perms-btn" type="button" (click)="openRolePermissions(role)">
+                                <i class="fa-solid fa-sliders"></i>
+                                Manage Permissions
+                            </button>
+                        </div>
+                        }
+                    </div>
+                </div>
+                } @else {
+                <div class="section">
+                    <div class="section-header">
+                        <div class="back-header">
+                            <button class="back-btn" type="button" (click)="selectedRoleId.set(null)">
+                                <i class="fa-solid fa-arrow-left"></i>
+                            </button>
+                            <h3>{{ selectedRoleName() }} — Permissions</h3>
+                        </div>
+                        <button class="add-btn" type="button" (click)="saveRolePermissions()" [disabled]="isSaving()">
+                            <i class="fa-solid" [class.fa-floppy-disk]="!isSaving()"
+                                [class.fa-spinner]="isSaving()"></i>
+                            {{ isSaving() ? 'Saving...' : 'Save' }}
+                        </button>
+                    </div>
+
+                    <div class="permission-groups">
+                        @for (group of groupedPermissions(); track group[0]) {
+                        <div class="perm-group">
+                            <div class="perm-group-title">
+                                <i class="fa-solid fa-folder-open"></i>
+                                {{ group[0] }}
+                            </div>
+                            <div class="perm-list">
+                                @for (perm of group[1]; track perm.id) {
+                                <div class="perm-row" [class.active]="isPermissionSelected(perm.id)">
+                                    <div class="perm-info">
+                                        <span class="perm-code">{{ perm.code }}</span>
+                                        <span class="perm-desc">{{ perm.description }}</span>
+                                    </div>
+                                    <button class="toggle-btn" [class.on]="isPermissionSelected(perm.id)" type="button"
+                                        (click)="togglePermission(perm.id)">
+                                        <span class="toggle-thumb"></span>
+                                    </button>
+                                </div>
+                                }
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+                }
+
+                <!-- PERMISSIONS -->
+                @if (activeTab() === 'permissions') {
+                <div class="section">
+                    <div class="section-header">
+                        <h3>All Permissions</h3>
+                    </div>
+                    <div class="list">
+                        @for (perm of lookupState.permissions(); track perm.id) {
+                        <div class="list-item">
+                            <div class="item-info">
+                                <i class="fa-solid fa-key item-icon"></i>
+                                <div class="item-text">
+                                    <span class="item-code">{{ perm.code }}</span>
+                                    <span class="item-desc">{{ perm.description }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+
+                <!-- DEPARTMENTS -->
+                @if (activeTab() === 'departments') {
+                <div class="section">
+                    <div class="section-header">
+                        <h3>Departments</h3>
+                    </div>
+
+                    <div class="add-row">
+                        <input class="add-input" type="text" placeholder="New department name..."
+                            [ngModel]="newDeptName()" (ngModelChange)="newDeptName.set($event)" />
+                        <button class="add-btn" type="button" (click)="addDepartment()">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </div>
+
+                    <div class="list">
+                        @for (dept of lookupState.departments(); track dept.id) {
+                        <div class="list-item">
+                            @if (editingId() === dept.id) {
+                            <input class="edit-input" type="text" [ngModel]="editingName()"
+                                (ngModelChange)="editingName.set($event)" (keyup.enter)="saveEdit('dept')"
+                                (keyup.escape)="cancelEdit()" />
+                            <div class="item-actions">
+                                <button class="action-btn save" type="button" (click)="saveEdit('dept')">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                                <button class="action-btn cancel" type="button" (click)="cancelEdit()">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            } @else {
+                            <div class="item-info">
+                                <i class="fa-solid fa-building item-icon"></i>
+                                <span class="item-code">{{ dept.name }}</span>
+                            </div>
+                            <div class="item-actions">
+                                <button class="action-btn edit" type="button" (click)="startEdit(dept.id, dept.name)">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button class="action-btn delete" type="button" (click)="deleteDept(dept.id)">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+
+                <!-- DESIGNATIONS -->
+                @if (activeTab() === 'designations') {
+                <div class="section">
+                    <div class="section-header">
+                        <h3>Designations</h3>
+                    </div>
+
+                    <div class="add-row">
+                        <input class="add-input" type="text" placeholder="New designation name..."
+                            [ngModel]="newDesigName()" (ngModelChange)="newDesigName.set($event)" />
+                        <select class="add-select" [ngModel]="newDesigDeptId()"
+                            (ngModelChange)="newDesigDeptId.set($event)">
+                            <option value="" disabled>Select department</option>
+                            @for (dept of lookupState.departments(); track dept.id) {
+                            <option [value]="dept.id">{{ dept.name }}</option>
+                            }
+                        </select>
+                        <button class="add-btn" type="button" (click)="addDesignation()">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </div>
+
+                    <div class="list">
+                        @for (desig of lookupState.designations(); track desig.id) {
+                        <div class="list-item">
+                            @if (editingId() === desig.id) {
+                            <input class="edit-input" type="text" [ngModel]="editingName()"
+                                (ngModelChange)="editingName.set($event)" (keyup.enter)="saveEdit('desig')"
+                                (keyup.escape)="cancelEdit()" />
+                            <div class="item-actions">
+                                <button class="action-btn save" type="button" (click)="saveEdit('desig')">
+                                    <i class="fa-solid fa-check"></i>
+                                </button>
+                                <button class="action-btn cancel" type="button" (click)="cancelEdit()">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                            } @else {
+                            <div class="item-info">
+                                <i class="fa-solid fa-id-badge item-icon"></i>
+                                <div class="item-text">
+                                    <span class="item-code">{{ desig.name }}</span>
+                                    <span class="item-desc">{{ getDeptName(desig.departmentId) }}</span>
+                                </div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="action-btn edit" type="button" (click)="startEdit(desig.id, desig.name)">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button class="action-btn delete" type="button" (click)="deleteDesig(desig.id)">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+
+            </div>
+        </div>
+    </div>
+</div>

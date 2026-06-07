@@ -8,14 +8,9 @@ using System.Security.Claims;
 
 namespace ArielCRM.Application.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService(IAuthRepository repo) : IAuthService
     {
-        private readonly IAuthRepository _repo;
-
-        public AuthService(IAuthRepository repo)
-        {
-            _repo = repo;
-        }
+        private readonly IAuthRepository _repo = repo;
 
         public async Task<UserResponseDto?> LoginAsync(LoginRequestDto dto, HttpResponse response)
         {
@@ -31,10 +26,13 @@ namespace ArielCRM.Application.Services
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name,           user.Name),
-                new Claim(ClaimTypes.Email,          user.Email),
-                new Claim(ClaimTypes.Role,           user.Role.ToString())
+                new(ClaimTypes.NameIdentifier, user.Id),
+                new(ClaimTypes.Name,           user.Name),
+                new(ClaimTypes.Email,          user.Email),
+                new("Department",              user.Department.Name),
+                new("Designation",             user.Designation.Name),
+                new("AccessLevel",             user.AccessLevel.Name),
+                new("Permissions",             string.Join(",", user.AccessLevel.Permissions.Select(p => p.Permission.Code)))
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -55,7 +53,20 @@ namespace ArielCRM.Application.Services
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
-                Role = user.Role.ToString()
+                DepartmentId = user.Department.Id,
+                DesignationId = user.Designation.Id,
+                AccessLevel = new AccessLevelDto
+                {
+                    Id = user.AccessLevel.Id,
+                    Name = user.AccessLevel.Name,
+                    Access = user.AccessLevel.Access,
+                    Permissions = [.. user.AccessLevel.Permissions.Select(p => new PermissionDto
+                    {
+                        Id = p.Permission.Id,
+                        Code = p.Permission.Code,
+                        Description = p.Permission.Description
+                    })]
+                }
             };
         }
 
@@ -66,20 +77,37 @@ namespace ArielCRM.Application.Services
             );
         }
 
-        public Task<UserResponseDto?> GetCurrentUserAsync(HttpContext context)
+        public async Task<UserResponseDto?> GetCurrentUserAsync(HttpContext context)
         {
             if (context.User.Identity is null || !context.User.Identity.IsAuthenticated)
-                return Task.FromResult<UserResponseDto?>(null);
+                return null;
 
-            var user = new UserResponseDto
+            var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
+            if (email is null) return null;
+
+            var user = await _repo.GetByEmailAsync(email);
+
+            if (user is null) return null;
+
+            return new UserResponseDto
             {
-                Id = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty,
-                Name = context.User.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty,
-                Email = context.User.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty,
-                Role = context.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                DepartmentId = user.Department.Id,
+                DesignationId = user.Designation.Id,
+                AccessLevel = new AccessLevelDto
+                {
+                    Id = user.AccessLevel.Id,
+                    Name = user.AccessLevel.Name,
+                    Access = user.AccessLevel.Access,
+                    Permissions = [.. user.AccessLevel.Permissions.Select(p => new PermissionDto
+                    {
+                        Id = p.Permission.Id,
+                        Code = p.Permission.Code
+                    })]
+                },
             };
-
-            return Task.FromResult<UserResponseDto?>(user);
         }
     }
 }

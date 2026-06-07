@@ -1,0 +1,189 @@
+<div class="modal-overlay" (click)="onOverlayClick($event)">
+    <div class="modal">
+
+        <div class="modal-header">
+            <div class="modal-title">
+                <i class="fa-solid fa-circle-user"></i>
+                <span>My Profile</span>
+            </div>
+            <button class="close-btn" type="button" (click)="close.emit()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="modal-body">
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="avatar-wrap">
+                    @if (selectedImage()) {
+                    <img [src]="selectedImage()!" class="avatar-img" alt="profile" />
+                    } @else {
+                    <div class="avatar-initials" [style.background]="getProfileColor(this.authState.fullName())">{{
+                        getInitials() }}</div>
+                    }   
+                    <label class="avatar-edit" title="Change photo">
+                        <i class="fa-solid fa-camera"></i>
+                        <input type="file" accept="image/*" hidden (change)="onImageSelect($event)" />
+                    </label>
+                </div>
+
+                <div class="sidebar-name">{{ authState.fullName() }}</div>
+                <div class="sidebar-role">{{ authState.user()?.accessLevel?.name }}</div>
+
+                <div class="sidebar-meta">
+                    <div class="meta-row">
+                        <i class="fa-solid fa-building"></i>
+                        <span>{{ this.globalState.getDepartmentName(this.authState.user()?.departmentId ?? "")}}</span>
+                    </div>
+                    <div class="meta-row">
+                        <i class="fa-solid fa-id-badge"></i>
+                        <span>{{ this.globalState.getDesignationName(this.authState.user()?.designationId ?? "")}}</span>
+                    </div>
+                    <div class="meta-row">
+                        <i class="fa-solid fa-envelope"></i>
+                        <span>{{ authState.user()?.email }}</span>
+                    </div>
+                </div>
+
+                <div class="tab-pills">
+                    <button class="pill" [class.active]="activeTab() === 'profile'" type="button"
+                        (click)="activeTab.set('profile')">
+                        <i class="fa-solid fa-user"></i> Edit Profile
+                    </button>
+                    <button class="pill" [class.active]="activeTab() === 'password'" type="button"
+                        (click)="activeTab.set('password')">
+                        <i class="fa-solid fa-lock"></i> Password
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+
+                @if (activeTab() === 'profile') {
+                <div class="form-section">
+                    <h3 class="form-title">Edit Profile</h3>
+
+                    <div class="field">
+                        <label>Full Name</label>
+                        <input type="text" [ngModel]="editName()" (ngModelChange)="editName.set($event)"
+                            placeholder="Enter your name" />
+                    </div>
+
+                    <div class="field">
+                        <label>Profile Photo</label>
+                        <label class="upload-box">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span>Click to upload image</span>
+                            <input type="file" accept="image/*" hidden (change)="onImageSelect($event)" />
+                        </label>
+                        @if (selectedImage()) {
+                        <div class="preview-row">
+                            <img [src]="selectedImage()!" class="preview-img" alt="preview" />
+                            <span class="preview-label">New photo selected</span>
+                        </div>
+                        }
+                    </div>
+
+                    <button class="save-btn" type="button" (click)="saveProfile()" [disabled]="isSavingProfile()">
+                        <i class="fa-solid" [class.fa-floppy-disk]="!isSavingProfile()"
+                            [class.fa-spinner]="isSavingProfile()"></i>
+                        {{ isSavingProfile() ? 'Saving...' : 'Save Changes' }}
+                    </button>
+                </div>
+                }
+
+                @if (activeTab() === 'password') {
+                <div class="form-section">
+
+                    <!-- Chrome autofill decoys -->
+                    <input type="text" name="username" autocomplete="username"
+                        style="position:absolute;left:-9999px;opacity:0;" />
+
+                    <input type="password" name="password" autocomplete="current-password"
+                        style="position:absolute;left:-9999px;opacity:0;" />
+
+                    <form autocomplete="off" autocapitalize="off" spellcheck="false">
+
+                        <h3 class="form-title">Change Password</h3>
+
+                        @if (passwordError()) {
+                        <div class="alert error">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            {{ passwordError() }}
+                        </div>
+                        }
+
+                        @if (passwordSuccess()) {
+                        <div class="alert success">
+                            <i class="fa-solid fa-circle-check"></i>
+                            {{ passwordSuccess() }}
+                        </div>
+                        }
+
+                        <div class="field">
+                            <label>Current Password</label>
+                            <div class="input-wrap">
+                                <input [type]="showCurrent() ? 'text' : 'password'" [ngModel]="currentPassword()"
+                                    (ngModelChange)="currentPassword.set($event)" name="currentPassword"
+                                    autocomplete="current-password" placeholder="Enter current password" />
+
+                                <button class="eye-btn" type="button" (click)="showCurrent.set(!showCurrent())">
+
+                                    <i class="fa-solid" [class.fa-eye]="!showCurrent()"
+                                        [class.fa-eye-slash]="showCurrent()">
+                                    </i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label>New Password</label>
+                            <div class="input-wrap">
+                                <input [type]="showNew() ? 'text' : 'password'" [ngModel]="newPassword()"
+                                    (ngModelChange)="newPassword.set($event)" name="newPassword"
+                                    autocomplete="new-password" placeholder="Enter new password" />
+
+                                <button class="eye-btn" type="button" (click)="showNew.set(!showNew())">
+
+                                    <i class="fa-solid" [class.fa-eye]="!showNew()" [class.fa-eye-slash]="showNew()">
+                                    </i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <label>Confirm Password</label>
+                            <div class="input-wrap">
+                                <input [type]="showConfirm() ? 'text' : 'password'" [ngModel]="confirmPassword()"
+                                    (ngModelChange)="confirmPassword.set($event)" name="confirmNewPassword"
+                                    autocomplete="new-password" placeholder="Confirm new password" />
+
+                                <button class="eye-btn" type="button" (click)="showConfirm.set(!showConfirm())">
+
+                                    <i class="fa-solid" [class.fa-eye]="!showConfirm()"
+                                        [class.fa-eye-slash]="showConfirm()">
+                                    </i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button class="save-btn" type="button" (click)="savePassword()" [disabled]="isSavingPassword()">
+
+                            <i class="fa-solid" [class.fa-lock]="!isSavingPassword()"
+                                [class.fa-spinner]="isSavingPassword()">
+                            </i>
+
+                            {{ isSavingPassword() ? 'Saving...' : 'Change Password' }}
+                        </button>
+
+                    </form>
+
+                </div>
+                }
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartOptions, ChartType } from 'chart.js';
 
@@ -11,9 +11,9 @@ import { LeadSource } from '../../../core/types/lead.type';
 import { MenuState } from '../../../state/menu.state';
 import { TaskState } from '../../../state/task.state';
 import { MeetingState } from '../../../state/meeting.state';
-import { HistoryResponseDto, HistoryService } from '../../../core/services/history.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { HistoryState } from '../../../state/history.state';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -21,16 +21,17 @@ import { HistoryState } from '../../../state/history.state';
   templateUrl: './analytics-dashboard.component.html',
   styleUrl: './analytics-dashboard.component.scss',
 })
-export class AnalyticsDashboardComponent  {
+export class AnalyticsDashboardComponent {
 
-  leadState    = inject(LeadState);
-  dealState    = inject(DealState);
-  menuState    = inject(MenuState);
-  ticketState  = inject(TicketState);
-  taskState    = inject(TaskState);
+  leadState = inject(LeadState);
+  dealState = inject(DealState);
+  menuState = inject(MenuState);
+  ticketState = inject(TicketState);
+  taskState = inject(TaskState);
   meetingState = inject(MeetingState);
   themeService = inject(ThemeService);
   historyState = inject(HistoryState);
+  perm = inject(PermissionFacade);
 
   barChartType: ChartType = 'bar';
 
@@ -159,10 +160,10 @@ export class AnalyticsDashboardComponent  {
   get dealStageData() {
     const deals = this.dealState.deals();
     return [
-      { name: 'Proposal',    value: deals.filter(x => x.stage === DEAL_STAGE.PROPOSAL).reduce((sum, x) => sum + x.value, 0) },
+      { name: 'Proposal', value: deals.filter(x => x.stage === DEAL_STAGE.PROPOSAL).reduce((sum, x) => sum + x.value, 0) },
       { name: 'Negotiation', value: deals.filter(x => x.stage === DEAL_STAGE.NEGOTIATION).reduce((sum, x) => sum + x.value, 0) },
-      { name: 'Won',         value: deals.filter(x => x.stage === DEAL_STAGE.WON).reduce((sum, x) => sum + x.value, 0) },
-      { name: 'Lost',        value: deals.filter(x => x.stage === DEAL_STAGE.LOST).reduce((sum, x) => sum + x.value, 0) }
+      { name: 'Won', value: deals.filter(x => x.stage === DEAL_STAGE.WON).reduce((sum, x) => sum + x.value, 0) },
+      { name: 'Lost', value: deals.filter(x => x.stage === DEAL_STAGE.LOST).reduce((sum, x) => sum + x.value, 0) }
     ];
   }
 
@@ -184,11 +185,11 @@ export class AnalyticsDashboardComponent  {
       leads.filter(x => x.source === source).length;
 
     return {
-      website:   countBySource('Website'),
-      referral:  countBySource('Referral'),
+      website: countBySource('Website'),
+      referral: countBySource('Referral'),
       instagram: countBySource('Instagram'),
-      coldCall:  countBySource('ColdCall'),
-      linkedIn:  countBySource('LinkedIn')
+      coldCall: countBySource('ColdCall'),
+      linkedIn: countBySource('LinkedIn')
     };
   }
 
@@ -205,7 +206,7 @@ export class AnalyticsDashboardComponent  {
   }
 
   get recentHistory() {
-     return this.historyState.recentHistory() ?? [];
+    return this.historyState.recentHistory() ?? [];
   }
 
   formatTime(time: string): string {
@@ -221,7 +222,7 @@ export class AnalyticsDashboardComponent  {
       case 'create': return 'action-create';
       case 'update': return 'action-update';
       case 'delete': return 'action-delete';
-      default:       return 'action-default';
+      default: return 'action-default';
     }
   }
 }

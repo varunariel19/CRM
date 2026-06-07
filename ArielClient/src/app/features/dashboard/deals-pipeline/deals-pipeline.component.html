@@ -2,22 +2,18 @@
 
   <!-- CREATE DEAL MODAL -->
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal($event)">
-    <div class="modal-box">
-
+    <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Create Sales Venture Deal</h2>
         <button class="modal-close" (click)="showCreateModal = false">
           <i class="fas fa-times"></i>
         </button>
       </div>
-
       <div class="modal-body">
-
         <div class="form-group full-width">
           <label>Proposed Architecture Title <span class="required">*</span></label>
           <input type="text" [(ngModel)]="newDeal.title" placeholder="e.g. AWS Cloud Outpost Setup" />
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Opportunity Value ($) <span class="required">*</span></label>
@@ -28,7 +24,6 @@
             <input type="date" [(ngModel)]="newDeal.closeDate" />
           </div>
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Key Customer Contact</label>
@@ -49,34 +44,28 @@
             </select>
           </div>
         </div>
-
       </div>
-
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
         <button class="btn-register" (click)="submitDeal()">Launch Opportunity</button>
       </div>
-
     </div>
   </div>
 
+  <!-- EDIT DEAL MODAL -->
   <div class="modal-overlay" *ngIf="showEditModal && editDeal" (click)="closeEditModal($event)">
-    <div class="modal-box">
-
+    <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Update Contract Opportunity</h2>
         <button class="modal-close" (click)="showEditModal = false; editDeal = null">
           <i class="fas fa-times"></i>
         </button>
       </div>
-
       <div class="modal-body">
-
         <div class="form-group full-width">
           <label>Proposed Architecture Title <span class="required">*</span></label>
           <input type="text" [(ngModel)]="editDeal.title" placeholder="e.g. AWS Cloud Outpost Setup" />
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Opportunity Value ($) <span class="required">*</span></label>
@@ -87,7 +76,6 @@
             <input type="date" [(ngModel)]="editDeal.closeDate" />
           </div>
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Pipeline Stage</label>
@@ -108,7 +96,6 @@
             </select>
           </div>
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Lead Representative <span class="required">*</span></label>
@@ -120,12 +107,134 @@
             </select>
           </div>
         </div>
-
       </div>
-
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showEditModal = false; editDeal = null">Cancel</button>
         <button class="btn-register" (click)="submitEdit()">Update Parameters</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROJECT CONVERSION MODAL
+       z-index: 1100 so it sits above the loader overlay (typically 1000).
+       Overlay click closes only when the backdrop itself is clicked.
+       Modal-box stops propagation so inner clicks never reach the overlay. -->
+  <div class="modal-overlay convert-overlay" *ngIf="showConvertModal" (click)="closeConvertModalOnOverlay($event)">
+    <div class="modal-box convert-modal-box" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <div class="convert-modal-title">
+          <div class="convert-icon">
+            <i class="fas fa-rocket"></i>
+          </div>
+          <div>
+            <h2>Deal-to-Project Conversion</h2>
+            <p class="convert-subtitle">Initialise a new project scope from won deal</p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="closeConvertModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- deal reference badge -->
+      <div class="deal-ref-banner">
+        <i class="fas fa-link"></i>
+        <span>Converting from deal:</span>
+        <strong>{{ convertingDeal?.title }}</strong>
+        <span class="deal-value-badge">{{ convertingDeal?.value | currency }}</span>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- SECTION: Project Identity -->
+        <div class="convert-section-label">
+          <i class="fas fa-folder-open"></i>
+          Project Identity
+        </div>
+
+        <div class="form-group full-width">
+          <label>Project Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="projectForm.name"
+            placeholder="e.g. AWS Cloud Outpost Implementation" />
+        </div>
+
+        <div class="form-row">
+          
+          <div class="form-group">
+            <label>Project Lead <span class="required">*</span></label>
+            <select [(ngModel)]="projectForm.projectLeadId">
+              <option value="" disabled>Assign Project Lead</option>
+              <option *ngFor="let member of teamMembers" [value]="member.id">
+                {{ member.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Project Description</label>
+          <textarea [(ngModel)]="projectForm.description"
+            placeholder="Describe the project scope, deliverables and objectives..." rows="3">
+          </textarea>
+        </div>
+
+        <!-- SECTION: Timeline -->
+        <div class="convert-section-label">
+          <i class="fas fa-calendar-alt"></i>
+          Project Timeline
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" [(ngModel)]="projectForm.startDate" />
+          </div>
+          <div class="form-group">
+            <label>Estimated End Date</label>
+            <input type="date" [(ngModel)]="projectForm.endDate" />
+          </div>
+        </div>
+
+        <!-- SECTION: Documents -->
+        <div class="convert-section-label">
+          <i class="fas fa-paperclip"></i>
+          Project Documents
+          <span class="member-count-badge">{{ projectForm.documents.length }} file(s)</span>
+        </div>
+
+        <div class="upload-drop-zone" (dragover)="onDocDragOver($event)" (dragleave)="onDocDragLeave($event)"
+          (drop)="onDocDrop($event)" [class.drag-over]="isDragOver" (click)="docFileInput.click()">
+          <i class="fas fa-cloud-upload-alt upload-icon"></i>
+          <p class="upload-label">Drag & drop files here, or <span class="upload-link">browse</span></p>
+          <p class="upload-hint">PDF, DOCX, XLSX, PNG, JPG — up to 20MB each</p>
+          <input #docFileInput type="file" multiple hidden (change)="onDocFileSelected($event)" />
+        </div>
+
+        <div class="doc-list" *ngIf="projectForm.documents.length > 0">
+          <div class="doc-item" *ngFor="let doc of projectForm.documents; let i = index">
+            <div class="doc-item-left">
+              <i class="fas" [ngClass]="getFileIcon(doc.name)"></i>
+              <div>
+                <p class="doc-name">{{ doc.name }}</p>
+                <p class="doc-size">{{ formatFileSize(doc.size) }}</p>
+              </div>
+            </div>
+            <button class="doc-remove" (click)="removeDocument(i)">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer convert-footer">
+        <div class="convert-footer-actions">
+          <button class="btn-convert" (click)="submitProjectConversion()">
+            <i class="fas fa-rocket"></i>
+            Initiate Project
+          </button>
+        </div>
       </div>
 
     </div>
@@ -133,7 +242,6 @@
 
   <!-- HEADER -->
   <div class="pipeline-header">
-
     <div>
       <h2>
         <i class="fas fa-arrow-trend-up"></i>
@@ -141,19 +249,17 @@
       </h2>
       <p>Reflects current technical services contract pipeline values.</p>
     </div>
-
+    @if(perm.deals.canCreate()) {
     <button class="new-deal-btn" (click)="showCreateModal = true">
       <i class="fas fa-plus"></i>
       New Opportunity Deal
     </button>
-
+    }
   </div>
 
   <!-- BOARD -->
   <div class="pipeline-board">
-
     <div class="pipeline-column" *ngFor="let column of columns">
-
       <div class="column-header">
         <div class="column-title">
           <div class="column-dot" [style.background]="column.color"></div>
@@ -164,16 +270,12 @@
       </div>
 
       <div class="deal-list" (dragover)="allowDrop($event)" (drop)="dropDeal($event, column.key)">
+        <div *ngIf="column.deals.length === 0" class="empty-state">No deals here.</div>
 
-        <div *ngIf="column.deals.length === 0" class="empty-state">
-          No deals here.
-        </div>
-
-        <div class="deal-card" *ngFor="let deal of column.deals" draggable="true"
-          (dragstart)="dragDeal($event, deal, column.key)">
+        <div class="deal-card" *ngFor="let deal of column.deals" [draggable]="perm.deals.canEdit()"
+          (dragstart)="perm.deals.canEdit() && dragDeal($event, deal, column.key)">
 
           <h3>{{ deal.title }}</h3>
-
           <p class="company">
             <i class="fas fa-building"></i>
             {{ deal.contact?.company ?? '—' }}
@@ -186,10 +288,7 @@
             </div>
             <div>
               <span>Target Close</span>
-              <p>
-                <i class="fas fa-calendar"></i>
-                {{ deal.closeDate }}
-              </p>
+              <p><i class="fas fa-calendar"></i> {{ deal.closeDate }}</p>
             </div>
           </div>
 
@@ -199,18 +298,20 @@
               {{ deal.assignedTo?.name ?? '—' }}
             </div>
             <div class="deal-actions">
+              @if(perm.deals.canEdit()) {
               <i class="fas fa-pen" (click)="openEditModal(deal)"></i>
               <i class="fas fa-chevron-left" (click)="moveLeft(column.key, deal)"></i>
               <i class="fas fa-chevron-right" (click)="moveRight(column.key, deal)"></i>
+              }
+              @if(perm.deals.canDelete()) {
+              <i class="fas fa-trash" (click)="deleteDeal(deal.id)"></i>
+              }
             </div>
           </div>
 
         </div>
-
       </div>
-
     </div>
-
   </div>
 
 </div>

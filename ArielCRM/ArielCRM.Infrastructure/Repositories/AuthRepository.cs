@@ -8,18 +8,18 @@ namespace ArielCRM.Infrastructure.Repositories
 
     namespace ArielCRM.Infrastructure.Repository
     {
-        public class AuthRepository : IAuthRepository
+        public class AuthRepository(AppDbContext db) : IAuthRepository
         {
-            private readonly AppDbContext _db;
-
-            public AuthRepository(AppDbContext db)
-            {
-                _db = db;
-            }
+            private readonly AppDbContext _db = db;
 
             public async Task<User?> GetByEmailAsync(string email)
             {
                 return await _db.Users
+                    .Include(u => u.Department)
+                    .Include(u => u.Designation)
+                    .Include(u => u.AccessLevel)
+                        .ThenInclude(a => a.Permissions)
+                            .ThenInclude(p => p.Permission)
                     .FirstOrDefaultAsync(u => u.Email == email);
             }
         }

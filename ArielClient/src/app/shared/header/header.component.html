@@ -10,53 +10,58 @@
       Ariel CRM
     </div>
 
-
     <button class="toggle-btn" type="button" (click)="onToggleSidebar()">
-
       <i class="fas" [class.fa-bars]="isSidebarCollapsed" [class.fa-chevron-left]="!isSidebarCollapsed">
       </i>
     </button>
 
   </div>
 
-
   <div class="center-section">
-
-
     <div class="search-box">
-      <input type="text" placeholder="Search customers, leads, invoices..." />
+      <input type="search" name="global-search" autocomplete="off" autocorrect="off" autocapitalize="off"
+        spellcheck="false" data-lpignore="true" placeholder="Search customers, leads, invoices..." />
     </div>
   </div>
 
   <div class="right-section">
 
-
     <button class="icon-btn" type="button" aria-label="Notifications" title="Notifications">
       <i class="fa-regular fa-bell"></i>
     </button>
 
-
     <button class="icon-btn" type="button"
       [attr.aria-label]="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
       [attr.title]="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
-      (click)="this.themeService.toggleTheme()">
+      (click)="themeService.toggleTheme()">
       <i class="fa-solid" [class.fa-sun]="isDarkTheme" [class.fa-moon]="!isDarkTheme"></i>
     </button>
 
+    @if(perm.dashboard.canView()) {
+      <button class="icon-btn" type="button" (click)="showSettings.set(true)">
+        <i class="fa-solid fa-gear"></i>
+      </button>
 
-    <button class="icon-btn" type="button" aria-label="Settings" title="Settings">
-      <i class="fa-solid fa-gear"></i>
-    </button>
+      @if(showSettings()) {
+        <app-settings (close)="showSettings.set(false)" />
+      }
+    }
 
-
-    <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="profile" />
-
-      <div class="profile-info">
-        <h4>Varun</h4>
-        <p>Admin</p>
+    @if(userDetails) {
+      <div (click)="showProfile.set(true)" style="cursor:pointer">
+        @if(userDetails.profileImage) {
+          <img [src]="userDetails.profileImage" alt="profile" />
+        } @else {
+          <div class="avatar" [style.background]="getProfileColor(userDetails.name)">
+            {{ userDetails.name.charAt(0).toUpperCase() }}
+          </div>
+        }
       </div>
-    </div>
+    }
+
+    @if(showProfile()) {
+      <app-profile-section (close)="showProfile.set(false)" />
+    }
 
     <button class="logout-btn" type="button" aria-label="Logout" title="Logout" (click)="logout()">
       <i class="fa-solid fa-right-from-bracket"></i>

@@ -14,12 +14,14 @@ export class SidebarComponent {
 
   menuState = inject(MenuState);
 
-  sidebarMenus = this.menuState.menus;
   activeIndex = this.menuState.activeIndex;
   selectedMenu = this.menuState.selectedMenu;
+
+  get sidebarMenus() {
+    return this.menuState.menus();
+  }
 
   setActiveMenu(index: number) {
     this.menuState.setActiveMenu(index);
   }
-
 }

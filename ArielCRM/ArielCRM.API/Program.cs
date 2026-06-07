@@ -1,12 +1,14 @@
 using ArielCRM.Application.Interfaces;
 using ArielCRM.Application.Services;
 using ArielCRM.Infrastructure.Data;
+using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using ArielCRM.Infrastructure.Interfaces.IService;
 using ArielCRM.Infrastructure.Repositories;
 using ArielCRM.Infrastructure.Repositories.ArielCRM.Infrastructure.Repository;
 using ArielCRM.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -44,16 +46,17 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     {
         options.Cookie.Name = "ArielCRM.Session";
         options.Cookie.HttpOnly = true;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; 
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         options.Cookie.SameSite = SameSiteMode.None;
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
         options.SlidingExpiration = true;
 
-        options.Events.OnRedirectToLogin = context => 
+        options.Events.OnRedirectToLogin = context =>
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return Task.CompletedTask;  
+            return Task.CompletedTask;
         };
+
         options.Events.OnRedirectToAccessDenied = context =>
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
@@ -61,8 +64,13 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         };
     });
 
+
 builder.Services.AddAuthorization();
+// builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+// builder.Services.AddSingleton<IAuthorizationHandler, PermissionHandler>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<AppwriteSettings>(builder.Configuration.GetSection("Appwrite"));
+builder.Services.AddScoped<IAppwriteStorageService, AppwriteStorageService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
@@ -84,7 +92,10 @@ builder.Services.AddScoped<IMeetingService, MeetingService>();
 builder.Services.AddScoped<IMeetingRepository, MeetingRepository>();
 builder.Services.AddScoped<IHistoryRepository, HistoryRepository>();
 builder.Services.AddScoped<IHistoryService, HistoryService>();
-
+builder.Services.AddScoped<ITeamRepository, TeamRepository>();
+builder.Services.AddScoped<ITeamService, TeamService>();
+builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 
 

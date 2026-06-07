@@ -1,4 +1,3 @@
-import { UserRole } from "./global.type";
 
 export interface LoginPayload {
     email: string;
@@ -6,9 +5,26 @@ export interface LoginPayload {
 }
 
 
-export interface UserRes {
+export interface PermissionPayload {
+    id: string;
+    code: string;
+    description?: string;
+}
+
+export interface AccessLevelPayload {
+    id: string;
+    name: string;
+    access: number;
+    permissions: PermissionPayload[];
+}
+
+export interface UserPayload {
     id: string;
     name: string;
     email: string;
-    role: UserRole;
+    profileImage?: string;
+    departmentId: string;
+    designationId: string;
+    accessLevel: AccessLevelPayload;
 }
+

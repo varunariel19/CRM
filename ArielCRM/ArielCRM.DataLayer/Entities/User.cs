@@ -1,5 +1,4 @@
-﻿using ArielCRM.DataLayer.Enums;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ArielCRM.DataLayer.Entities
@@ -22,17 +21,42 @@ namespace ArielCRM.DataLayer.Entities
         [MaxLength(150)]
         public string Email { get; set; } = string.Empty;
 
+
+        [Column("profile_image")]
+        [MaxLength(255)]
+        public string? ProfileImage { get; set; }
+
         [Required]
         [Column("password_hash")]
         [MaxLength(255)]
         public string PasswordHash { get; set; } = string.Empty;
 
-        [Required]
-        [Column("role")]
-        public UserRole Role { get; set; }
-
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Required]
+        [Column("department_id")]
+        [MaxLength(50)]
+        public string DepartmentId { get; set; } = string.Empty;
+
+        [ForeignKey(nameof(DepartmentId))]
+        public Department Department { get; set; } = null!;
+
+        [Required]
+        [Column("designation_id")]
+        [MaxLength(50)]
+        public string DesignationId { get; set; } = string.Empty;
+
+        [ForeignKey(nameof(DesignationId))]
+        public Designation Designation { get; set; } = null!;
+
+        [Required]
+        [Column("access_level_id")]
+        [MaxLength(50)]
+        public string AccessLevelId { get; set; } = string.Empty;
+
+        [ForeignKey(nameof(AccessLevelId))]
+        public AccessLevel AccessLevel { get; set; } = null!;
 
         public ICollection<Lead> AssignedLeads { get; set; } = new List<Lead>();
         public ICollection<Deal> AssignedDeals { get; set; } = new List<Deal>();

@@ -18,7 +18,7 @@ namespace ArielCRM.DataLayer.Entities
 
         [Required]
         [Column("project_key")]
-        [MaxLength(20)]
+        [MaxLength(50)]
         public string ProjectKey { get; set; } = string.Empty;
 
         [Column("project_lead_id")]
@@ -37,6 +37,10 @@ namespace ArielCRM.DataLayer.Entities
         [Column("end_date")]
         public DateTime? EndDate { get; set; }
 
+        [Column("deal_id")]
+        [MaxLength(50)]
+        public string? DealId { get; set; }
+
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -46,8 +50,13 @@ namespace ArielCRM.DataLayer.Entities
         [ForeignKey(nameof(ProjectLeadId))]
         public User? ProjectLead { get; set; }
 
-        public ICollection<User> Members { get; set; } = new List<User>();
+        [ForeignKey(nameof(DealId))]
+        public Deal? Deal { get; set; } = null!;
 
-        public ICollection<TicketTask> Tasks { get; set; } = new List<TicketTask>();
+        public ICollection<User> Members { get; set; } = [];
+
+        public ICollection<TicketTask> Tasks { get; set; } = [];
+
+        public ICollection<Documents> Documents { get; set; } = [];
     }
 }

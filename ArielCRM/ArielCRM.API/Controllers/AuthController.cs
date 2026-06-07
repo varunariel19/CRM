@@ -12,79 +12,69 @@ namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/auth")]
-    public class AuthController(IAuthService authService , AppDbContext db , IEmailService emailService) : ControllerBase
+    public class AuthController(IAuthService authService ) : ControllerBase
     {
         private readonly IAuthService _authService = authService;
-        private readonly IEmailService _emailService = emailService;
-        private readonly AppDbContext _db = db;
 
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequestDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
 
-            var result = await _authService.LoginAsync(dto, Response);
+                var result = await _authService.LoginAsync(dto, Response);
 
-            if (result is null)
-                return Unauthorized(new { message = "Invalid email or password." });
+                if (result is null)
+                    return Unauthorized(new { message = "Invalid email or password." });
 
-            return Ok(new { message = "Login successful.", user = result });
+                return Ok(new { message = "Login successful.", user = result });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred during login.", error = ex.Message });
+            }
         }
 
         [HttpPost("logout")]
         [Authorize]
         public async Task<IActionResult> Logout()
         {
-            await _authService.LogoutAsync(Response);
-            return Ok(new { message = "Logged out successfully." });
+            try
+            {
+                await _authService.LogoutAsync(Response);
+                return Ok(new { message = "Logged out successfully." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred during logout.", error = ex.Message });
+            }
         }
 
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> Me()
         {
-            var user = await _authService.GetCurrentUserAsync(HttpContext);
-
-            if (user is null)
-                return Unauthorized(new { message = "Not authenticated." });
-
-            return Ok(user);
-        }
-
-
-        [HttpPost("register")]
-        // [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> RegisterMember([FromBody] RegisterRequestDto dto)  
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var exists = await _db.Users.AnyAsync(u => u.Email == dto.Email);
-
-            if (exists)  return Conflict(new { message = "User with this email already exists." });
-
-            string generatedPass = Utils.GeneratePassword();
-            var user = new User
+            try
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = dto.Name,
-                Email = dto.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(generatedPass),
-                Role = dto.Role,
-                CreatedAt = DateTime.UtcNow
-            };
+                var user = await _authService.GetCurrentUserAsync(HttpContext);
 
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-            await _emailService.SendWelcomeEmailAsync(dto.Email ,dto.Name, generatedPass);
+                if (user is null)
+                    return Unauthorized(new { message = "Not authenticated." });
 
-            return Ok(new { message = "User created successfully.", userId = user.Id });
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching user.", error = ex.Message });
+            }
         }
-
-
+      
 
 
     }
+
+
 }

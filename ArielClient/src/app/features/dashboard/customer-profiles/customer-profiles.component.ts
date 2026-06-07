@@ -6,6 +6,7 @@ import { ContactService } from '../../../services/contact.service';
 import { ContactState } from '../../../state/contact.state';
 import { AuthState } from '../../../state/auth.state';
 import { NoteService, NoteDto, CreateNoteRequest } from '../../../services/notes.service';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 @Component({
   selector: 'app-customer-profiles',
@@ -19,6 +20,7 @@ export class CustomerProfilesComponent {
 
   contactState = inject(ContactState);
   authState = inject(AuthState);
+  perm = inject(PermissionFacade);
 
   noteService = inject(NoteService);
 

@@ -7,9 +7,7 @@ export const endpoints = {
 
     login: `${BASE_URL}/api/auth/login`,
     logout: `${BASE_URL}/api/auth/logout`,
-    register: `${BASE_URL}/api/auth/register`,
     authenticate: `${BASE_URL}/api/auth/me`,
-    teamMembers: `${BASE_URL}/api/admin/team-members`,
 
 
     // leads 
@@ -55,8 +53,23 @@ export const endpoints = {
     history: `${BASE_URL}/api/history`,
 
 
+    // team members
+    teamMembers: `${BASE_URL}/api/team`,
+
+
+    // project 
+    projects: `${BASE_URL}/api/projects`,
+
+
+
+
     AIUrl: 'https://api.groq.com/openai/v1/chat/completions',
     groqApiKey: ``,
+
+    PERMISSIONS: `${BASE_URL}/api/admin/permissions`,
+    DEPARTMENTS: `${BASE_URL}/api/admin/departments`,
+    ACCESS_LEVELS: `${BASE_URL}/api/admin/access-levels`,
+    DESIGNATIONS: `${BASE_URL}/api/admin/designations`,
 
 }
 

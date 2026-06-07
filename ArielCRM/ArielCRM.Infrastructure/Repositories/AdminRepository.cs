@@ -25,7 +25,6 @@ namespace ArielCRM.Infrastructure.Repositories
                     Id = u.Id,
                     Name = u.Name,
                     Email = u.Email,
-                    Role = u.Role.ToString(),
                     CreatedAt = u.CreatedAt
                     
                 })

@@ -11,7 +11,6 @@ import { AppointmentSchedulerComponent } from "../../features/dashboard/appointm
 import { TeamMembersComponent } from "../../features/dashboard/team-members/team-members.component";
 
 import { MenuState } from '../../state/menu.state';
-import { AuthState } from '../../state/auth.state';
 
 import { TeamService } from '../../services/team.service';
 import { LeadService } from '../../services/lead.service';
@@ -35,6 +34,9 @@ import { HistoryService } from '../../core/services/history.service';
 import { HistoryState } from '../../state/history.state';
 import { TaskManagementComponent } from '../../features/dashboard/task-management/task-management.component';
 import { ProjectsComponent } from '../../features/dashboard/projects/projects.component';
+import { GlobalState } from '../../state/global.state';
+import { LookUpService } from '../../core/services/lookup.service';
+import { TeamState } from '../../state/team.state';
 
 @Component({
   selector: 'app-dashboard',
@@ -60,6 +62,8 @@ export class DashboardComponent implements OnInit {
   private crmTaskService = inject(CrmTaskService);
   private readonly meetingState = inject(MeetingState);
 
+  globalState = inject(GlobalState);
+  lookupService = inject(LookUpService);
   contactState = inject(ContactState);
   menuState = inject(MenuState);
   leadState = inject(LeadState);
@@ -67,6 +71,7 @@ export class DashboardComponent implements OnInit {
   ticketState = inject(TicketState);
   taskState = inject(TaskState);
   historyState = inject(HistoryState);
+  teamState = inject(TeamState);
 
   leadService = inject(LeadService);
   contactService = inject(ContactService);
@@ -81,8 +86,9 @@ export class DashboardComponent implements OnInit {
 
   constructor(
     private teamService: TeamService,
-    private authState: AuthState
   ) { }
+
+
 
   ngOnInit(): void {
     this.loadInitialData();
@@ -90,9 +96,14 @@ export class DashboardComponent implements OnInit {
 
   loadInitialData(): void {
 
-    this.teamService.getTeamMembers().subscribe({
+    this.lookupService.getDepartments().subscribe(data => this.globalState.setDepartments(data));
+    this.lookupService.getDesignations().subscribe(data => this.globalState.setDesignations(data));
+    this.lookupService.getAccessLevels().subscribe(data => this.globalState.setAccessLevels(data));
+    this.lookupService.getPermissions().subscribe(data => this.globalState.setPermissions(data));
+
+    this.teamService.handleGetList().subscribe({
       next: (data) => {
-        this.authState.setTeamMembers(data);
+        this.teamState.setTeamMembers(data);
       },
       error: (err) => {
         console.error('Failed to load team members', err);
@@ -141,7 +152,6 @@ export class DashboardComponent implements OnInit {
       },
 
     });
-
 
     this.meetingService.getAllMeetings().subscribe({
       next: (meetings) => {

@@ -3,313 +3,229 @@
   <!-- TOP CARDS -->
   <div class="top-cards">
 
-    <div class="stat-card">
-      <div>
-        <p class="card-title">TOTAL LEADS</p>
-        <h2>{{ totalLeads }}</h2>
-        <span class="card-link cursor-pointer" (click)="navigateMenuOptions(1)">Manage Leads →</span>
-      </div>
-
-      <div class="card-icon blue">
-        <i class="fas fa-users"></i>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div>
-        <p class="card-title">ACTIVE DEALS</p>
-        <h2>{{ activeDeals }}</h2>
-        <span class="card-link" (click)="navigateMenuOptions(3)">View Pipeline →</span>
-      </div>
-
-      <div class="card-icon purple">
-        <i class="fas fa-arrow-trend-up"></i>
-      </div>
-    </div>
-
-    <div class="stat-card">
-      <div>
-        <p class="card-title">OPEN TICKETS</p>
-        <h2>{{ openTickets }}</h2>
-        <span class="card-link orange-text" (click)="navigateMenuOptions(5)">Support Desk →</span>
-      </div>
-
-      <div class="card-icon orange">
-        <i class="fas fa-life-ring"></i>
-      </div>
-    </div>
-
-    <div class="stat-card revenue-card">
-
-      <div>
-        <p class="card-title">TOTAL REVENUE WON</p>
-        <h2>${{wonRevenue}}</h2>
-
-        <div class="badge">
-          SLA Delivery Active
+    @if(perm.leads.canView()) {
+      <div class="stat-card">
+        <div>
+          <p class="card-title">TOTAL LEADS</p>
+          <h2>{{ totalLeads }}</h2>
+          <span class="card-link cursor-pointer" (click)="navigateMenuOptions(1)">Manage Leads →</span>
+        </div>
+        <div class="card-icon blue">
+          <i class="fas fa-users"></i>
         </div>
       </div>
+    }
 
-      <div class="revenue-icon">
-        <i class="fas fa-dollar-sign"></i>
+    @if(perm.deals.canView()) {
+      <div class="stat-card">
+        <div>
+          <p class="card-title">ACTIVE DEALS</p>
+          <h2>{{ activeDeals }}</h2>
+          <span class="card-link" (click)="navigateMenuOptions(3)">View Pipeline →</span>
+        </div>
+        <div class="card-icon purple">
+          <i class="fas fa-arrow-trend-up"></i>
+        </div>
       </div>
+    }
 
-    </div>
+    @if(perm.tickets.canView()) {
+      <div class="stat-card">
+        <div>
+          <p class="card-title">OPEN TICKETS</p>
+          <h2>{{ openTickets }}</h2>
+          <span class="card-link orange-text" (click)="navigateMenuOptions(5)">Support Desk →</span>
+        </div>
+        <div class="card-icon orange">
+          <i class="fas fa-life-ring"></i>
+        </div>
+      </div>
+    }
+
+    @if(perm.deals.canView()) {
+      <div class="stat-card revenue-card">
+        <div>
+          <p class="card-title">TOTAL REVENUE WON</p>
+          <h2>${{ wonRevenue }}</h2>
+          <div class="badge">SLA Delivery Active</div>
+        </div>
+        <div class="revenue-icon">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+      </div>
+    }
 
   </div>
 
   <!-- CHART SECTION -->
   <div class="chart-grid">
 
-    <!-- BAR CHART -->
-    <div class="chart-container">
-      <canvas baseChart type="bar" [data]="barChartData" [options]="barChartOptions">
-      </canvas>
-    </div>
-
-    <div class="donut-wrapper">
-      <div class="donut-chart">
-
-        <canvas baseChart [type]="'doughnut'" [data]="doughnutChartData" [options]="doughnutChartOptions">
+    @if(perm.leads.canView()) {
+      <div class="chart-container">
+        <canvas baseChart type="bar" [data]="barChartData" [options]="barChartOptions">
         </canvas>
+      </div>
 
-        <div class="donut-center">
-          <p>Total Leads</p>
-          <h2>{{ totalLeads }}</h2>
+      <div class="donut-wrapper">
+        <div class="donut-chart">
+          <canvas baseChart [type]="'doughnut'" [data]="doughnutChartData" [options]="doughnutChartOptions">
+          </canvas>
+          <div class="donut-center">
+            <p>Total Leads</p>
+            <h2>{{ totalLeads }}</h2>
+          </div>
         </div>
 
+        <div class="legend">
+          <div><span class="dot blue"></span> Website ({{ leadSourceData.website }})</div>
+          <div><span class="dot purple"></span> Referral ({{ leadSourceData.referral }})</div>
+          <div><span class="dot orange"></span> Instagram ({{ leadSourceData.instagram }})</div>
+          <div><span class="dot red"></span> Cold Call ({{ leadSourceData.coldCall }})</div>
+          <div><span class="dot light-blue"></span> LinkedIn ({{ leadSourceData.linkedIn }})</div>
+        </div>
       </div>
-
-      <div class="legend">
-        <div><span class="dot blue"></span> Website ({{ leadSourceData.website }})</div>
-        <div><span class="dot purple"></span> Referral ({{ leadSourceData.referral }})</div>
-        <div><span class="dot orange"></span> Instagram ({{ leadSourceData.instagram }})</div>
-        <div><span class="dot red"></span> Cold Call ({{ leadSourceData.coldCall }})</div>
-        <div><span class="dot light-blue"></span> LinkedIn ({{ leadSourceData.linkedIn }})</div>
-      </div>
-
-    </div>
+    }
 
   </div>
 
   <!-- BOTTOM GRID -->
   <div class="bottom-grid">
 
-    <!-- RECENT -->
-    <div class="bottom-card">
-
-      <div class="section-header">
-        <h3>
-          <i class="fas fa-users"></i>
-          Recent Prospects
-        </h3>
-
-        <span class="view-link" (click)="navigateMenuOptions(1)">View More</span>
-      </div>
-
-      <div class="prospect-list">
-
-        @for (lead of leads; track lead.id) {
-
-        <div class="prospect-item">
-
-          <div>
-            <h4>{{ lead.name }}</h4>
-            <p>{{ lead.company }} • {{ lead.source }}</p>
-          </div>
-
-          <span class="status" [ngClass]="lead.status.toLowerCase()">
-
-            {{ lead.status }}
-
-          </span>
-
+    @if(perm.leads.canView()) {
+      <div class="bottom-card">
+        <div class="section-header">
+          <h3>
+            <i class="fas fa-users"></i>
+            Recent Prospects
+          </h3>
+          <span class="view-link" (click)="navigateMenuOptions(1)">View More</span>
         </div>
 
-        }
-
-      </div>
-
-    </div>
-
-    <!-- REMINDER -->
-    <div class="bottom-card">
-
-      <div class="section-header">
-        <h3>
-          <i class="fas fa-calendar"></i>
-          My Reminders Calendar
-        </h3>
-
-        <span class="view-link" (click)="navigateMenuOptions(4)">All Tasks</span>
-      </div>
-
-      @if (pendingTask.length > 0) {
-
-      <div class="task-list">
-
-        @for (task of pendingTask; track task.id) {
-
-        <div class="task-item">
-
-          <div class="task-info">
-            <h4>{{ task.title }}</h4>
-
-            <div class="task-meta">
-              <span>
-                <i class="fas fa-tag"></i>
-                {{ task.type }}
-              </span>
-
-              <span>
-                <i class="fas fa-user"></i>
-                {{ task.assignedToName || 'Unassigned' }}
+        <div class="prospect-list">
+          @for (lead of leads; track lead.id) {
+            <div class="prospect-item">
+              <div>
+                <h4>{{ lead.name }}</h4>
+                <p>{{ lead.company }} • {{ lead.source }}</p>
+              </div>
+              <span class="status" [ngClass]="lead.status.toLowerCase()">
+                {{ lead.status }}
               </span>
             </div>
-          </div>
+          }
+        </div>
+      </div>
+    }
 
-          <div class="task-date">
-            {{ task.dueDate | date:'MMM d' }}
-          </div>
-
+    @if(perm.tasks.canView()) {
+      <div class="bottom-card">
+        <div class="section-header">
+          <h3>
+            <i class="fas fa-calendar"></i>
+            My Reminders Calendar
+          </h3>
+          <span class="view-link" (click)="navigateMenuOptions(4)">All Tasks</span>
         </div>
 
+        @if (pendingTask.length > 0) {
+          <div class="task-list">
+            @for (task of pendingTask; track task.id) {
+              <div class="task-item">
+                <div class="task-info">
+                  <h4>{{ task.title }}</h4>
+                  <div class="task-meta">
+                    <span><i class="fas fa-tag"></i> {{ task.type }}</span>
+                    <span><i class="fas fa-user"></i> {{ task.assignedToName || 'Unassigned' }}</span>
+                  </div>
+                </div>
+                <div class="task-date">{{ task.dueDate | date:'MMM d' }}</div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <i class="fas fa-check-circle"></i>
+            <p>You're all caught up! No tasks pending.</p>
+          </div>
         }
-
       </div>
+    }
 
-      } @else {
-
-      <div class="empty-state">
-        <i class="fas fa-check-circle"></i>
-        <p>You're all caught up! No tasks pending.</p>
-      </div>
-
-      }
-
-    </div>
-
-    <!-- UPCOMING APPOINTMENTS -->
-    <div class="bottom-card">
-
-      <div class="section-header">
-        <h3>
-          <i class="fas fa-calendar-check"></i>
-          Upcoming Appointments
-        </h3>
-
-        <span class="view-link" (click)="navigateMenuOptions(6)">
-          View Calendar
-        </span>
-      </div>
-
-      @if (upcomingMeetings.length > 0) {
-
-      <div class="meeting-list">
-
-        @for (meeting of upcomingMeetings; track meeting.id) {
-
-        <div class="meeting-item">
-
-          <div class="meeting-info">
-
-            <h4>{{ meeting.title }}</h4>
-
-            <p>
-              {{ meeting.clientInfo.name }}
-              •
-              {{ meeting.clientInfo.company }}
-            </p>
-
-            <div class="meeting-meta">
-
-              <span>
-                <i class="fas fa-clock"></i>
-                {{ formatTime(meeting.time) }}
-              </span>
-
-              <span>
-                <i class="fas fa-location-dot"></i>
-                {{ meeting.location }}
-              </span>
-
-            </div>
-
-          </div>
-
-          <div class="meeting-date">
-            {{ meeting.date | date:'MMM d' }}
-          </div>
-
+    @if(perm.appointments.canView()) {
+      <div class="bottom-card">
+        <div class="section-header">
+          <h3>
+            <i class="fas fa-calendar-check"></i>
+            Upcoming Appointments
+          </h3>
+          <span class="view-link" (click)="navigateMenuOptions(6)">View Calendar</span>
         </div>
 
+        @if (upcomingMeetings.length > 0) {
+          <div class="meeting-list">
+            @for (meeting of upcomingMeetings; track meeting.id) {
+              <div class="meeting-item">
+                <div class="meeting-info">
+                  <h4>{{ meeting.title }}</h4>
+                  <p>{{ meeting.clientInfo.name }} • {{ meeting.clientInfo.company }}</p>
+                  <div class="meeting-meta">
+                    <span><i class="fas fa-clock"></i> {{ formatTime(meeting.time) }}</span>
+                    <span><i class="fas fa-location-dot"></i> {{ meeting.location }}</span>
+                  </div>
+                </div>
+                <div class="meeting-date">{{ meeting.date | date:'MMM d' }}</div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <i class="fas fa-calendar-check"></i>
+            <p>No upcoming appointments.</p>
+          </div>
         }
-
       </div>
+    }
 
-      } @else {
-
-      <div class="empty-state">
-        <i class="fas fa-calendar-check"></i>
-        <p>No upcoming appointments.</p>
-      </div>
-
-      }
-
-    </div>
-
-    <!-- ACTIVITY here for history logs  -->
-    <div class="bottom-card">
-      <div class="section-header">
-        <h3>
-          <i class="fas fa-bolt"></i>
-          CRM Live Activity Feed
-        </h3>
-        <span class="view-link cursor-pointer" (click)="navigateMenuOptions(7)">View All</span>
-      </div>
-
-      @if (this.historyState.isLoading()) {
-      <div class="empty-state">
-        <i class="fas fa-spinner fa-spin"></i>
-        <p>Loading activity...</p>
-      </div>
-      } @else if (recentHistory.length > 0) {
-      <div class="activity-feed">
-        @for (log of recentHistory; track log.id) {
-
-        <div class="activity-item">
-
-          <div class="activity-timeline">
-            <span class="activity-dot" [ngClass]="getActionClass(log.actionType)">
-            </span>
-          </div>
-
-          <div class="activity-body">
-            <h4>{{ log.title }}</h4>
-
-            <div class="activity-meta">
-              <span>By: {{ log.initiatedByName || 'System' }}</span>
-
-              <span>
-                {{ log.initiatedAt | date:'hh:mm a' }}
-              </span>
-            </div>
-          </div>
-
+    @if(perm.auditHistory.canView()) {
+      <div class="bottom-card">
+        <div class="section-header">
+          <h3>
+            <i class="fas fa-bolt"></i>
+            CRM Live Activity Feed
+          </h3>
+          <span class="view-link cursor-pointer" (click)="navigateMenuOptions(7)">View All</span>
         </div>
 
+        @if (historyState.isLoading()) {
+          <div class="empty-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading activity...</p>
+          </div>
+        } @else if (recentHistory.length > 0) {
+          <div class="activity-feed">
+            @for (log of recentHistory; track log.id) {
+              <div class="activity-item">
+                <div class="activity-timeline">
+                  <span class="activity-dot" [ngClass]="getActionClass(log.actionType)"></span>
+                </div>
+                <div class="activity-body">
+                  <h4>{{ log.title }}</h4>
+                  <div class="activity-meta">
+                    <span>By: {{ log.initiatedByName || 'System' }}</span>
+                    <span>{{ log.initiatedAt | date:'hh:mm a' }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <i class="fas fa-bolt"></i>
+            <p>No recent activity found.</p>
+          </div>
         }
       </div>
-      } @else {
-      <div class="empty-state">
-        <i class="fas fa-bolt"></i>
-        <p>No recent activity found.</p>
-      </div>
-      }
-    </div>
-
-
-
+    }
 
   </div>
 

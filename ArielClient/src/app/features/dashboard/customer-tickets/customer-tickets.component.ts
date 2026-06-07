@@ -1,13 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ContactState } from '../../../state/contact.state';
-import { AuthState } from '../../../state/auth.state';
 import { Contact } from '../../../core/types/contact.type';
 import { TeamMember } from '../../../core/types/global.type';
 import { TicketState } from '../../../state/tickets.state';
 import { TicketService } from '../../../services/ticket.service';
 import { Ticket, TicketStatus, TicketPriority, TICKET_STATUS } from '../../../core/types/ticket.type';
+import { TeamState } from '../../../state/team.state';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 @Component({
   selector: 'app-customer-tickets',
@@ -19,9 +20,10 @@ import { Ticket, TicketStatus, TicketPriority, TICKET_STATUS } from '../../../co
 export class CustomerTicketsComponent {
 
   contactState = inject(ContactState);
-  authState = inject(AuthState);
+  teamState = inject(TeamState);
   ticketState = inject(TicketState);
   ticketService = inject(TicketService);
+  perm = inject(PermissionFacade);
 
   // toast = inject();
 
@@ -42,7 +44,7 @@ export class CustomerTicketsComponent {
   }
 
   get teamMembers(): TeamMember[] {
-    return this.authState.teamMembers().filter(member => member.role !== 'Admin');
+    return this.teamState.teamMembers();
   }
 
 

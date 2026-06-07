@@ -1,5 +1,6 @@
 <div class="tasks-wrapper">
 
+  <!-- CREATE MODAL -->
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
     <div class="modal-box">
 
@@ -97,6 +98,7 @@
     </div>
   </div>
 
+  <!-- TOP BAR -->
   <div class="tasks-topbar">
 
     <div class="tabs">
@@ -111,19 +113,25 @@
       </button>
     </div>
 
-    <button class="add-btn" (click)="openCreateModal()">
-      <i class="fas fa-plus"></i>
-      Add Task Action
-    </button>
+    @if(perm.tasks.canCreate()) {
+      <button class="add-btn" (click)="openCreateModal()">
+        <i class="fas fa-plus"></i>
+        Add Task Action
+      </button>
+    }
 
   </div>
 
+  <!-- TASK LIST -->
   <div class="tasks-list">
 
     <div class="task-card" *ngFor="let task of filteredTasks()">
 
       <div class="task-left">
-        <input type="checkbox" [checked]="isCompleted(task)" (change)="toggleTask(task ,$event)" />
+        <input type="checkbox"
+          [checked]="isCompleted(task)"
+          [disabled]="!perm.tasks.canEdit()"
+          (change)="toggleTask(task, $event)" />
         <div>
           <h3 [class.completed]="isCompleted(task)">{{ task.title }}</h3>
           <div class="task-meta">
@@ -139,7 +147,6 @@
               <i class="fas fa-link"></i>
               Lead: {{ task.leadName }}
             </span>
-
             <span *ngIf="task.dealTitle" class="deal-pill">
               <i class="fas fa-link"></i>
               {{ task.dealTitle }}
@@ -153,7 +160,10 @@
           <i class="fas fa-user"></i>
           Representative: {{ task.assignedToName }}
         </div>
-        <i class="fas fa-trash delete-icon" (click)="deleteTask(task.id)"></i>
+
+        @if(perm.tasks.canDelete()) {
+          <i class="fas fa-trash delete-icon" (click)="deleteTask(task.id)"></i>
+        }
       </div>
 
     </div>

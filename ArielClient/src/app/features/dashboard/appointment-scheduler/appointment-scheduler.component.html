@@ -7,9 +7,12 @@
         <i class="fas fa-calendar-alt cal-icon"></i>
         Agenda Grid Calendar
       </div>
-      <button class="book-btn" (click)="openModal()">
-        <i class="fas fa-plus"></i> Book
-      </button>
+
+      @if(perm.appointments.canCreate()) {
+        <button class="book-btn" (click)="openModal()">
+          <i class="fas fa-plus"></i> Book
+        </button>
+      }
     </div>
 
     <p class="cal-subtitle">
@@ -17,7 +20,8 @@
     </p>
 
     <div class="date-grid">
-      <div class="date-cell" *ngFor="let day of calendarDays" [class.selected]="day.fullDate === selectedDate"
+      <div class="date-cell" *ngFor="let day of calendarDays"
+        [class.selected]="day.fullDate === selectedDate"
         (click)="selectDay(day)">
 
         <div class="day-top">
@@ -32,7 +36,6 @@
     </div>
 
   </div>
-
 
   <div class="meetings-panel">
 
@@ -89,9 +92,11 @@
           </div>
         </div>
 
-        <button class="meeting-delete" (click)="deleteMeeting(m.id)" aria-label="Delete meeting">
-          <i class="fas fa-trash"></i>
-        </button>
+        @if(perm.appointments.canEdit()) {
+          <button class="meeting-delete" (click)="deleteMeeting(m.id)" aria-label="Delete meeting">
+            <i class="fas fa-trash"></i>
+          </button>
+        }
 
       </div>
     </div>
@@ -99,7 +104,10 @@
     <div class="empty-state" *ngIf="meetingsForSelected.length === 0">
       <i class="fas fa-calendar empty-icon"></i>
       <p class="empty-text">No scheduled meetings logged for {{ selectedDate }}.</p>
-      <button class="schedule-link" (click)="openModalForDate()">Schedule an appointment slot</button>
+
+      @if(perm.appointments.canCreate()) {
+        <button class="schedule-link" (click)="openModalForDate()">Schedule an appointment slot</button>
+      }
     </div>
 
   </div>

@@ -8,6 +8,7 @@ import { LoaderService } from '../../../core/services/loader.service';
 import { MenuState } from '../../../state/menu.state';
 import { LeadState } from '../../../state/lead.state';
 import { MeetingState } from '../../../state/meeting.state';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 
 @Component({
@@ -26,6 +27,7 @@ export class AppointmentSchedulerComponent implements OnInit {
   private readonly loader = inject(LoaderService);
   private readonly menuState = inject(MenuState);
   private readonly meetingState = inject(MeetingState);
+  perm = inject(PermissionFacade);
   selectedDate = '';
   showModal = false;
   isLocationDropdownOpen = false;

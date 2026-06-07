@@ -1,7 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { CreateLeadDto, Lead, LeadSource, LeadStatus, UpdateLeadDto } from '../../../core/types/lead.type';
 import { TeamMember } from '../../../core/types/global.type';
-import { AuthState } from '../../../state/auth.state';
 import { LeadService } from '../../../services/lead.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -9,6 +8,10 @@ import { MenuState } from '../../../state/menu.state';
 import { LeadState } from '../../../state/lead.state';
 import { ToastService } from '../../../core/services/toast.service';
 import { LoaderService } from '../../../core/services/loader.service';
+import { TeamState } from '../../../state/team.state';
+import { PermissionService } from '../../../core/services/permission.service';
+import { PermissionKey } from '../../../core/constants/permission';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 @Component({
   selector: 'app-lead-management',
@@ -21,6 +24,7 @@ export class LeadManagementComponent {
   leadState = inject(LeadState);
   toastService = inject(ToastService);
   private loader = inject(LoaderService);
+  perm = inject(PermissionFacade);
   showCreateModal = false;
   showEditModal = false;
   editLead: Partial<UpdateLeadDto & { id: string }> = {};
@@ -74,14 +78,14 @@ export class LeadManagementComponent {
   ];
 
   constructor(
-    private authState: AuthState,
+    private teamState: TeamState,
     private menuState: MenuState,
     private leadService: LeadService
   ) { }
 
 
   get teamMembers(): TeamMember[] {
-    return this.authState.teamMembers().filter(m => m.role !== 'Admin');
+    return this.teamState.teamMembers();
   }
 
   get leadList(): Lead[] {
@@ -295,4 +299,8 @@ export class LeadManagementComponent {
   getAssigneeName(memberId: string): string {
     return this.teamMembers.find(m => m.id === memberId)?.name ?? 'Select member';
   }
+
+
+
+
 }
