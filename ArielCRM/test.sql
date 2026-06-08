@@ -278,17 +278,28 @@ WHERE Id = '15F41A7C-AD15-4FA5-A882-C783374AF9D4'; -- Viewer Level
 
 
 
+-- RESET ALL THE TABLES
 
+-- Disable foreign key constraints
+EXEC sp_MSforeachtable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL';
 
+DELETE FROM activity_log;
+DELETE FROM comments;
+DELETE FROM contacts;
+DELETE FROM crm_history;
+DELETE FROM deals;
+DELETE FROM leads;
+DELETE FROM meetings;
+DELETE FROM notes;
+DELETE FROM project_members;
+DELETE FROM projects;
+DELETE FROM tasks;
+DELETE FROM ticket_tasks;
+DELETE FROM tickets;
+DELETE FROM users;
 
-
-
-
-
-
-
-
-
+-- Re-enable foreign key constraints
+EXEC sp_MSforeachtable 'ALTER TABLE ? WITH CHECK CHECK CONSTRAINT ALL';
 
 
 

@@ -143,6 +143,22 @@ namespace ArielCRM.Application.Services
         };
 
 
+
+        public async Task<bool> AddMemberToProjectAsync(string projectId, string memberId)
+        {
+            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(memberId)) throw new Exception("project Id or user Id is missing !!");
+
+            return await _projectRepository.AddMemberToProjectAsync(projectId, memberId);
+        }
+
+
+        public async Task RemoveMemberFromProjectAsync(string projectId, string memberId)
+        {
+            await _projectRepository.RemoveMemberFromProjectAsync(
+                projectId,
+                memberId);
+        }
+
     }
 
 }

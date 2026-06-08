@@ -36,9 +36,9 @@ dotnet ef database update --project ArielCRM.Infrastructure --startup-project Ar
 admin account seed !!  
 {
 
-levelId : 9D8BD8D7-E1E3-4781-94AD-ECA5B83695F2,
-designationId : 80B22952-1C67-42BF-824C-9050CDC7C586,
-departmentId : BFCA932C-6DFD-49F9-9DDA-EFCC3472B45A,
+levelId : 740569C1-0D28-461B-AE28-98B4A88BBF31,
+designationId : EEB7E63A-B672-4486-8FDC-5FF14D77E2DB,
+departmentId : 208CC35C-C673-417D-9BDC-A4A503D25A8C,
 email : amit@arielsoftwares.com,
 password : amit@45,
 adminKey : 4bb068cbd6115d58eedad84903784b005ee8eb8ffe651089713fdd639a12

@@ -126,5 +126,42 @@ namespace ArielCRM.API.Controllers
             }
         }
 
+        [HttpPatch("add-member")]
+        public async Task<IActionResult> AddMemberToProject([FromQuery] string projectId, [FromQuery] string memberId)
+        {
+            try
+            {
+                var result = await _projectService.AddMemberToProjectAsync(projectId, memberId);
+                return Ok(new
+                {
+                    Message = "Member added successfully."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
+        }
+
+
+        [HttpPatch("remove-member")]
+        public async Task<IActionResult> RemoveMemberFromProject([FromQuery] string projectId, [FromQuery] string memberId)
+        {
+
+            try
+            {
+                await _projectService.RemoveMemberFromProjectAsync(projectId, memberId);
+
+                return Ok(new
+                {
+                    Message = "Member removed successfully."
+                });
+
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
+        }
     }
 }

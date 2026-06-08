@@ -57,5 +57,50 @@ namespace ArielCRM.Infrastructure.Repositories
         }
 
 
+
+        public async Task<bool> AddMemberToProjectAsync(string projectId, string memberId)
+        {
+
+            var project = await _context.Projects
+                .Include(p => p.Members)
+                .FirstOrDefaultAsync(p => p.Id == projectId) ?? throw new Exception("Project not found.");
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == memberId) ?? throw new Exception("User not found.");
+
+
+            if (project.Members.Any(m => m.Id == memberId))
+                return false;
+
+            project.Members.Add(user);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+
+        public async Task RemoveMemberFromProjectAsync(string projectId, string memberId)
+        {
+            var project = await _context.Projects
+                .Include(p => p.Members)
+                .FirstOrDefaultAsync(p => p.Id == projectId);
+
+            if (project == null)
+                throw new KeyNotFoundException("Project not found.");
+
+            var member = project.Members
+                .FirstOrDefault(m => m.Id == memberId);
+
+            if (member == null)
+                throw new KeyNotFoundException("Member not found in project.");
+
+            project.Members.Remove(member);
+
+            await _context.SaveChangesAsync();
+        }
+
+
+
+
     }
 }

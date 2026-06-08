@@ -1,26 +1,25 @@
 <div class="lead-management-wrapper">
 
-  <!-- CREATE LEAD MODAL -->
+  <!-- ══════════════════════════════════════════════
+       CREATE LEAD MODAL
+  ══════════════════════════════════════════════ -->
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
-    <div class="modal-box">
+    <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Onboard New Lead Opportunity</h2>
-        <button class="modal-close" (click)="showCreateModal = false">
-          <i class="fas fa-times"></i>
-        </button>
+        <h2>Onboard New Lead</h2>
+        <button class="modal-close" (click)="showCreateModal = false"><i class="fas fa-times"></i></button>
       </div>
-
       <div class="modal-body">
-        <div class="form-group full-width">
-          <label>Company / Enterprise <span class="required">*</span></label>
-          <input type="text" [(ngModel)]="newLead.company" placeholder="e.g. Initech Corp" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Company / Enterprise <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="newLead.company" placeholder="e.g. Initech Corp" />
+          </div>
+          <div class="form-group">
+            <label>Primary Contact Name <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="newLead.name" placeholder="e.g. John Doe" />
+          </div>
         </div>
-
-        <div class="form-group full-width">
-          <label>Primary Contact Name <span class="required">*</span></label>
-          <input type="text" [(ngModel)]="newLead.name" placeholder="e.g. John Doe" />
-        </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Email Address <span class="required">*</span></label>
@@ -31,7 +30,6 @@
             <input type="tel" [(ngModel)]="newLead.phone" placeholder="+1 555-0199" />
           </div>
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Source Pipeline</label>
@@ -40,49 +38,44 @@
               <option value="Referral">Referral</option>
               <option value="Instagram">Instagram</option>
               <option value="ColdCall">Cold Call</option>
-              <option value="LinkedIn">LinkedIn</option>
             </select>
           </div>
           <div class="form-group">
             <label>Assigned Representative</label>
             <select [(ngModel)]="newLead.assignedToId">
               <option value="" disabled>Select Member</option>
-              <option *ngFor="let member of teamMembers" [value]="member.id">
-                {{ member.name }}
-              </option>
+              <option *ngFor="let member of teamMembers" [value]="member.id">{{ member.name }}</option>
             </select>
           </div>
         </div>
       </div>
-
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
-        <button class="btn-register" (click)="submitCreateLead()">Register Entry</button>
+        <button class="btn-register" (click)="submitCreateLead()">Register Lead</button>
       </div>
     </div>
   </div>
 
-  <!-- EDIT LEAD MODAL -->
+  <!-- ══════════════════════════════════════════════
+       EDIT LEAD MODAL
+  ══════════════════════════════════════════════ -->
   <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal($event)">
-    <div class="modal-box">
+    <div class="modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Modify Lead File</h2>
-        <button class="modal-close" (click)="showEditModal = false">
-          <i class="fas fa-times"></i>
-        </button>
+        <button class="modal-close" (click)="showEditModal = false"><i class="fas fa-times"></i></button>
       </div>
-
       <div class="modal-body">
-        <div class="form-group full-width">
-          <label>Company / Enterprise <span class="required">*</span></label>
-          <input type="text" [(ngModel)]="editLead.company" placeholder="e.g. Initech Corp" />
+        <div class="form-row">
+          <div class="form-group">
+            <label>Company / Enterprise <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="editLead.company" placeholder="e.g. Initech Corp" />
+          </div>
+          <div class="form-group">
+            <label>Primary Contact Name <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="editLead.name" placeholder="e.g. John Doe" />
+          </div>
         </div>
-
-        <div class="form-group full-width">
-          <label>Primary Contact Name <span class="required">*</span></label>
-          <input type="text" [(ngModel)]="editLead.name" placeholder="e.g. John Doe" />
-        </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Email Address <span class="required">*</span></label>
@@ -93,7 +86,6 @@
             <input type="tel" [(ngModel)]="editLead.phone" placeholder="+1 555-0199" />
           </div>
         </div>
-
         <div class="form-row">
           <div class="form-group">
             <label>Source Pipeline</label>
@@ -102,92 +94,379 @@
               <option value="Referral">Referral</option>
               <option value="Instagram">Instagram</option>
               <option value="ColdCall">Cold Call</option>
-              <option value="LinkedIn">LinkedIn</option>
             </select>
           </div>
           <div class="form-group">
             <label>Assigned Representative</label>
             <select [(ngModel)]="editLead.assignedToId">
               <option value="" disabled>Select Member</option>
-              <option *ngFor="let member of teamMembers" [value]="member.id">
-                {{ member.name }}
-              </option>
+              <option *ngFor="let member of teamMembers" [value]="member.id">{{ member.name }}</option>
             </select>
           </div>
         </div>
-
         <div class="form-group full-width">
           <label>Lead Status</label>
           <select [(ngModel)]="editLead.status">
-            <option *ngFor="let status of statusOptions" [value]="status.value">
-              {{ status.label }}
-            </option>
+            <option *ngFor="let status of statusOptions" [value]="status.value">{{ status.label }}</option>
           </select>
         </div>
       </div>
-
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showEditModal = false">Cancel</button>
-        <button class="btn-register" (click)="submitEditLead()">Update Information</button>
+        <button class="btn-register" (click)="submitEditLead()">Update Lead</button>
       </div>
     </div>
   </div>
 
-  <!-- TOP TOOLBAR -->
-  <div class="top-toolbar">
-    <div class="search-box">
-      <i class="fas fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search leads name, company, email..."
-        (input)="onSearch($any($event.target).value)" />
-    </div>
-
-    <div class="toolbar-actions">
-      <div class="filter-label">
-        <i class="fas fa-filter"></i>
-        <span>Filters:</span>
+  <!-- ══════════════════════════════════════════════
+       LEAD DETAIL MODAL
+  ══════════════════════════════════════════════ -->
+  <div class="modal-overlay" *ngIf="showDetailModal && detailLead" (click)="closeDetailModalOnOverlay($event)">
+    <div class="modal-box detail-modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="detail-header-left">
+          <div class="detail-avatar">{{ detailLead.name.charAt(0) }}</div>
+          <div>
+            <h2>{{ detailLead.name }}</h2>
+            <p class="detail-company"><i class="fas fa-building"></i> {{ detailLead.company }}</p>
+          </div>
+        </div>
+        <div class="detail-header-right">
+          <span class="status-badge" [ngClass]="statusClass(detailLead.status)">
+            <span class="status-dot"></span>{{ detailLead.status }}
+          </span>
+          <button class="modal-close" (click)="closeDetailModal()"><i class="fas fa-times"></i></button>
+        </div>
       </div>
 
-      <select>
-        <option>All Statuses</option>
-      </select>
+      <div class="detail-body">
+        <div class="detail-section">
+          <div class="detail-section-title"><i class="fas fa-address-card"></i> Contact Information</div>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Email</span>
+              <span class="detail-value"><i class="fas fa-envelope"></i> {{ detailLead.email }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Phone</span>
+              <span class="detail-value"><i class="fas fa-phone"></i> {{ detailLead.phone || '—' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Source</span>
+              <span class="detail-value"><i class="fas fa-signal"></i> {{ detailLead.source }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Assigned To</span>
+              <span class="detail-value"><i class="fas fa-user-tie"></i> {{ getAssigneeName(detailLead.assignedToId) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Created</span>
+              <span class="detail-value"><i class="fas fa-calendar"></i> {{ detailLead.createdAt | date:'MMM d, yyyy' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <select>
-        <option>All Sources</option>
-      </select>
+      <div class="modal-footer detail-footer">
+        <button class="btn-cancel" (click)="closeDetailModal()">Close</button>
+        @if(perm.leads.canEdit()) {
+          <button class="btn-register" (click)="closeDetailModal(); openEditModal(detailLead)">
+            <i class="fas fa-pen"></i> Edit Lead
+          </button>
+        }
+      </div>
+    </div>
+  </div>
 
-      @if(perm.leads.canCreate()) {
-      <button class="create-btn" (click)="showCreateModal = true">
-        <i class="fas fa-plus"></i>
-        Create Lead
+  <!-- ══════════════════════════════════════════════
+       CONVERSION MODAL (2-step)
+  ══════════════════════════════════════════════ -->
+  <div class="modal-overlay convert-overlay" *ngIf="showConvertModal" (click)="closeConvertModalOnOverlay($event)">
+    <div class="modal-box convert-modal-box" (click)="$event.stopPropagation()">
+
+      <!-- Step indicators -->
+      <div class="convert-steps">
+        <div class="convert-step" [class.active]="conversionStep === 1" [class.done]="conversionStep > 1">
+          <div class="step-num">{{ conversionStep > 1 ? '✓' : '1' }}</div>
+          <span>Create Project</span>
+        </div>
+        <div class="step-line" [class.done]="conversionStep > 1"></div>
+        <div class="convert-step" [class.active]="conversionStep === 2">
+          <div class="step-num">2</div>
+          <span>Create Client</span>
+        </div>
+      </div>
+
+      <div class="modal-header">
+        <div class="convert-modal-title">
+          <div class="convert-icon">
+            <i class="fas fa-{{ conversionStep === 1 ? 'rocket' : 'user-plus' }}"></i>
+          </div>
+          <div>
+            <h2>{{ conversionStep === 1 ? 'Create Project' : 'Create Client' }}</h2>
+            <p class="convert-subtitle">
+              {{ conversionStep === 1 ? 'Initialise a new project from this lead' : 'Register lead as a client' }}
+            </p>
+          </div>
+        </div>
+        <button class="modal-close" (click)="closeConvertModal()"><i class="fas fa-times"></i></button>
+      </div>
+
+      <!-- Lead reference banner -->
+      <div class="deal-ref-banner">
+        <i class="fas fa-link"></i>
+        <span>Converting lead:</span>
+        <strong>{{ convertingLead?.name }}</strong>
+        <span class="deal-value-badge source-tag">{{ convertingLead?.source }}</span>
+      </div>
+
+      <!-- ── STEP 1: Project Form ── -->
+      <div class="modal-body" *ngIf="conversionStep === 1">
+        <div class="convert-section-label"><i class="fas fa-folder-open"></i> Project Identity</div>
+
+        <div class="form-group full-width">
+          <label>Project Name <span class="required">*</span></label>
+          <input type="text" [(ngModel)]="projectForm.name" placeholder="e.g. CRM Integration for Initech" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Project Lead <span class="required">*</span></label>
+          <select [(ngModel)]="projectForm.projectLeadId">
+            <option value="" disabled>Assign Project Lead</option>
+            <option *ngFor="let member of teamMembers" [value]="member.id">{{ member.name }}</option>
+          </select>
+        </div>
+
+        <div class="form-group full-width">
+          <label>Description</label>
+          <textarea [(ngModel)]="projectForm.description" placeholder="Describe scope and objectives..." rows="3"></textarea>
+        </div>
+
+        <div class="convert-section-label"><i class="fas fa-calendar-alt"></i> Project Timeline</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Date</label>
+            <input type="date" [(ngModel)]="projectForm.startDate" />
+          </div>
+          <div class="form-group">
+            <label>Estimated End Date</label>
+            <input type="date" [(ngModel)]="projectForm.endDate" />
+          </div>
+        </div>
+
+        <div class="convert-section-label">
+          <i class="fas fa-paperclip"></i> Documents
+          <span class="member-count-badge">{{ projectForm.documents.length }} file(s)</span>
+        </div>
+        <div class="upload-drop-zone" (dragover)="onDocDragOver($event)" (dragleave)="onDocDragLeave($event)"
+          (drop)="onDocDrop($event)" [class.drag-over]="isDragOver" (click)="docFileInput.click()">
+          <i class="fas fa-cloud-upload-alt upload-icon"></i>
+          <p class="upload-label">Drag & drop files, or <span class="upload-link">browse</span></p>
+          <p class="upload-hint">PDF, DOCX, XLSX, PNG, JPG — up to 20MB each</p>
+          <input #docFileInput type="file" multiple hidden (change)="onDocFileSelected($event)" />
+        </div>
+        <div class="doc-list" *ngIf="projectForm.documents.length > 0">
+          <div class="doc-item" *ngFor="let doc of projectForm.documents; let i = index">
+            <div class="doc-item-left">
+              <i class="fas" [ngClass]="getFileIcon(doc.name)"></i>
+              <div>
+                <p class="doc-name">{{ doc.name }}</p>
+                <p class="doc-size">{{ formatFileSize(doc.size) }}</p>
+              </div>
+            </div>
+            <button class="doc-remove" (click)="removeDocument(i)"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Client Form ── -->
+      <div class="modal-body" *ngIf="conversionStep === 2">
+        <div class="convert-section-label"><i class="fas fa-user-tie"></i> Client Details</div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Client Name <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="clientForm.name" placeholder="John Doe" />
+          </div>
+          <div class="form-group">
+            <label>Company <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="clientForm.company" placeholder="Initech Corp" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Email <span class="required">*</span></label>
+            <input type="email" [(ngModel)]="clientForm.email" placeholder="john@initech.com" />
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="tel" [(ngModel)]="clientForm.phone" placeholder="+1 555-0199" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer convert-footer">
+        <div class="convert-footer-actions">
+          <button class="btn-cancel" (click)="conversionStep === 1 ? closeConvertModal() : goBackToProjectStep()">
+            {{ conversionStep === 1 ? 'Cancel' : '← Back' }}
+          </button>
+          <button class="btn-convert" *ngIf="conversionStep === 1" (click)="proceedToClientCreation()">
+            Next: Create Client <i class="fas fa-arrow-right"></i>
+          </button>
+          <button class="btn-convert btn-finalize" *ngIf="conversionStep === 2" (click)="submitConversion()">
+            <i class="fas fa-check-circle"></i> Finalize Conversion
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TOP TOOLBAR
+  ══════════════════════════════════════════════ -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h2><i class="fas fa-users"></i> Lead Management</h2>
+      <p>Track and manage your lead pipeline from discovery to conversion.</p>
+    </div>
+    @if(perm.leads.canCreate()) {
+      <button class="new-lead-btn" (click)="showCreateModal = true">
+        <i class="fas fa-plus"></i> New Lead
       </button>
-      }
+    }
+  </div>
+
+  <div class="top-toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" placeholder="Search by name, company, email..."
+          (input)="onSearch($any($event.target).value)" />
+      </div>
+
+      <div class="filter-group">
+        <i class="fas fa-filter filter-icon"></i>
+        <select [(ngModel)]="filterStatus" class="filter-select">
+          <option value="">All Statuses</option>
+          <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+        </select>
+        <select [(ngModel)]="filterSource" class="filter-select">
+          <option value="">All Sources</option>
+          <option *ngFor="let src of sourceOptions" [value]="src">{{ src }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="view-toggle">
+      <button class="toggle-btn" [class.active]="viewMode === 'pipeline'" (click)="viewMode = 'pipeline'" title="Pipeline View">
+        <i class="fas fa-columns"></i>
+      </button>
+      <button class="toggle-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'" title="List View">
+        <i class="fas fa-list"></i>
+      </button>
     </div>
   </div>
 
-  <!-- TABLE -->
-  <div class="table-wrapper">
+  <!-- ══════════════════════════════════════════════
+       PIPELINE / KANBAN VIEW
+  ══════════════════════════════════════════════ -->
+  <div class="pipeline-board" *ngIf="viewMode === 'pipeline'">
+    <div class="pipeline-column" *ngFor="let col of pipelineColumns">
+      <div class="column-header">
+        <div class="column-title">
+          <div class="column-dot" [style.background]="col.color"></div>
+          <h3>{{ col.title }}</h3>
+          <span class="column-count">{{ getColumnTotal(col.key) }}</span>
+        </div>
+      </div>
 
+      <div class="lead-drop-zone" (dragover)="allowDrop($event)" (drop)="dropLead($event, col.key)">
+        <div *ngIf="getColumnLeads(col.key).length === 0" class="empty-state">
+          <i class="fas fa-inbox"></i> No leads here
+        </div>
+
+        <div class="lead-card" *ngFor="let lead of getColumnLeads(col.key)"
+          [draggable]="perm.leads.canEdit()"
+          (dragstart)="perm.leads.canEdit() && dragLead($event, lead, col.key)"
+          (click)="openDetailModal(lead)">
+
+          <div class="lead-card-header">
+            <div class="lead-avatar">{{ lead.name.charAt(0) }}</div>
+            <div class="lead-card-title">
+              <h3>{{ lead.name }}</h3>
+              <p><i class="fas fa-building"></i> {{ lead.company }}</p>
+            </div>
+            <div class="card-actions-top" (click)="$event.stopPropagation()">
+              @if(perm.leads.canEdit()) {
+                <i class="fas fa-pen card-action-icon" (click)="openEditModal(lead)" title="Edit"></i>
+              }
+              @if(perm.leads.canDelete()) {
+                <i class="fas fa-trash card-action-icon danger" (click)="deleteLead(lead.id)" title="Delete"></i>
+              }
+            </div>
+          </div>
+
+          <div class="lead-card-body">
+            <div class="lead-meta-row">
+              <i class="fas fa-envelope"></i>
+              <span>{{ lead.email }}</span>
+            </div>
+            <div class="lead-meta-row" *ngIf="lead.phone">
+              <i class="fas fa-phone"></i>
+              <span>{{ lead.phone }}</span>
+            </div>
+          </div>
+
+          <div class="lead-card-footer">
+            <span class="source-chip">{{ lead.source }}</span>
+            <div class="card-nav-actions" (click)="$event.stopPropagation()">
+              @if(perm.leads.canEdit()) {
+                <button class="nav-btn" (click)="moveLeadLeft(lead)" title="Move left"><i class="fas fa-chevron-left"></i></button>
+                <button class="nav-btn" (click)="moveLeadRight(lead)" title="Move right"><i class="fas fa-chevron-right"></i></button>
+              }
+            </div>
+            <div class="assignee-chip">
+              <i class="fas fa-user"></i>
+              <span>{{ getAssigneeName(lead.assignedToId) }}</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       LIST VIEW
+  ══════════════════════════════════════════════ -->
+  <div class="table-wrapper" *ngIf="viewMode === 'list'">
     <div class="table-header">
       <div>PROSPECT / COMPANY</div>
       <div>CONTACT METHODS</div>
       <div>SOURCE</div>
-      <div>CRM STATUS STATE</div>
+      <div>STATUS</div>
       <div>ASSIGNEE</div>
-      @if(perm.leads.canEditOrDel()) {
-      <div>ACTIONS</div>
-      }
+      @if(perm.leads.canEditOrDel()) { <div>ACTIONS</div> }
     </div>
 
-    <div class="table-row" *ngFor="let lead of leadList; let rowIndex = index">
+    <div *ngIf="filteredLeads.length === 0" class="list-empty-state">
+      <i class="fas fa-search"></i>
+      <p>No leads match your filters.</p>
+    </div>
 
+    <div class="table-row" *ngFor="let lead of filteredLeads; let rowIndex = index">
       <div class="prospect-info">
-        <h3>{{ lead.name }}</h3>
-        <p><i class="fas fa-building"></i> {{ lead.company }}</p>
+        <div class="list-avatar">{{ lead.name.charAt(0) }}</div>
+        <div>
+          <h3>{{ lead.name }}</h3>
+          <p><i class="fas fa-building"></i> {{ lead.company }}</p>
+        </div>
       </div>
 
       <div class="contact-info">
         <p><i class="fas fa-envelope"></i> {{ lead.email }}</p>
-        <p><i class="fas fa-phone"></i> {{ lead.phone }}</p>
+        <p *ngIf="lead.phone"><i class="fas fa-phone"></i> {{ lead.phone }}</p>
       </div>
 
       <div>
@@ -196,23 +475,20 @@
 
       <div class="crm-status-container">
         <div class="dropdown-wrap">
-          <button type="button" class="status-select" [disabled]="!perm.leads.canEdit()" [ngClass]="statusClass(lead.status)"
-            (click)="toggleStatus(rowIndex)">
+          <button type="button" class="status-select" [disabled]="!perm.leads.canEdit()"
+            [ngClass]="statusClass(lead.status)" (click)="toggleStatus(rowIndex)">
             <span class="status-dot"></span>
             <span>{{ lead.status }}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
-
           <div class="dropdown-menu status-menu" *ngIf="openStatusIndex === rowIndex">
-            <button type="button" class="dropdown-option" [disabled]="!perm.leads.canEdit()"
-              *ngFor="let status of statusOptions" [ngClass]="status.className" (click)="setStatus(lead, status.value)">
-              <span class="status-dot"></span>
-              <span>{{ status.label }}</span>
+            <button type="button" class="dropdown-option" *ngFor="let s of statusOptions"
+              [ngClass]="s.className" (click)="setStatus(lead, s.value)">
+              <span class="status-dot"></span><span>{{ s.label }}</span>
             </button>
           </div>
         </div>
-
-        <p class="date-text">Modified: {{ lead.createdAt | date: 'M/d/yyyy' }}</p>
+        <p class="date-text">{{ lead.createdAt | date:'M/d/yyyy' }}</p>
       </div>
 
       <div class="dropdown-wrap assignee-wrap">
@@ -221,36 +497,32 @@
           <span>{{ getAssigneeName(lead.assignedToId) }}</span>
           <i class="fas fa-chevron-down"></i>
         </button>
-
         <div class="dropdown-menu assignee-menu" *ngIf="openAssigneeIndex === rowIndex">
-          <button type="button" class="dropdown-option assignee-option" [disabled]="!perm.leads.canEdit()" *ngFor="let member of teamMembers"
+          <button type="button" class="dropdown-option assignee-option" *ngFor="let member of teamMembers"
             (click)="setAssignee(lead, member.id)">
             <span class="member-dot">{{ member.name.charAt(0) }}</span>
             <span>{{ member.name }}</span>
           </button>
-
-          <div class="empty-option" *ngIf="teamMembers.length === 0">
-            No members available
-          </div>
+          <div class="empty-option" *ngIf="teamMembers.length === 0">No members available</div>
         </div>
       </div>
 
       <div class="actions">
+        <button class="action-btn view-btn" title="View Details" (click)="openDetailModal(lead)">
+          <i class="fas fa-eye"></i>
+        </button>
         @if(perm.leads.canEdit()) {
-        <button class="action-btn edit-btn" (click)="openEditModal(lead)">
-          <i class="fas fa-pen"></i>
-        </button>
+          <button class="action-btn edit-btn" (click)="openEditModal(lead)">
+            <i class="fas fa-pen"></i>
+          </button>
         }
-
         @if(perm.leads.canDelete()) {
-        <button class="action-btn delete-btn" (click)="deleteLead(lead.id)">
-          <i class="fas fa-trash"></i>
-        </button>
+          <button class="action-btn delete-btn" (click)="deleteLead(lead.id)">
+            <i class="fas fa-trash"></i>
+          </button>
         }
       </div>
-
     </div>
-
   </div>
 
 </div>

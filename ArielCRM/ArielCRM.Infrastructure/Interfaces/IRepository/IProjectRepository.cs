@@ -14,6 +14,8 @@ namespace ArielCRM.Infrastructure.Interfaces.IRepository
 
         Task<Project?> GetByIdWithDetailsAsync(string projectId);
         Task<List<Project>> GetAllWithDetailsAsync();
+        Task<bool> AddMemberToProjectAsync(string projectId, string memberId);
+        Task RemoveMemberFromProjectAsync(string projectId, string memberId);
 
     }
 

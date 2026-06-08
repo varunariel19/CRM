@@ -1,9 +1,10 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 import { ProjectService } from '../../../services/project.service';
 import { ProjectState } from '../../../state/project.state';
-
+import { TeamState } from '../../../state/team.state';
 
 export interface ProjectMember {
   id: string;
@@ -35,7 +36,7 @@ export interface Project {
   dealId?: string;
   projectKey: string;
   createdAt: string;
-  client?: ClientInfo;           
+  client?: ClientInfo;
   projectLead?: ProjectMember;
   members: ProjectMember[];
   documents: ProjectDocument[];
@@ -54,6 +55,7 @@ export class ProjectsComponent implements OnInit {
 
   private readonly projectService = inject(ProjectService);
   private readonly projectState = inject(ProjectState);
+  private readonly teamState = inject(TeamState);
 
   searchQuery = signal('');
   filterStatus = signal('all');
@@ -62,8 +64,26 @@ export class ProjectsComponent implements OnInit {
   isModalOpen = signal(false);
   isCreateModalOpen = signal(false);
 
+  isMemberPickerOpen = signal(false);
+  memberPickerSearch = signal('');
+  pendingMembers = signal<ProjectMember[]>([]);
+  isAddingMembers = signal(false);
+
   projects = this.projectState.projects;
   loading = this.projectState.loading;
+
+  newProject = signal({
+    name: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    projectLeadId: '',
+    dealId: '',
+  });
+  selectedFiles = signal<File[]>([]);
+  isCreating = signal(false);
+  availableUsers = signal<{ id: string; name: string }[]>([]);
+  availableDeals = signal<{ id: string; name: string }[]>([]);
 
   ngOnInit(): void {
     this.loadProjects();
@@ -76,11 +96,24 @@ export class ProjectsComponent implements OnInit {
         this.projectState.setProjects(res.data ?? res);
         this.projectState.setLoading(false);
       },
-      error: () => {
-        this.projectState.setLoading(false);
-      }
+      error: () => this.projectState.setLoading(false)
     });
   }
+
+  get teamMembers() {
+    return this.teamState.teamMembers();
+  }
+
+  availableToAdd = computed(() => {
+    const proj = this.selectedProject();
+    const existingIds = new Set((proj?.members ?? []).map(m => m.id));
+    const pendingIds = new Set(this.pendingMembers().map(m => m.id));
+    const q = this.memberPickerSearch().toLowerCase().trim();
+
+    return this.teamMembers
+      .filter(m => !existingIds.has(m.id) && !pendingIds.has(m.id))
+      .filter(m => !q || m.name.toLowerCase().includes(q));
+  });
 
   filteredProjects = computed(() => {
     const q = this.searchQuery().toLowerCase();
@@ -110,18 +143,90 @@ export class ProjectsComponent implements OnInit {
     this.selectedProject.set(project);
     this.activeTab.set('overview');
     this.isModalOpen.set(true);
+    this.isMemberPickerOpen.set(false);
+    this.memberPickerSearch.set('');
+    this.pendingMembers.set([]);
     document.body.style.overflow = 'hidden';
   }
 
   closeModal() {
     this.isModalOpen.set(false);
     this.selectedProject.set(null);
+    this.isMemberPickerOpen.set(false);
+    this.memberPickerSearch.set('');
+    this.pendingMembers.set([]);
     document.body.style.overflow = '';
   }
 
-
   setTab(tab: 'overview' | 'members' | 'documents') {
     this.activeTab.set(tab);
+    if (tab !== 'members') {
+      this.isMemberPickerOpen.set(false);
+      this.memberPickerSearch.set('');
+      this.pendingMembers.set([]);
+    }
+  }
+
+  openMemberPicker() {
+    this.pendingMembers.set([]);
+    this.memberPickerSearch.set('');
+    this.isMemberPickerOpen.set(true);
+  }
+
+  closeMemberPicker() {
+    this.isMemberPickerOpen.set(false);
+    this.memberPickerSearch.set('');
+    this.pendingMembers.set([]);
+  }
+
+  togglePendingMember(member: ProjectMember) {
+    const current = this.pendingMembers();
+    const exists = current.some(m => m.id === member.id);
+    if (exists) {
+      this.pendingMembers.set(current.filter(m => m.id !== member.id));
+    } else {
+      this.pendingMembers.set([...current, member]);
+    }
+  }
+
+  isPending(memberId: string): boolean {
+    return this.pendingMembers().some(m => m.id === memberId);
+  }
+
+  confirmAddMembers() {
+    const proj = this.selectedProject();
+    const pending = this.pendingMembers();
+    if (!proj || pending.length === 0) return;
+
+    const updated: Project = {
+      ...proj,
+      members: [...proj.members, ...pending]
+    };
+    this.selectedProject.set(updated);
+    this.closeMemberPicker();
+    this.isAddingMembers.set(true);
+
+    forkJoin(pending.map(m => this.projectService.addMemberToProject(proj.id, m.id)))
+      .subscribe({
+        next: () => { this.isAddingMembers.set(false); this.loadProjects(); },
+        error: () => { this.selectedProject.set(proj); this.isAddingMembers.set(false); }
+      });
+  }
+
+  removeMember(memberId: string) {
+    const proj = this.selectedProject();
+    if (!proj) return;
+
+    const updated: Project = {
+      ...proj,
+      members: proj.members.filter(m => m.id !== memberId)
+    };
+    this.selectedProject.set(updated);
+
+    this.projectService.removeMemberFromProject(proj.id, memberId).subscribe({
+      next: () => this.loadProjects(),
+      error: () => this.selectedProject.set(proj)
+    });
   }
 
   getInitials(name: string): string {
@@ -131,9 +236,9 @@ export class ProjectsComponent implements OnInit {
   getDocIcon(fileName: string): string {
     const ext = fileName.split('.').pop()?.toLowerCase();
     const map: Record<string, string> = {
-      'pdf': '📄', 'doc': '📝', 'docx': '📝',
-      'xls': '📊', 'xlsx': '📊', 'png': '🖼️',
-      'jpg': '🖼️', 'jpeg': '🖼️', 'zip': '📦'
+      pdf: '📄', doc: '📝', docx: '📝',
+      xls: '📊', xlsx: '📊', png: '🖼️',
+      jpg: '🖼️', jpeg: '🖼️', zip: '📦'
     };
     return map[ext ?? ''] || '📄';
   }
@@ -166,80 +271,65 @@ export class ProjectsComponent implements OnInit {
     }
   }
 
-
-newProject = signal({
-  name: '',
-  description: '',
-  startDate: '',
-  endDate: '',
-  projectLeadId: '',
-  dealId: '',
-});
-selectedFiles = signal<File[]>([]);
-isCreating = signal(false);
-availableUsers = signal<{ id: string; name: string }[]>([]);
-availableDeals = signal<{ id: string; name: string }[]>([]);
-
-openCreateModal() {
-  this.newProject.set({ name: '', description: '', startDate: '', endDate: '', projectLeadId: '', dealId: '' });
-  this.selectedFiles.set([]);
-  this.isCreateModalOpen.set(true);
-}
-  closeCreateModal() { this.isCreateModalOpen.set(false); }
-
-
-updateNewProject(field: string, value: string) {
-  this.newProject.update(p => ({ ...p, [field]: value }));
-}
-
-onFileSelect(event: Event) {
-  const input = event.target as HTMLInputElement;
-  if (input.files) {
-    this.selectedFiles.update(prev => [...prev, ...Array.from(input.files!)]);
+  openCreateModal() {
+    this.newProject.set({ name: '', description: '', startDate: '', endDate: '', projectLeadId: '', dealId: '' });
+    this.selectedFiles.set([]);
+    this.isCreateModalOpen.set(true);
   }
-}
 
-onFileDrop(event: DragEvent) {
-  event.preventDefault();
-  if (event.dataTransfer?.files) {
-    this.selectedFiles.update(prev => [...prev, ...Array.from(event.dataTransfer!.files)]);
+  closeCreateModal() {
+    this.isCreateModalOpen.set(false);
   }
-}
 
-removeFile(index: number) {
-  this.selectedFiles.update(prev => prev.filter((_, i) => i !== index));
-}
+  updateNewProject(field: string, value: string) {
+    this.newProject.update(p => ({ ...p, [field]: value }));
+  }
 
-submitCreateProject() {
-  const p = this.newProject();
-  if (!p.name.trim()) return;
-
-  this.isCreating.set(true);
-  const formData = new FormData();
-  formData.append('name', p.name);
-  formData.append('description', p.description);
-  formData.append('startDate', p.startDate);
-  formData.append('endDate', p.endDate);
-  formData.append('projectLeadId', p.projectLeadId);
-  formData.append('dealId', p.dealId);
-  this.selectedFiles().forEach(f => formData.append('documents', f));
-
-  this.projectService.createProject(formData).subscribe({
-    next: (res: any) => {
-      this.isCreating.set(false);
-      this.closeCreateModal();
-      this.loadProjects();
-    },
-    error: () => {
-      this.isCreating.set(false);
+  onFileSelect(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files) {
+      this.selectedFiles.update(prev => [...prev, ...Array.from(input.files!)]);
     }
-  });
-}
-
-onCreateOverlayClick(event: MouseEvent) {
-  if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
-    this.closeCreateModal();
   }
-}
 
+  onFileDrop(event: DragEvent) {
+    event.preventDefault();
+    if (event.dataTransfer?.files) {
+      this.selectedFiles.update(prev => [...prev, ...Array.from(event.dataTransfer!.files)]);
+    }
+  }
+
+  removeFile(index: number) {
+    this.selectedFiles.update(prev => prev.filter((_, i) => i !== index));
+  }
+
+  submitCreateProject() {
+    const p = this.newProject();
+    if (!p.name.trim()) return;
+
+    this.isCreating.set(true);
+    const formData = new FormData();
+    formData.append('name', p.name);
+    formData.append('description', p.description);
+    formData.append('startDate', p.startDate);
+    formData.append('endDate', p.endDate);
+    formData.append('projectLeadId', p.projectLeadId);
+    formData.append('dealId', p.dealId);
+    this.selectedFiles().forEach(f => formData.append('documents', f));
+
+    this.projectService.createProject(formData).subscribe({
+      next: () => {
+        this.isCreating.set(false);
+        this.closeCreateModal();
+        this.loadProjects();
+      },
+      error: () => this.isCreating.set(false)
+    });
+  }
+
+  onCreateOverlayClick(event: MouseEvent) {
+    if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
+      this.closeCreateModal();
+    }
+  }
 }
