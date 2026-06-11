@@ -1,11 +1,12 @@
 ﻿using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArielCRM.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/leads")]
     public class LeadsController(ILeadService leadService, ILogger<LeadsController> logger) : ControllerBase
     {
         private readonly ILeadService _leadService = leadService;
@@ -13,11 +14,12 @@ namespace ArielCRM.API.Controllers
 
         // GET api/leads
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [Authorize(Policy = "Permission:Leads.View")]
+        public async Task<IActionResult> GetAllLeadsAsync()
         {
             try
             {
-                var leads = await _leadService.GetAllLeadsAsync();
+                var leads = await _leadService.GetAllLeadsAsync(HttpContext);
                 return Ok(leads);
             }
             catch (Exception ex)
@@ -29,7 +31,7 @@ namespace ArielCRM.API.Controllers
 
         // GET api/leads/search?q=john
         [HttpGet("search")]
-        public async Task<IActionResult> Search([FromQuery] string q)
+        public async Task<IActionResult> SearchLeadsAsync([FromQuery] string q)
         {
             if (string.IsNullOrWhiteSpace(q))
                 return BadRequest("Search query is required.");
@@ -48,8 +50,9 @@ namespace ArielCRM.API.Controllers
 
         // GET api/leads/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(string id)
+        public async Task<IActionResult> GetLeadByIdAsync(string id)
         {
+            if (string.IsNullOrWhiteSpace(id)) return BadRequest("Lead is required.");
             try
             {
                 var lead = await _leadService.GetLeadByIdAsync(id);
@@ -64,14 +67,14 @@ namespace ArielCRM.API.Controllers
 
         // POST api/leads
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateLeadDto dto)
+        public async Task<IActionResult> CreateLeadAsync([FromBody] CreateLeadDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             try
             {
                 var lead = await _leadService.CreateLeadAsync(dto);
-                return CreatedAtAction(nameof(GetById), new { id = lead.Id }, lead);
+                return Ok(lead);
             }
             catch (Exception ex)
             {
@@ -82,8 +85,9 @@ namespace ArielCRM.API.Controllers
 
         // PUT api/leads/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> HandleUpdateLeadData(string id, [FromBody] UpdateLeadDto dto)
+        public async Task<IActionResult> UpdateLeadAsync(string id, [FromBody] UpdateLeadDto dto)
         {
+            if (!ModelState.IsValid || string.IsNullOrWhiteSpace(id)) return BadRequest(ModelState);
             try
             {
                 var lead = await _leadService.UpdateLeadAsync(id, dto);
@@ -98,8 +102,9 @@ namespace ArielCRM.API.Controllers
 
         // DELETE api/leads/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> DeleteLeadAsync(string id)
         {
+            if (string.IsNullOrWhiteSpace(id)) return BadRequest("Lead is required.");
             try
             {
                 var deleted = await _leadService.DeleteLeadAsync(id);

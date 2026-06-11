@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { afterNextRender, Component, effect, ElementRef, inject, Injector, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { AnalyticsDashboardComponent } from "../../features/dashboard/analytics-dashboard/analytics-dashboard.component";
@@ -37,6 +37,8 @@ import { ProjectsComponent } from '../../features/dashboard/projects/projects.co
 import { GlobalState } from '../../state/global.state';
 import { LookUpService } from '../../core/services/lookup.service';
 import { TeamState } from '../../state/team.state';
+import { menuItems } from '../../core/constants/menuItems';
+import { LoaderService } from '../../core/services/loader.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -56,13 +58,14 @@ import { TeamState } from '../../state/team.state';
     ProjectsComponent,
   ],
   templateUrl: './dashboard.component.html',
-  styleUrl: './dashboard.component.css',
+  styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   private crmTaskService = inject(CrmTaskService);
   private readonly meetingState = inject(MeetingState);
 
   globalState = inject(GlobalState);
+  loader = inject(LoaderService);
   lookupService = inject(LookUpService);
   contactState = inject(ContactState);
   menuState = inject(MenuState);
@@ -84,10 +87,9 @@ export class DashboardComponent implements OnInit {
 
   teamMemberList: TeamMember[] = [];
 
-  constructor(
-    private teamService: TeamService,
-  ) { }
 
+  constructor(private teamService: TeamService) {
+  }
 
 
   ngOnInit(): void {
@@ -168,4 +170,51 @@ export class DashboardComponent implements OnInit {
 
     });
   }
+
+
+  goToPreviousMenu() {
+    const history = this.menuState.menuHistory();
+
+    if (history.length === 0) {
+      this.menuState.setActiveMenu(0);
+      return;
+    }
+
+    const previousMenu = history[history.length - 2] ?? 0;
+
+    this.menuState.popHistory();
+    this.menuState.setActiveMenu(previousMenu);
+  }
+
+
+  refresh() {
+    const item = menuItems[this.menuState.activeIndex() ?? 0];
+    this.loader.show("reloading...", 'lg');
+    setTimeout(() => {
+      
+    switch (item.route) {
+      case "leads": {
+        this.leadService.handleGetLeads().subscribe({
+          next: (leads) => {
+            this.leadState.setLeads(leads);
+          },
+          error: (err) => {
+            console.error('Failed to load leads', err);
+          }
+        });
+        break;
+      }
+
+      default: {
+        this.loader.hide();
+        return;
+      };
+    }
+
+    this.loader.hide();
+     }, 500);
+  }
+
+
+
 }

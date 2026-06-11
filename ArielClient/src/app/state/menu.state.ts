@@ -23,8 +23,8 @@ export class MenuState {
   );
 
   activeIndex = signal(0);
+  menuHistory = signal<number[]>([]);
 
-  // Derived from menus + activeIndex — no stale signal
   readonly selectedMenu = computed(() => {
     const menus = this.menus();
     const index = Math.min(this.activeIndex(), menus.length - 1);
@@ -33,6 +33,14 @@ export class MenuState {
 
   setActiveMenu(index: number) {
     this.activeIndex.set(index);
+  }
+
+  setMenuHistory(index: number) {
+    this.menuHistory.update(prev => [...prev, index]);
+  }
+
+  popHistory() {
+    this.menuHistory.update(prev => prev.slice(0, -1));
   }
 
   isOpen = signal(false);

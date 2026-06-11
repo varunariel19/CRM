@@ -36,16 +36,6 @@ namespace ArielCRM.Application.Services
 
             var created = await _repository.CreateAsync(meeting);
 
-            await _historyService.LogAsync(new LogHistoryRequest
-            {
-                EntityName = "Meeting",
-                EntityId = meeting.Id,
-                ActionType = CRMActionType.Create.ToString(),
-                Title = $"Created meeting '{meeting.Title}'",
-                PreviousState = null,
-                UpdatedState = JsonSerializer.Serialize(meeting)
-            });
-
             return created;
         }
 
@@ -58,18 +48,6 @@ namespace ArielCRM.Application.Services
 
             var result = await _repository.DeleteAsync(id);
 
-            if (result)
-            {
-                await _historyService.LogAsync(new LogHistoryRequest
-                {
-                    EntityName = "Meeting",
-                    EntityId = id,
-                    ActionType = CRMActionType.Delete.ToString(),
-                    Title = $"Deleted meeting '{meeting.Title}'",
-                    PreviousState = previousSnapshot,
-                    UpdatedState = null
-                });
-            }
 
             return result;
         }

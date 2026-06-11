@@ -18,7 +18,7 @@ namespace ArielCRM.Infrastructure.Services
             var permissions = context.User.FindFirst("Permissions")?.Value;
 
             if (permissions != null &&
-                permissions.Split(',').Contains(requirement.Permission))
+                permissions.Split('|').Contains(requirement.Permission)) 
             {
                 context.Succeed(requirement);
             }

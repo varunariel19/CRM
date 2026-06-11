@@ -79,7 +79,7 @@ namespace ArielCRM.API.Controllers
             try
             {
                 var departments = await _db.Departments
-                    .Select(d => new { d.Id, d.Name })
+                    .Select(d => new { d.Id, d.Name, d.DepartmentKey })
                     .ToListAsync();
 
                 return Ok(departments);

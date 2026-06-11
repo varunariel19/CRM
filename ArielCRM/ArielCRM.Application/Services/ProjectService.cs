@@ -25,7 +25,7 @@ namespace ArielCRM.Application.Services
                 Description = dto.Description,
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
-                DealId = dto.DealId,
+                ContactId = dto.ContactId,
                 ProjectKey = Guid.NewGuid().ToString(),
                 Documents = []
             };
@@ -109,7 +109,7 @@ namespace ArielCRM.Application.Services
             IsActive = p.IsActive,
             StartDate = p.StartDate,
             EndDate = p.EndDate,
-            DealId = p.DealId,
+            ContactId = p.ContactId,
             ProjectKey = p.ProjectKey,
             CreatedAt = p.CreatedAt,
             ProjectLead = p.ProjectLead == null ? null : new ProjectMemberDto
@@ -118,11 +118,11 @@ namespace ArielCRM.Application.Services
                 Name = p.ProjectLead.Name,
                 ProfileImage = p.ProjectLead.ProfileImage
             },
-            Client = p.Deal?.Contact == null ? null : new ClientDto
+            Client = p.Contact == null ? null : new ClientDto
             {
-                Name = p.Deal.Contact.Name ?? "",
-                Email = p.Deal.Contact.Email ?? "",
-                CompanyName = p.Deal.Contact.Company ?? ""
+                Name = p.Contact.Name ?? "",
+                Email = p.Contact.Email ?? "",
+                CompanyName = p.Contact.Company ?? ""
             },
             Members = [.. p.Members.Select(m => new ProjectMemberDto
             {

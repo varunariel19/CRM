@@ -42,10 +42,10 @@ namespace ArielCRM.DataLayer.Entities
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public ICollection<Lead> Leads { get; set; } = new List<Lead>();
+        public Lead? Lead { get; set; }
 
-        public ICollection<Deal> Deals { get; set; } = new List<Deal>();
+        public Project Project { get; set; } = null!;
 
-        public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+        public ICollection<Ticket> Tickets { get; set; } = [];
     }
 }

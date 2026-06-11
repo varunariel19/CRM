@@ -37,15 +37,6 @@ namespace ArielCRM.Application.Services
 
             var created = await _repository.CreateAsync(ticket);
 
-            await _historyService.LogAsync(new LogHistoryRequest
-            {
-                EntityName = "Ticket",
-                EntityId = ticket.Id,
-                ActionType = CRMActionType.Create.ToString(),
-                Title = $"Created ticket '{ticket.Title}'",
-                PreviousState = null,
-                UpdatedState = JsonSerializer.Serialize(ticket)
-            });
 
             return created;
         }
@@ -61,18 +52,6 @@ namespace ArielCRM.Application.Services
             ticket.Status = dto.Status;
             var result = await _repository.UpdateAsync(ticket);
 
-            if (result)
-            {
-                await _historyService.LogAsync(new LogHistoryRequest
-                {
-                    EntityName = "Ticket",
-                    EntityId = ticket.Id,
-                    ActionType = CRMActionType.Update.ToString(),
-                    Title = $"Updated ticket '{ticket.Title}' status from '{oldStatus}' to '{dto.Status}'",
-                    PreviousState = previousSnapshot,
-                    UpdatedState = JsonSerializer.Serialize(ticket)
-                });
-            }
 
             return result;
         }
@@ -88,18 +67,6 @@ namespace ArielCRM.Application.Services
             ticket.Priority = dto.Priority;
             var result = await _repository.UpdateAsync(ticket);
 
-            if (result)
-            {
-                await _historyService.LogAsync(new LogHistoryRequest
-                {
-                    EntityName = "Ticket",
-                    EntityId = ticket.Id,
-                    ActionType = CRMActionType.Update.ToString(),
-                    Title = $"Updated ticket '{ticket.Title}' priority from '{oldPriority}' to '{dto.Priority}'",
-                    PreviousState = previousSnapshot,
-                    UpdatedState = JsonSerializer.Serialize(ticket)
-                });
-            }
 
             return result;
         }
@@ -115,18 +82,6 @@ namespace ArielCRM.Application.Services
             ticket.AssignedToId = dto.AssignedToId;
             var result = await _repository.UpdateAsync(ticket);
 
-            if (result)
-            {
-                await _historyService.LogAsync(new LogHistoryRequest
-                {
-                    EntityName = "Ticket",
-                    EntityId = ticket.Id,
-                    ActionType = CRMActionType.Update.ToString(),
-                    Title = $"Updated ticket '{ticket.Title}' assignee from '{oldAssignee}' to '{dto.AssignedToId}'",
-                    PreviousState = previousSnapshot,
-                    UpdatedState = JsonSerializer.Serialize(ticket)
-                });
-            }
 
             return result;
         }
@@ -140,18 +95,6 @@ namespace ArielCRM.Application.Services
 
             var result = await _repository.DeleteAsync(id);
 
-            if (result)
-            {
-                await _historyService.LogAsync(new LogHistoryRequest
-                {
-                    EntityName = "Ticket",
-                    EntityId = id,
-                    ActionType = CRMActionType.Delete.ToString(),
-                    Title = $"Deleted ticket '{ticket.Title}'",
-                    PreviousState = previousSnapshot,
-                    UpdatedState = null
-                });
-            }
 
             return result;
         }

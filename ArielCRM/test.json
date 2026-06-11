@@ -71,3 +71,21 @@
     ]
   }
 ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+  "Status": "Qualified",
+  "CreatedContact": "{\u0022Id\u0022:\u00224fa4c0a7-920c-40bb-a358-adbe753e5014\u0022,\u0022Name\u0022:\u0022s\u0022,\u0022Company\u0022:\u0022s\u0022,\u0022Designation\u0022:\u0022Staff\u0022,\u0022Email\u0022:\u0022amit.ariel@yopmail.com\u0022,\u0022Phone\u0022:\u0022s\u0022,\u0022Address\u0022:null,\u0022CreatedAt\u0022:\u00222026-06-10T08:05:16.8618111\u0022}"
+}

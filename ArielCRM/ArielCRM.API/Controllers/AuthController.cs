@@ -1,18 +1,13 @@
 ﻿using ArielCRM.Application.Interfaces;
-using ArielCRM.DataLayer.Entities;
-using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.DTOs;
-using ArielCRM.Infrastructure.Interfaces.IService;
-using ArielCRM.Shared.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/auth")]
-    public class AuthController(IAuthService authService ) : ControllerBase
+    public class AuthController(IAuthService authService) : ControllerBase
     {
         private readonly IAuthService _authService = authService;
 
@@ -22,8 +17,7 @@ namespace ArielCRM.API.Controllers
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+                if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var result = await _authService.LoginAsync(dto, Response);
 
@@ -71,7 +65,7 @@ namespace ArielCRM.API.Controllers
                 return StatusCode(500, new { message = "An error occurred while fetching user.", error = ex.Message });
             }
         }
-      
+
 
 
     }

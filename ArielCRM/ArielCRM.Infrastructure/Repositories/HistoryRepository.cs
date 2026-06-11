@@ -3,78 +3,124 @@ using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace ArielCRM.Infrastructure.Repositories
 {
-        public class HistoryRepository : IHistoryRepository
+    public class HistoryRepository(AppDbContext db) : IHistoryRepository
+    {
+        private readonly AppDbContext _db = db;
+
+        public async Task<AuditLog?> GetByIdAsync(string id)
+            => await _db.AuditLogs
+                        .Include(h => h.InitiatedBy)
+                        .Include(h => h.RevertedBy)
+                        .FirstOrDefaultAsync(h => h.Id == id);
+
+        public async Task<(IEnumerable<AuditLog> Items, int TotalCount)> GetAllAsync(HistoryFilterDto filter)
         {
-            private readonly AppDbContext _db;
+            var query = _db.AuditLogs
+                           .Include(h => h.InitiatedBy)
+                           .AsQueryable();
 
-            public HistoryRepository(AppDbContext db)
-            {
-                _db = db;
-            }
+            if (!string.IsNullOrWhiteSpace(filter.EntityName))
+                query = query.Where(h => h.EntityName == filter.EntityName);
 
-            public async Task<CRMHistory?> GetByIdAsync(string id)
-                => await _db.CRMHistories
-                            .Include(h => h.InitiatedBy)
-                            .FirstOrDefaultAsync(h => h.Id == id);
+            if (!string.IsNullOrWhiteSpace(filter.EntityId))
+                query = query.Where(h => h.EntityId == filter.EntityId);
 
-            public async Task<(IEnumerable<CRMHistory> Items, int TotalCount)> GetAllAsync(HistoryFilterDto filter)
-            {
-                var query = _db.CRMHistories
-                               .Include(h => h.InitiatedBy)
-                               .AsQueryable();
+            if (filter.ActionType.HasValue)
+                query = query.Where(h => h.ActionTypeRaw == filter.ActionType.Value.ToString());
 
-                if (!string.IsNullOrWhiteSpace(filter.EntityName))
-                    query = query.Where(h => h.EntityName == filter.EntityName);
+            if (filter.Source.HasValue)
+                query = query.Where(h => h.SourceRaw == filter.Source.Value.ToString());
 
-                if (!string.IsNullOrWhiteSpace(filter.EntityId))
-                    query = query.Where(h => h.EntityId == filter.EntityId);
+            if (filter.Status.HasValue)
+                query = query.Where(h => h.StatusRaw == filter.Status.Value.ToString());
 
-                if (filter.ActionType.HasValue)
-                    query = query.Where(h => h.ActionTypeRaw == filter.ActionType.Value.ToString());
+            if (!string.IsNullOrWhiteSpace(filter.InitiatedById))
+                query = query.Where(h => h.InitiatedById == filter.InitiatedById);
 
-                if (!string.IsNullOrWhiteSpace(filter.InitiatedById))
-                    query = query.Where(h => h.InitiatedById == filter.InitiatedById);
+            if (!string.IsNullOrWhiteSpace(filter.BatchId))
+                query = query.Where(h => h.BatchId == filter.BatchId);
 
-                if (filter.From.HasValue)
-                    query = query.Where(h => h.InitiatedAt >= filter.From.Value);
+            if (filter.IsReverted.HasValue)
+                query = query.Where(h => h.IsReverted == filter.IsReverted.Value);
 
-                if (filter.To.HasValue)
-                    query = query.Where(h => h.InitiatedAt <= filter.To.Value);
+            if (filter.From.HasValue)
+                query = query.Where(h => h.InitiatedAt >= filter.From.Value);
 
-                var total = await query.CountAsync();
+            if (filter.To.HasValue)
+                query = query.Where(h => h.InitiatedAt <= filter.To.Value);
 
-                var items = await query
-                    .OrderByDescending(h => h.InitiatedAt)
-                    .Skip((filter.Page - 1) * filter.PageSize)
-                    .Take(filter.PageSize)
-                    .ToListAsync();
+            // Filter by a specific affected field — e.g. "email"
+            if (!string.IsNullOrWhiteSpace(filter.AffectedField))
+                query = query.Where(h => h.AffectedFields != null &&
+                                         h.AffectedFields.Contains(filter.AffectedField));
 
-                return (items, total);
-            }
+            var total = await query.CountAsync();
 
-            public async Task<IEnumerable<CRMHistory>> GetByEntityAsync(string entityName, string entityId)
-                => await _db.CRMHistories
-                            .Include(h => h.InitiatedBy)
-                            .Where(h => h.EntityName == entityName && h.EntityId == entityId)
-                            .OrderByDescending(h => h.InitiatedAt)
-                            .ToListAsync();
+            var items = await query
+                .OrderByDescending(h => h.InitiatedAt)
+                .Skip((filter.Page - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToListAsync();
 
-            public async Task AddAsync(CRMHistory history)
-                => await _db.CRMHistories.AddAsync(history);
-
-            public Task DeleteAsync(CRMHistory history)
-            {
-                _db.CRMHistories.Remove(history);
-                return Task.CompletedTask;
-            }
-
-            public async Task DeleteAllAsync()
-                => await _db.CRMHistories.ExecuteDeleteAsync();
-
-            public async Task SaveChangesAsync()
-                => await _db.SaveChangesAsync();
+            return (items, total);
         }
+
+        public async Task<IEnumerable<AuditLog>> GetByEntityAsync(string entityName, string entityId)
+            => await _db.AuditLogs
+                        .Include(h => h.InitiatedBy)
+                        .Where(h => h.EntityName == entityName && h.EntityId == entityId)
+                        .OrderByDescending(h => h.InitiatedAt)
+                        .ToListAsync();
+
+        public async Task<IEnumerable<AuditLog>> GetByBatchAsync(string batchId)
+            => await _db.AuditLogs
+                        .Include(h => h.InitiatedBy)
+                        .Where(h => h.BatchId == batchId)
+                        .OrderByDescending(h => h.InitiatedAt)
+                        .ToListAsync();
+
+        public async Task<IEnumerable<AuditLog>> GetChildLogsAsync(string parentAuditId)
+            => await _db.AuditLogs
+                        .Include(h => h.InitiatedBy)
+                        .Where(h => h.ParentAuditId == parentAuditId)
+                        .OrderByDescending(h => h.InitiatedAt)
+                        .ToListAsync();
+
+        public async Task AddAsync(AuditLog log)
+            => await _db.AuditLogs.AddAsync(log);
+
+        public Task DeleteAsync(AuditLog log)
+        {
+            _db.AuditLogs.Remove(log);
+            return Task.CompletedTask;
+        }
+
+        public async Task DeleteAllAsync()
+            => await _db.AuditLogs.ExecuteDeleteAsync();
+
+        // ─────────────────────────────────────────────
+        // AuditRevertHistory
+        // ─────────────────────────────────────────────
+
+        public async Task<IEnumerable<AuditRevertHistory>> GetRevertHistoryAsync(string auditLogId)
+            => await _db.AuditRevertHistories
+                        .Include(r => r.RevertedBy)
+                        .Where(r => r.AuditLogId == auditLogId)
+                        .OrderByDescending(r => r.RevertedAt)
+                        .ToListAsync();
+
+        public async Task AddRevertHistoryAsync(AuditRevertHistory revertHistory)
+            => await _db.AuditRevertHistories.AddAsync(revertHistory);
+
+        // ─────────────────────────────────────────────
+        // Save
+        // ─────────────────────────────────────────────
+
+        public async Task SaveChangesAsync()
+            => await _db.SaveChangesAsync();
+    }
 }

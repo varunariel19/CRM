@@ -8,6 +8,7 @@ export class AuthState {
     private _isValidating = signal(false);
     private _teamMembers = signal<TeamMember[]>([]);
 
+    logoUrl = signal('/ariel-logo.png');
     user = computed(() => this._user());
     isValidating = computed(() => this._isValidating());
 

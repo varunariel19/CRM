@@ -7,7 +7,6 @@ import { AuthState } from '../../state/auth.state';
 import { CommonModule } from '@angular/common';
 import { getAvatarColor } from '../../utils';
 import { PermissionFacade } from '../../core/services/permissionFacade.service';
-
 @Component({
   selector: 'app-header',
   imports: [CommonModule, SettingsComponent, ProfileSectionComponent],
@@ -27,6 +26,9 @@ export class HeaderComponent {
   readonly themeService = inject(ThemeService);
   private authService = inject(AuthService);
 
+  get LogoUrl() {
+     return this.authState.logoUrl();
+  }
 
   get isDarkTheme() {
     return this.themeService.isDark();

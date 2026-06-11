@@ -8,7 +8,21 @@
   <div class="dashboard-body">
 
     <div class="workspace-wrapper">
+      <div class="action-bar">
+        <button class="back-btn" (click)="goToPreviousMenu()">
+          <span class="back-icon">
+            <i class="fas fa-arrow-left"></i>
+          </span>
+          <span class="back-text">Back</span>
+        </button>
 
+        <button class="reload-btn" (click)="refresh()">
+          <span class="reload-icon">
+            <i class="fas fa-sync-alt"></i>
+          </span>
+          <span class="back-text">Reload</span>
+        </button>
+      </div>
       <ng-container [ngSwitch]="selectedMenu().route">
 
         <div *ngSwitchCase="'analytics'">

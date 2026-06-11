@@ -23,5 +23,6 @@ export class SidebarComponent {
 
   setActiveMenu(index: number) {
     this.menuState.setActiveMenu(index);
+    this.menuState.setMenuHistory(index);
   }
 }

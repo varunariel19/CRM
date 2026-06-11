@@ -2,23 +2,23 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 namespace ArielCRM.Infrastructure.Services
 {
-    
-public class PermissionPolicyProvider(IOptions<AuthorizationOptions> options) : DefaultAuthorizationPolicyProvider(options)
-{
-        public override Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
+
+    public class PermissionPolicyProvider(IOptions<AuthorizationOptions> options) : DefaultAuthorizationPolicyProvider(options)
     {
-        if (policyName.StartsWith("Permission:", StringComparison.OrdinalIgnoreCase))
+        public override Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
         {
-            var permission = policyName.Split(':')[1];
+            if (policyName.StartsWith("Permission:", StringComparison.OrdinalIgnoreCase))
+            {
+                var permission = policyName["Permission:".Length..];
 
-            var policy = new AuthorizationPolicyBuilder()
-                .AddRequirements(new PermissionRequirement(permission))
-                .Build();
+                var policy = new AuthorizationPolicyBuilder()
+                    .AddRequirements(new PermissionRequirement(permission))
+                    .Build();
 
-            return Task.FromResult<AuthorizationPolicy?>(policy);
+                return Task.FromResult<AuthorizationPolicy?>(policy);
+            }
+
+            return base.GetPolicyAsync(policyName);
         }
-
-        return base.GetPolicyAsync(policyName);
     }
-}
 }

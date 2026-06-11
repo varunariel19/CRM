@@ -6,58 +6,76 @@ using Microsoft.AspNetCore.Mvc;
 namespace ArielCRM.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/team")]
+    [Authorize]
     public class TeamController(ITeamService teamService) : ControllerBase
     {
-        private readonly ITeamService _teamService = teamService;
-
         [HttpGet]
         public async Task<IActionResult> GetMembers()
         {
-            return Ok(await _teamService.GetAllAsync());
-        }
-
-
-        // [Authorize(Policy = "Permission:TeamMembers.Create")]
-        [HttpPost("register")]
-        public async Task<IActionResult> CreateMember(CreateTeamDto dto)
-        {
             try
             {
-                if (!ModelState.IsValid) return BadRequest(ModelState);
-                return Ok(await _teamService.CreateAsync(dto));
-
+                var members = await teamService.GetAllAsync();
+                return Ok(members);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while registering user.", error = ex.Message });
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while retrieving team members.", details = ex.Message });
             }
-
         }
 
+        [HttpPost("register")]
+        [Authorize(Policy = "Permission:TeamMembers.Create")]
+        public async Task<IActionResult> CreateMember(CreateTeamDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var result = await teamService.CreateAsync(dto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while registering user.", details = ex.Message });
+            }
+        }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateMember(string id, UpdateTeamDto dto)
         {
-            var result = await _teamService.UpdateAsync(id, dto);
+            try
+            {
+                var result = await teamService.UpdateAsync(id, dto);
 
-            if (result == null)
-                return NotFound();
+                if (result == null)
+                    return NotFound();
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = $"An error occurred while updating team member {id}.", details = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteMember(string id)
         {
-            var deleted = await _teamService.DeleteAsync(id);
+            try
+            {
+                var deleted = await teamService.DeleteAsync(id);
 
-            if (!deleted)
-                return NotFound();
+                if (!deleted)
+                    return NotFound();
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = $"An error occurred while deleting team member {id}.", details = ex.Message });
+            }
         }
     }
-
-
 }

@@ -1,7 +1,28 @@
+:host {
+  display: block;
+  height: 100%;
+}
 .sidebar-wrapper {
   padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.menu-list::-webkit-scrollbar {
+  display: none;
+}
 .logo-section {
   display: flex;
   align-items: center;
@@ -25,12 +46,6 @@
 .logo-text h2 {
   color: var(--on-primary);
   font-size: 18px;
-}
-
-.menu-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .menu-item {

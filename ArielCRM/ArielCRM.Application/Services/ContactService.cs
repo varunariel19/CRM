@@ -39,18 +39,10 @@ namespace ArielCRM.Application.Services
                 Address = dto.Address
             };
 
+
             await _contactRepository.AddAsync(contact);
             await _contactRepository.SaveChangesAsync();
 
-            await _historyService.LogAsync(new LogHistoryRequest
-            {
-                EntityName = "Contact",
-                EntityId = contact.Id,
-                ActionType = CRMActionType.Create.ToString(),
-                Title = $"Created contact '{contact.Name}'",
-                PreviousState = null,
-                UpdatedState = JsonSerializer.Serialize(contact)
-            });
 
             return contact;
         }
@@ -72,16 +64,6 @@ namespace ArielCRM.Application.Services
             _contactRepository.Update(contact);
             await _contactRepository.SaveChangesAsync();
 
-            await _historyService.LogAsync(new LogHistoryRequest
-            {
-                EntityName = "Contact",
-                EntityId = contact.Id,
-                ActionType = CRMActionType.Update.ToString(),
-                Title = $"Updated contact '{contact.Name}'",
-                PreviousState = previousSnapshot,
-                UpdatedState = JsonSerializer.Serialize(contact)
-            });
-
             return contact;
         }
 
@@ -95,18 +77,6 @@ namespace ArielCRM.Application.Services
             _contactRepository.Delete(contact);
             var result = await _contactRepository.SaveChangesAsync();
 
-            if (result)
-            {
-                await _historyService.LogAsync(new LogHistoryRequest
-                {
-                    EntityName = "Contact",
-                    EntityId = id,
-                    ActionType = CRMActionType.Delete.ToString(),
-                    Title = $"Deleted contact '{contact.Name}'",
-                    PreviousState = previousSnapshot,
-                    UpdatedState = null
-                });
-            }
 
             return result;
         }

@@ -23,44 +23,60 @@ namespace ArielCRM.Infrastructure.Services
                 prev = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(previousJson);
                 next = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(updatedJson);
             }
-            catch
-            {
-                return null;
-            }
+            catch { return null; }
 
             if (prev is null || next is null) return null;
 
-            var diff = new Dictionary<string, object?>();
+            var diff = new Dictionary<string, object>();
 
             foreach (var key in next.Keys)
             {
                 if (IsSystemField(key)) continue;
 
                 var newVal = Stringify(next[key]);
-
-                if (string.IsNullOrEmpty(newVal) || newVal == "null") continue;
-
                 var oldVal = prev.TryGetValue(key, out var ov) ? Stringify(ov) : null;
 
+                // Only record if the value actually changed
                 if (newVal == oldVal) continue;
 
-                diff[key] = newVal;
+                diff[key] = new
+                {
+                    from = oldVal,
+                    to = newVal
+                };
             }
 
-            if (diff.Count == 0) return null;
+            // Also capture fields that were removed (exist in prev but not in next)
+            foreach (var key in prev.Keys)
+            {
+                if (IsSystemField(key)) continue;
+                if (next.ContainsKey(key)) continue; // already handled above
 
-            return JsonSerializer.Serialize(diff);
+                diff[key] = new
+                {
+                    from = Stringify(prev[key]),
+                    to = (string?)null
+                };
+            }
+
+            return diff.Count == 0 ? null : JsonSerializer.Serialize(diff);
         }
 
-        private static string Stringify(JsonElement el) => el.ValueKind switch
+        private static string Stringify(JsonElement el)
         {
-            JsonValueKind.String => el.GetString() ?? string.Empty,
-            JsonValueKind.Null => "null",
-            JsonValueKind.True => "true",
-            JsonValueKind.False => "false",
-            _ => el.ToString()
-        };
-
+            return el.ValueKind switch
+            {
+                JsonValueKind.String => el.GetString() ?? string.Empty,
+                JsonValueKind.Null => "null",
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                JsonValueKind.Number => el.GetRawText(),   // ← use raw text, not ToString()
+                                                           // For objects/arrays: re-serialize with sorted keys for stable comparison
+                _ => JsonSerializer.Serialize(
+                        JsonSerializer.Deserialize<JsonElement>(el.GetRawText()),
+                        new JsonSerializerOptions { WriteIndented = false })
+            };
+        }
         private static bool IsSystemField(string key) => _systemFields.Contains(key);
     }
 

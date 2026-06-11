@@ -1,230 +1,302 @@
 <div class="dashboard-wrapper">
 
-  <!-- TOP CARDS -->
-  <div class="top-cards">
+  <!-- ── KPI CARDS ROW 1: Core Counts ── -->
+  @if(perm.leads.canView()) {
+  <div class="kpi-grid kpi-grid--top">
 
-    @if(perm.leads.canView()) {
-      <div class="stat-card">
-        <div>
-          <p class="card-title">TOTAL LEADS</p>
-          <h2>{{ totalLeads }}</h2>
-          <span class="card-link cursor-pointer" (click)="navigateMenuOptions(1)">Manage Leads →</span>
-        </div>
-        <div class="card-icon blue">
-          <i class="fas fa-users"></i>
-        </div>
+    <!-- Total Leads -->
+    <div class="kpi-card kpi-card--accent">
+      <div class="kpi-card__body">
+        <p class="kpi-label">TOTAL LEADS</p>
+        <h2 class="kpi-value">{{ totalLeads }}</h2>
+        <span class="kpi-link cursor-pointer" (click)="navigateMenuOptions(1)">Manage Leads →</span>
       </div>
-    }
+      <div class="kpi-icon kpi-icon--blue">
+        <i class="fas fa-users"></i>
+      </div>
+    </div>
 
-    @if(perm.deals.canView()) {
-      <div class="stat-card">
-        <div>
-          <p class="card-title">ACTIVE DEALS</p>
-          <h2>{{ activeDeals }}</h2>
-          <span class="card-link" (click)="navigateMenuOptions(3)">View Pipeline →</span>
-        </div>
-        <div class="card-icon purple">
-          <i class="fas fa-arrow-trend-up"></i>
-        </div>
+    <!-- New This Month -->
+    <div class="kpi-card">
+      <div class="kpi-card__body">
+        <p class="kpi-label">NEW THIS MONTH</p>
+        <h2 class="kpi-value">{{ newLeadsThisMonth }}</h2>
+        <span class="kpi-sub">Added in current month</span>
       </div>
-    }
+      <div class="kpi-icon kpi-icon--teal">
+        <i class="fas fa-user-plus"></i>
+      </div>
+    </div>
 
-    @if(perm.tickets.canView()) {
-      <div class="stat-card">
-        <div>
-          <p class="card-title">OPEN TICKETS</p>
-          <h2>{{ openTickets }}</h2>
-          <span class="card-link orange-text" (click)="navigateMenuOptions(5)">Support Desk →</span>
-        </div>
-        <div class="card-icon orange">
-          <i class="fas fa-life-ring"></i>
-        </div>
+    <!-- Qualified -->
+    <div class="kpi-card">
+      <div class="kpi-card__body">
+        <p class="kpi-label">QUALIFIED</p>
+        <h2 class="kpi-value">{{ qualifiedLeads }}</h2>
+        <span class="kpi-sub">Ready for outreach</span>
       </div>
-    }
+      <div class="kpi-icon kpi-icon--purple">
+        <i class="fas fa-star"></i>
+      </div>
+    </div>
 
-    @if(perm.deals.canView()) {
-      <div class="stat-card revenue-card">
-        <div>
-          <p class="card-title">TOTAL REVENUE WON</p>
-          <h2>${{ wonRevenue }}</h2>
-          <div class="badge">SLA Delivery Active</div>
-        </div>
-        <div class="revenue-icon">
-          <i class="fas fa-dollar-sign"></i>
-        </div>
+    <!-- Converted -->
+    <div class="kpi-card">
+      <div class="kpi-card__body">
+        <p class="kpi-label">CONVERTED</p>
+        <h2 class="kpi-value">{{ convertedLeads }}</h2>
+        <span class="kpi-sub">Successfully closed</span>
       </div>
-    }
+      <div class="kpi-icon kpi-icon--green">
+        <i class="fas fa-circle-check"></i>
+      </div>
+    </div>
 
   </div>
 
-  <!-- CHART SECTION -->
+  <!-- ── KPI CARDS ROW 2: Performance Metrics ── -->
+  <div class="kpi-grid kpi-grid--metrics">
+
+    <!-- Conversion Rate -->
+    <div class="kpi-card kpi-card--rate">
+      <div class="kpi-card__body">
+        <p class="kpi-label">CONVERSION RATE</p>
+        <div class="kpi-rate-display">
+          <h2 class="kpi-value">{{ conversionRate }}</h2>
+          <span class="kpi-unit">%</span>
+        </div>
+        <div class="kpi-progress-track">
+          <div class="kpi-progress-fill" [style.width.%]="conversionRate"></div>
+        </div>
+      </div>
+      <div class="kpi-icon kpi-icon--blue">
+        <i class="fas fa-chart-line"></i>
+      </div>
+    </div>
+
+    <!-- Avg Response Time -->
+    <div class="kpi-card">
+      <div class="kpi-card__body">
+        <p class="kpi-label">AVG RESPONSE TIME</p>
+        <div class="kpi-rate-display">
+          <h2 class="kpi-value">{{ averageResponseTime }}</h2>
+          <span class="kpi-unit">days</span>
+        </div>
+        <span class="kpi-sub">Creation → first contact</span>
+      </div>
+      <div class="kpi-icon kpi-icon--orange">
+        <i class="fas fa-clock"></i>
+      </div>
+    </div>
+
+    <!-- Avg Lead Age -->
+    <div class="kpi-card">
+      <div class="kpi-card__body">
+        <p class="kpi-label">AVG LEAD AGE</p>
+        <div class="kpi-rate-display">
+          <h2 class="kpi-value">{{ averageLeadAge }}</h2>
+          <span class="kpi-unit">days</span>
+        </div>
+        <span class="kpi-sub">Since lead creation</span>
+      </div>
+      <div class="kpi-icon kpi-icon--purple">
+        <i class="fas fa-hourglass-half"></i>
+      </div>
+    </div>
+
+    <!-- Lost Leads -->
+    <div class="kpi-card">
+      <div class="kpi-card__body">
+        <p class="kpi-label">LOST LEADS</p>
+        <h2 class="kpi-value kpi-value--danger">{{ lostLeads }}</h2>
+        <span class="kpi-sub">Not converted</span>
+      </div>
+      <div class="kpi-icon kpi-icon--red">
+        <i class="fas fa-user-xmark"></i>
+      </div>
+    </div>
+
+    <!-- Revenue from Converted -->
+    <div class="kpi-card kpi-card--revenue">
+      <div class="kpi-card__body">
+        <p class="kpi-label">REVENUE GENERATED</p>
+        <h2 class="kpi-value">{{ formatCurrency(revenueFromConverted) }}</h2>
+        <div class="badge badge--success">From Converted Leads</div>
+      </div>
+      <div class="kpi-icon kpi-icon--revenue">
+        <i class="fas fa-sack-dollar"></i>
+      </div>
+    </div>
+
+  </div>
+  }
+
+  <!-- ── CHART SECTION ── -->
   <div class="chart-grid">
 
     @if(perm.leads.canView()) {
-      <div class="chart-container">
-        <canvas baseChart type="bar" [data]="barChartData" [options]="barChartOptions">
-        </canvas>
+    <!-- Lead Status Bar Chart -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <h3>Lead Status Breakdown</h3>
+        <span class="chart-period">All time</span>
+      </div>
+      <div class="chart-canvas-wrap">
+        <canvas baseChart type="bar" [data]="leadStatusBarData" [options]="barChartOptions"></canvas>
+      </div>
+    </div>
+
+    <!-- Lead Source Doughnut -->
+    <div class="donut-wrapper">
+      <div class="chart-header">
+        <h3>Lead Sources</h3>
+      </div>
+      <div class="donut-chart">
+        <canvas baseChart [type]="'doughnut'" [data]="doughnutChartData" [options]="doughnutChartOptions"></canvas>
+        <div class="donut-center">
+          <p>Total</p>
+          <h2>{{ totalLeads }}</h2>
+        </div>
       </div>
 
-      <div class="donut-wrapper">
-        <div class="donut-chart">
-          <canvas baseChart [type]="'doughnut'" [data]="doughnutChartData" [options]="doughnutChartOptions">
-          </canvas>
-          <div class="donut-center">
-            <p>Total Leads</p>
-            <h2>{{ totalLeads }}</h2>
-          </div>
+      <div class="legend">
+        <div class="legend-item"><span class="dot dot--blue"></span> Marketing Platform ({{
+          leadSourceData.marketingPlatform }})</div>
+        <div class="legend-item"><span class="dot dot--purple"></span> Website ({{ leadSourceData.website }})</div>
+        <div class="legend-item"><span class="dot dot--orange"></span> Referrals ({{ leadSourceData.referrals }})</div>
+        <div class="legend-item"><span class="dot dot--light-blue"></span> LinkedIn ({{ leadSourceData.linkedIn }})
         </div>
-
-        <div class="legend">
-          <div><span class="dot blue"></span> Website ({{ leadSourceData.website }})</div>
-          <div><span class="dot purple"></span> Referral ({{ leadSourceData.referral }})</div>
-          <div><span class="dot orange"></span> Instagram ({{ leadSourceData.instagram }})</div>
-          <div><span class="dot red"></span> Cold Call ({{ leadSourceData.coldCall }})</div>
-          <div><span class="dot light-blue"></span> LinkedIn ({{ leadSourceData.linkedIn }})</div>
+        <div class="legend-item"><span class="dot dot--green"></span> Events ({{ leadSourceData.events }})</div>
+        <div class="legend-item"><span class="dot dot--yellow"></span> Partners ({{ leadSourceData.partners }})</div>
+        <div class="legend-item"><span class="dot dot--red"></span> Cold Outreach ({{ leadSourceData.coldOutreach }})
         </div>
       </div>
+    </div>
     }
 
   </div>
 
-  <!-- BOTTOM GRID -->
   <div class="bottom-grid">
 
     @if(perm.leads.canView()) {
-      <div class="bottom-card">
-        <div class="section-header">
-          <h3>
-            <i class="fas fa-users"></i>
-            Recent Prospects
-          </h3>
-          <span class="view-link" (click)="navigateMenuOptions(1)">View More</span>
-        </div>
-
-        <div class="prospect-list">
-          @for (lead of leads; track lead.id) {
-            <div class="prospect-item">
-              <div>
-                <h4>{{ lead.name }}</h4>
-                <p>{{ lead.company }} • {{ lead.source }}</p>
-              </div>
-              <span class="status" [ngClass]="lead.status.toLowerCase()">
-                {{ lead.status }}
-              </span>
-            </div>
-          }
-        </div>
+    <div class="bottom-card">
+      <div class="section-header">
+        <h3><i class="fas fa-users"></i> Recent Prospects</h3>
+        <span class="view-link" (click)="navigateMenuOptions(1)">View More</span>
       </div>
+      <div class="prospect-list">
+        @for (lead of leads; track lead.id) {
+        <div class="prospect-item">
+          <div>
+            <h4>{{ lead.name }}</h4>
+            <p>{{ lead.company }} • {{ lead.source }}</p>
+          </div>
+          <span class="status" [ngClass]="lead.status.toLowerCase()">{{ lead.status }}</span>
+        </div>
+        }
+      </div>
+    </div>
     }
 
     @if(perm.tasks.canView()) {
-      <div class="bottom-card">
-        <div class="section-header">
-          <h3>
-            <i class="fas fa-calendar"></i>
-            My Reminders Calendar
-          </h3>
-          <span class="view-link" (click)="navigateMenuOptions(4)">All Tasks</span>
-        </div>
+    <div class="bottom-card">
+      <div class="section-header">
+        <h3><i class="fas fa-calendar"></i> My Reminders Calendar</h3>
+        <span class="view-link" (click)="navigateMenuOptions(4)">All Tasks</span>
+      </div>
 
-        @if (pendingTask.length > 0) {
-          <div class="task-list">
-            @for (task of pendingTask; track task.id) {
-              <div class="task-item">
-                <div class="task-info">
-                  <h4>{{ task.title }}</h4>
-                  <div class="task-meta">
-                    <span><i class="fas fa-tag"></i> {{ task.type }}</span>
-                    <span><i class="fas fa-user"></i> {{ task.assignedToName || 'Unassigned' }}</span>
-                  </div>
-                </div>
-                <div class="task-date">{{ task.dueDate | date:'MMM d' }}</div>
-              </div>
-            }
+      @if (pendingTask.length > 0) {
+      <div class="task-list">
+        @for (task of pendingTask; track task.id) {
+        <div class="task-item">
+          <div class="task-info">
+            <h4>{{ task.title }}</h4>
+            <div class="task-meta">
+              <span><i class="fas fa-tag"></i> {{ task.type }}</span>
+              <span><i class="fas fa-user"></i> {{ task.assignedToName || 'Unassigned' }}</span>
+            </div>
           </div>
-        } @else {
-          <div class="empty-state">
-            <i class="fas fa-check-circle"></i>
-            <p>You're all caught up! No tasks pending.</p>
-          </div>
+          <div class="task-date">{{ task.dueDate | date:'MMM d' }}</div>
+        </div>
         }
       </div>
+      } @else {
+      <div class="empty-state">
+        <i class="fas fa-check-circle"></i>
+        <p>You're all caught up! No tasks pending.</p>
+      </div>
+      }
+    </div>
     }
 
     @if(perm.appointments.canView()) {
-      <div class="bottom-card">
-        <div class="section-header">
-          <h3>
-            <i class="fas fa-calendar-check"></i>
-            Upcoming Appointments
-          </h3>
-          <span class="view-link" (click)="navigateMenuOptions(6)">View Calendar</span>
-        </div>
+    <div class="bottom-card">
+      <div class="section-header">
+        <h3><i class="fas fa-calendar-check"></i> Upcoming Appointments</h3>
+        <span class="view-link" (click)="navigateMenuOptions(6)">View Calendar</span>
+      </div>
 
-        @if (upcomingMeetings.length > 0) {
-          <div class="meeting-list">
-            @for (meeting of upcomingMeetings; track meeting.id) {
-              <div class="meeting-item">
-                <div class="meeting-info">
-                  <h4>{{ meeting.title }}</h4>
-                  <p>{{ meeting.clientInfo.name }} • {{ meeting.clientInfo.company }}</p>
-                  <div class="meeting-meta">
-                    <span><i class="fas fa-clock"></i> {{ formatTime(meeting.time) }}</span>
-                    <span><i class="fas fa-location-dot"></i> {{ meeting.location }}</span>
-                  </div>
-                </div>
-                <div class="meeting-date">{{ meeting.date | date:'MMM d' }}</div>
-              </div>
-            }
+      @if (upcomingMeetings.length > 0) {
+      <div class="meeting-list">
+        @for (meeting of upcomingMeetings; track meeting.id) {
+        <div class="meeting-item">
+          <div class="meeting-info">
+            <h4>{{ meeting.title }}</h4>
+            <p>{{ meeting.clientInfo.name }} • {{ meeting.clientInfo.company }}</p>
+            <div class="meeting-meta">
+              <span><i class="fas fa-clock"></i> {{ formatTime(meeting.time) }}</span>
+              <span><i class="fas fa-location-dot"></i> {{ meeting.location }}</span>
+            </div>
           </div>
-        } @else {
-          <div class="empty-state">
-            <i class="fas fa-calendar-check"></i>
-            <p>No upcoming appointments.</p>
-          </div>
+          <div class="meeting-date">{{ meeting.date | date:'MMM d' }}</div>
+        </div>
         }
       </div>
+      } @else {
+      <div class="empty-state">
+        <i class="fas fa-calendar-check"></i>
+        <p>No upcoming appointments.</p>
+      </div>
+      }
+    </div>
     }
 
     @if(perm.auditHistory.canView()) {
-      <div class="bottom-card">
-        <div class="section-header">
-          <h3>
-            <i class="fas fa-bolt"></i>
-            CRM Live Activity Feed
-          </h3>
-          <span class="view-link cursor-pointer" (click)="navigateMenuOptions(7)">View All</span>
-        </div>
+    <div class="bottom-card">
+      <div class="section-header">
+        <h3><i class="fas fa-bolt"></i> CRM Live Activity Feed</h3>
+        <span class="view-link cursor-pointer" (click)="navigateMenuOptions(7)">View All</span>
+      </div>
 
-        @if (historyState.isLoading()) {
-          <div class="empty-state">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Loading activity...</p>
+      @if (historyState.isLoading()) {
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading activity...</p>
+      </div>
+      } @else if (recentHistory.length > 0) {
+      <div class="activity-feed">
+        @for (log of recentHistory; track log.id) {
+        <div class="activity-item">
+          <div class="activity-timeline">
+            <span class="activity-dot" [ngClass]="getActionClass(log.actionType)"></span>
           </div>
-        } @else if (recentHistory.length > 0) {
-          <div class="activity-feed">
-            @for (log of recentHistory; track log.id) {
-              <div class="activity-item">
-                <div class="activity-timeline">
-                  <span class="activity-dot" [ngClass]="getActionClass(log.actionType)"></span>
-                </div>
-                <div class="activity-body">
-                  <h4>{{ log.title }}</h4>
-                  <div class="activity-meta">
-                    <span>By: {{ log.initiatedByName || 'System' }}</span>
-                    <span>{{ log.initiatedAt | date:'hh:mm a' }}</span>
-                  </div>
-                </div>
-              </div>
-            }
+          <div class="activity-body">
+            <h4>{{ log.title }}</h4>
+            <div class="activity-meta">
+              <span>By: {{ log.initiatedByName || 'System' }}</span>
+              <span>{{ log.initiatedAt | date:'hh:mm a' }}</span>
+            </div>
           </div>
-        } @else {
-          <div class="empty-state">
-            <i class="fas fa-bolt"></i>
-            <p>No recent activity found.</p>
-          </div>
+        </div>
         }
       </div>
+      } @else {
+      <div class="empty-state">
+        <i class="fas fa-bolt"></i>
+        <p>No recent activity found.</p>
+      </div>
+      }
+    </div>
     }
 
   </div>

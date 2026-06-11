@@ -29,12 +29,6 @@ export const menuItems: MenuItem[] = [
     permission: PermissionKey.CustomersView,
   },
   {
-    icon: 'fas fa-arrow-trend-up',
-    label: 'Deals Pipeline',
-    route: 'deals',
-    permission: PermissionKey.DealsView,
-  },
-  {
     icon: 'fas fa-square-check',
     label: 'Tasks & Follow-ups',
     route: 'tasks',

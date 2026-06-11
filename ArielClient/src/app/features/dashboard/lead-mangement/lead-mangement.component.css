@@ -1,21 +1,9 @@
-/* ══════════════════════════════════════════════════════
-   LEAD MANAGEMENT — COMPLETE STYLESHEET
-   Merges lead-management.css + deal.css and adds all
-   missing classes referenced in lead-management.html
-══════════════════════════════════════════════════════ */
-
-/* ── WRAPPER ── */
-
 .lead-management-wrapper {
   padding: 22px;
   background: var(--page-bg);
   min-height: 100vh;
   font-family: var(--font-sans);
 }
-
-/* ══════════════════════════════════════════════
-   PAGE HEADER  ← NEW
-══════════════════════════════════════════════ */
 
 .page-header {
   display: flex;
@@ -62,10 +50,6 @@
   opacity: 0.88;
 }
 
-/* ══════════════════════════════════════════════
-   TOP TOOLBAR
-══════════════════════════════════════════════ */
-
 .top-toolbar {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -78,7 +62,6 @@
   gap: 16px;
 }
 
-/* toolbar-left replaces old toolbar-actions ← NEW */
 .toolbar-left {
   display: flex;
   align-items: center;
@@ -87,7 +70,6 @@
   flex: 1;
 }
 
-/* kept for backward compat */
 .toolbar-actions {
   display: flex;
   align-items: center;
@@ -116,7 +98,6 @@
   color: var(--text-dark);
 }
 
-/* filter group  ← NEW */
 .filter-group {
   display: flex;
   align-items: center;
@@ -142,7 +123,6 @@
   outline: none;
 }
 
-/* view toggle  ← NEW */
 .view-toggle {
   display: flex;
   align-items: center;
@@ -164,7 +144,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .toggle-btn.active {
@@ -176,10 +158,6 @@
 .toggle-btn:not(.active):hover {
   color: var(--text-dark);
 }
-
-/* ══════════════════════════════════════════════
-   PIPELINE / KANBAN BOARD  (from deal.css)
-══════════════════════════════════════════════ */
 
 .pipeline-board {
   display: grid;
@@ -233,13 +211,12 @@
   border-radius: 50%;
 }
 
-/* drop zone  ← NEW */
 .lead-drop-zone {
   padding: 12px;
   min-height: 580px;
 }
 
-/* ── LEAD CARD  ← NEW ── */
+/* ── LEAD CARD ── */
 
 .lead-card {
   background: var(--card-bg);
@@ -248,7 +225,9 @@
   padding: 14px;
   margin-bottom: 12px;
   cursor: grab;
-  transition: box-shadow 0.2s, background 0.2s;
+  transition:
+    box-shadow 0.2s,
+    background 0.2s;
 }
 
 .lead-card:hover {
@@ -315,7 +294,9 @@
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .card-action-icon:hover {
@@ -347,6 +328,35 @@
   color: var(--placeholder-text);
   width: 12px;
   font-size: 11px;
+}
+
+/* Deal info inline on pipeline card */
+.deal-pill-row {
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-color);
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.deal-inline-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.deal-inline-budget {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--success-text);
+  background: var(--success-bg);
+  padding: 1px 6px;
+  border-radius: 10px;
+  white-space: nowrap;
 }
 
 .lead-card-footer {
@@ -386,7 +396,9 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .nav-btn:hover {
@@ -416,7 +428,6 @@
   text-overflow: ellipsis;
 }
 
-/* empty state (pipeline) */
 .empty-state {
   height: 200px;
   display: flex;
@@ -427,10 +438,6 @@
   font-style: italic;
   font-size: 13px;
 }
-
-/* ══════════════════════════════════════════════
-   LIST / TABLE VIEW
-══════════════════════════════════════════════ */
 
 .table-wrapper {
   background: var(--card-bg);
@@ -476,7 +483,6 @@
   border-bottom-right-radius: 18px;
 }
 
-/* list empty state  ← NEW */
 .list-empty-state {
   display: flex;
   flex-direction: column;
@@ -497,7 +503,7 @@
 
 .prospect-info {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
 }
 
@@ -505,7 +511,7 @@
   font-size: 15px;
   font-weight: 600;
   color: var(--text-dark);
-  margin: 0 0 6px;
+  margin: 0 0 4px;
 }
 
 .prospect-info p {
@@ -514,10 +520,23 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0;
+  margin: 0 0 2px;
 }
 
-/* list avatar  ← NEW */
+/* Deal row hint in list view */
+.deal-row-hint {
+  font-size: 11px !important;
+  color: var(--text-light) !important;
+  margin-top: 2px !important;
+  flex-wrap: wrap;
+  gap: 4px !important;
+}
+
+.deal-row-hint i {
+  color: var(--active-bg) !important;
+  font-size: 10px;
+}
+
 .list-avatar {
   width: 36px;
   height: 36px;
@@ -574,7 +593,8 @@
 
 .date-text {
   position: absolute;
-  margin-top: 8px;
+  margin-top: 6px;
+  margin-left: 10px;
   font-size: 12px;
   color: var(--placeholder-text);
 }
@@ -626,7 +646,6 @@
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
 }
 
-/* status-menu alias  ← NEW */
 .status-menu {
   min-width: 160px;
 }
@@ -654,36 +673,87 @@
 }
 
 /* status colour variants */
-.status-select.new          { background: var(--info-bg);      color: var(--active-bg); }
-.status-select.new .status-dot { background: var(--active-bg); }
-.dropdown-option.new        { color: var(--active-bg); }
-.dropdown-option.new .status-dot { background: var(--active-bg); }
-
-.status-select.contracted   { background: var(--warning-bg);   color: var(--warning-text); }
-.status-select.contracted .status-dot { background: var(--warning-text); }
-.dropdown-option.contracted { color: var(--warning-text); }
-.dropdown-option.contracted .status-dot { background: var(--warning-text); }
-
-.status-select.qualified    { background: var(--qualified-bg); color: var(--qualified-text); }
-.status-select.qualified .status-dot { background: var(--qualified-text); }
-.dropdown-option.qualified  { color: var(--qualified-text); }
-.dropdown-option.qualified .status-dot { background: var(--qualified-text); }
-
-.status-select.converted    { background: var(--success-bg);   color: var(--success-text); }
-.status-select.converted .status-dot { background: var(--success-text); }
-.dropdown-option.converted  { color: var(--success-text); }
-.dropdown-option.converted .status-dot { background: var(--success-text); }
-
-.status-select.lost         { background: var(--danger-bg);    color: var(--danger-text); }
-.status-select.lost .status-dot { background: var(--danger-text); }
-.dropdown-option.lost       { color: var(--danger-text); }
-.dropdown-option.lost .status-dot { background: var(--danger-text); }
-
-/* ── ASSIGNEE ── */
-
-.assignee-wrap {
-  /* inherits .dropdown-wrap */
+.status-select.new {
+  background: var(--info-bg);
+  color: var(--active-bg);
 }
+.status-select.new .status-dot {
+  background: var(--active-bg);
+}
+.dropdown-option.new {
+  color: var(--active-bg);
+}
+.dropdown-option.new .status-dot {
+  background: var(--active-bg);
+}
+
+.status-select.contracted {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.status-select.contracted .status-dot {
+  background: var(--warning-text);
+}
+.dropdown-option.contracted {
+  color: var(--warning-text);
+}
+.dropdown-option.contracted .status-dot {
+  background: var(--warning-text);
+}
+
+.status-select.qualified {
+  background: var(--qualified-bg);
+  color: var(--qualified-text);
+}
+.status-select.qualified .status-dot {
+  background: var(--qualified-text);
+}
+.dropdown-option.qualified {
+  color: var(--qualified-text);
+}
+.dropdown-option.qualified .status-dot {
+  background: var(--qualified-text);
+}
+
+.status-select.converted {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.status-select.converted .status-dot {
+  background: var(--success-text);
+}
+.dropdown-option.converted {
+  color: var(--success-text);
+}
+.dropdown-option.converted .status-dot {
+  background: var(--success-text);
+}
+
+.status-select.lost {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+.status-select.lost .status-dot {
+  background: var(--danger-text);
+}
+.dropdown-option.lost {
+  color: var(--danger-text);
+}
+.dropdown-option.lost .status-dot {
+  background: var(--danger-text);
+}
+
+.status-badge--ongoing {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 
 .assignee {
   display: flex;
@@ -764,10 +834,11 @@
   justify-content: center;
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
-/* view-btn  ← NEW */
 .view-btn {
   background: var(--surface-muted);
   color: var(--text-light);
@@ -797,10 +868,6 @@
   color: var(--on-primary);
 }
 
-/* ══════════════════════════════════════════════
-   MODAL — BASE
-══════════════════════════════════════════════ */
-
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -821,9 +888,22 @@
   animation: modalIn 0.2s ease;
 }
 
+/* Create / Edit modal is wider to fit 2-col deal section */
+.create-modal-box {
+  max-width: 580px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
 @keyframes modalIn {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-header {
@@ -831,6 +911,44 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 22px;
+}
+
+/* Modal title with icon badge */
+.modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--info-bg);
+  color: var(--active-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.edit-icon-badge {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.modal-title-group h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin: 0 0 3px;
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: var(--placeholder-text);
+  margin: 0;
 }
 
 .modal-header h2 {
@@ -855,12 +973,53 @@
   color: var(--text-dark);
 }
 
-/* ── FORM ── */
-
 .modal-body {
   display: flex;
   flex-direction: column;
+  gap: 0;
+}
+
+/* Sectioned form layout */
+.form-section {
+  display: flex;
+  flex-direction: column;
   gap: 14px;
+  padding-bottom: 20px;
+  margin-bottom: 4px;
+}
+
+.form-section + .form-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 18px;
+}
+
+.form-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--placeholder-text);
+  margin-bottom: 2px;
+}
+
+.form-section-label i {
+  color: var(--active-bg);
+  font-size: 13px;
+}
+
+.optional-tag {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--surface-muted);
+  color: var(--placeholder-text);
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .form-row {
@@ -899,7 +1058,9 @@
   color: var(--text-dark);
   font-family: var(--font-sans);
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
   background: var(--card-bg);
   width: 100%;
   box-sizing: border-box;
@@ -921,7 +1082,43 @@
   color: var(--placeholder-text);
 }
 
-/* ── MODAL FOOTER ── */
+/* ── BUDGET INPUT ── */
+
+.budget-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.budget-prefix {
+  position: absolute;
+  left: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.budget-suffix {
+  position: absolute;
+  right: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--active-bg);
+  pointer-events: none;
+}
+
+.budget-input-wrap input {
+  padding-left: 26px !important;
+  padding-right: 40px !important;
+}
+
+.budget-input-wrap input[type='number']::-webkit-outer-spin-button,
+.budget-input-wrap input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
 .modal-footer {
   display: flex;
@@ -967,12 +1164,8 @@
   opacity: 0.9;
 }
 
-/* ══════════════════════════════════════════════
-   DETAIL MODAL  ← ALL NEW
-══════════════════════════════════════════════ */
-
 .detail-modal-box {
-  max-width: 560px;
+  max-width: 580px;
 }
 
 .modal-header .detail-header-left {
@@ -1030,16 +1223,41 @@
   font-weight: 700;
 }
 
-.status-badge.new         { background: var(--info-bg);      color: var(--active-bg); }
-.status-badge.new .status-dot { background: var(--active-bg); }
-.status-badge.contracted  { background: var(--warning-bg);   color: var(--warning-text); }
-.status-badge.contracted .status-dot { background: var(--warning-text); }
-.status-badge.qualified   { background: var(--qualified-bg); color: var(--qualified-text); }
-.status-badge.qualified .status-dot { background: var(--qualified-text); }
-.status-badge.converted   { background: var(--success-bg);   color: var(--success-text); }
-.status-badge.converted .status-dot { background: var(--success-text); }
-.status-badge.lost        { background: var(--danger-bg);    color: var(--danger-text); }
-.status-badge.lost .status-dot { background: var(--danger-text); }
+.status-badge.new {
+  background: var(--info-bg);
+  color: var(--active-bg);
+}
+.status-badge.new .status-dot {
+  background: var(--active-bg);
+}
+.status-badge.contracted {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+.status-badge.contracted .status-dot {
+  background: var(--warning-text);
+}
+.status-badge.qualified {
+  background: var(--qualified-bg);
+  color: var(--qualified-text);
+}
+.status-badge.qualified .status-dot {
+  background: var(--qualified-text);
+}
+.status-badge.converted {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+.status-badge.converted .status-dot {
+  background: var(--success-text);
+}
+.status-badge.lost {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+.status-badge.lost .status-dot {
+  background: var(--danger-text);
+}
 
 .detail-body {
   padding: 4px 0 8px;
@@ -1080,6 +1298,11 @@
   gap: 4px;
 }
 
+/* Full-width item inside grid */
+.detail-item-full {
+  grid-column: 1 / -1;
+}
+
 .detail-label {
   font-size: 11px;
   font-weight: 600;
@@ -1103,15 +1326,39 @@
   width: 14px;
 }
 
+/* Budget value highlight */
+.budget-value {
+  font-weight: 700;
+  color: var(--success-text);
+}
+
+/* Project type pill in detail */
+.project-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--info-bg);
+  color: var(--active-bg);
+}
+
+.project-type-pill.fixed-price {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.project-type-pill.man-month {
+  background: var(--qualified-bg, rgba(139, 92, 246, 0.1));
+  color: var(--qualified-text, #8b5cf6);
+}
+
 .detail-footer {
   justify-content: space-between;
 }
 
-/* ══════════════════════════════════════════════
-   CONVERSION MODAL  (from deal.css + new)
-══════════════════════════════════════════════ */
-
-/* sits above loader overlay */
 .convert-overlay {
   z-index: 1100;
 }
@@ -1121,8 +1368,6 @@
   max-height: 88vh;
   overflow-y: auto;
 }
-
-/* ── STEP INDICATOR  ← NEW ── */
 
 .convert-steps {
   display: flex;
@@ -1166,7 +1411,10 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  transition: background 0.2s, border-color 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
 }
 
 .convert-step.active .step-num {
@@ -1186,7 +1434,7 @@
   height: 2px;
   background: var(--border-color);
   margin: 0 8px;
-  margin-bottom: 22px; /* align with circles vertically */
+  margin-bottom: 22px;
   min-width: 40px;
   transition: background 0.2s;
 }
@@ -1251,7 +1499,6 @@
   font-weight: 600;
 }
 
-/* source-tag modifier on deal-value-badge  ← NEW */
 .deal-value-badge.source-tag {
   background: var(--surface-muted);
   color: var(--text-light);
@@ -1298,7 +1545,9 @@
   padding: 28px 20px;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
   background: var(--page-bg);
 }
 
@@ -1393,7 +1642,9 @@
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 6px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   flex-shrink: 0;
   font-size: 12px;
 }
@@ -1402,8 +1653,6 @@
   color: var(--danger-text);
   background: var(--danger-bg);
 }
-
-/* ── CONVERSION FOOTER ── */
 
 .convert-footer {
   flex-direction: column;
@@ -1437,7 +1686,6 @@
   opacity: 0.88;
 }
 
-/* btn-finalize — pulse accent  ← NEW */
 .btn-finalize {
   background: var(--success-text);
   box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
@@ -1445,14 +1693,16 @@
 }
 
 @keyframes finalizePulse {
-  0%   { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0.35); }
-  60%  { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-  100% { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35);
+  }
+  60% {
+    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
 }
-
-/* ══════════════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════════════ */
 
 @media (max-width: 1400px) {
   .pipeline-board {
@@ -1500,7 +1750,19 @@
     grid-template-columns: 1fr;
   }
 
+  .detail-item-full {
+    grid-column: 1;
+  }
+
   .convert-steps {
     padding: 0 8px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .create-modal-box {
+    padding: 20px;
   }
 }

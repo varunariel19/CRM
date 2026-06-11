@@ -1,7 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
+import { AuthState } from '../../../state/auth.state';
+import { Router } from '@angular/router';
+import { Routes } from '../../../core/constants/endpoints';
 
 
 @Component({
@@ -14,6 +17,10 @@ import { AuthService } from '../../../services/auth.service';
 
 
 export class LoginComponent {
+
+  private authState = inject(AuthState);
+  private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   step: 1 | 2 = 1;
 
@@ -42,8 +49,9 @@ export class LoginComponent {
   }
 
   continue(): void {
-    if (!this.email || !this.email.includes('@')) {
-      this.errorMsg = 'Please enter a valid email or username.';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!this.email || !emailRegex.test(this.email)) {
+      this.errorMsg = 'Please enter a valid email address.';
       return;
     }
     this.errorMsg = '';
@@ -61,7 +69,21 @@ export class LoginComponent {
       return;
     }
     this.errorMsg = '';
-    this.authService.login({ email: this.email, password: this.password });
+    this.authService.login({ email: this.email, password: this.password }).subscribe({
+      next: (user) => {
+        this.authState.setUser(user);
+        this.router.navigate([Routes.dashboard]);
+      },
+      error: (err: any) => {
+        this.errorMsg =
+          err?.error?.message ||
+          err?.error?.error ||
+          err?.message ||
+          'Login failed. Please try again.';
+        this.generateCaptcha();
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   goBack(): void {

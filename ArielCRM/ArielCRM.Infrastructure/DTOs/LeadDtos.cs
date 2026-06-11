@@ -1,4 +1,5 @@
 ﻿using ArielCRM.DataLayer.Enums;
+using ArielCRM.DataLayer.Enums.ArielCRM.DataLayer.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -24,12 +25,30 @@ namespace ArielCRM.Infrastructure.DTOs
 
         [Required]
         public string AssignedToId { get; set; } = string.Empty;
+
+        [Required]
+        public string ProjectTitle { get; set; } = string.Empty;
+
+        [Required]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public ProjectType ProjectType { get; set; }
+
+        [Required]
+        [Range(0.01, double.MaxValue, ErrorMessage = "Budget must be greater than zero.")]
+        public decimal Budget { get; set; }
+
+        [Required]
+        public DateOnly DealStartDate { get; set; }
+
+        public DateOnly? DealCloseDate { get; set; } = null;
     }
 
     public class UpdateLeadDto
     {
         public string? Name { get; set; }
         public string? Company { get; set; }
+
+        public string? ContactId { get; set; }
 
         [EmailAddress]
         public string? Email { get; set; }
@@ -42,6 +61,17 @@ namespace ArielCRM.Infrastructure.DTOs
         public LeadStatus? Status { get; set; }
 
         public string? AssignedToId { get; set; }
+
+        public string? ProjectTitle { get; set; }
+
+        [JsonConverter(typeof(JsonStringEnumConverter))]
+        public ProjectType? ProjectType { get; set; }
+
+        [Range(0.01, double.MaxValue, ErrorMessage = "Budget must be greater than zero.")]
+        public decimal? Budget { get; set; }
+
+        public DateOnly? DealStartDate { get; set; }
+        public DateOnly? DealCloseDate { get; set; }
     }
 
     public class LeadResponseDto
@@ -54,9 +84,17 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Source { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;
         public string ContactId { get; set; } = string.Empty;
-        public ContactDto? CreatedContact { get; set; } 
+        public ContactDto? CreatedContact { get; set; }
         public string AssignedToId { get; set; } = string.Empty;
         public string AssignedToName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
+
+        // ── Project / Deal Info ──
+
+        public string ProjectTitle { get; set; } = string.Empty;
+        public string ProjectType { get; set; } = string.Empty;
+        public decimal Budget { get; set; }
+        public DateOnly DealStartDate { get; set; }
+        public DateOnly? DealCloseDate { get; set; } = null;
     }
 }

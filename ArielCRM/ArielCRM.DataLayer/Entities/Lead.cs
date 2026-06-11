@@ -1,7 +1,8 @@
 ﻿using ArielCRM.DataLayer.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+using Microsoft.EntityFrameworkCore;
+using ArielCRM.DataLayer.Enums.ArielCRM.DataLayer.Enums;
 namespace ArielCRM.DataLayer.Entities
 {
     [Table("leads")]
@@ -34,11 +35,11 @@ namespace ArielCRM.DataLayer.Entities
 
         [Required]
         [Column("source")]
-        public LeadSource Source { get; set; }
+        public LeadSource Source { get; set; } 
 
         [Required]
         [Column("status")]
-        public LeadStatus Status { get; set; } = LeadStatus.New;
+        public LeadStatus Status { get; set; } = LeadStatus.Contracted;
 
         [Required]
         [Column("assigned_to")]
@@ -52,13 +53,37 @@ namespace ArielCRM.DataLayer.Entities
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        // ── Project / Deal Info ──
+
+        [Required]
+        [Column("project_title")]
+        [MaxLength(200)]
+        public string ProjectTitle { get; set; } = string.Empty;
+
+        [Required]
+        [Column("project_type")]
+        public ProjectType ProjectType { get; set; }
+
+        [Required]
+        [Column("budget")]
+        [Precision(18, 2)]
+        public decimal Budget { get; set; }
+
+        [Required]
+        [Column("deal_start_date")]
+        public DateOnly DealStartDate { get; set; }
+
+        [Column("deal_close_date")]
+        public DateOnly? DealCloseDate { get; set; } = null;
+
+
         [ForeignKey(nameof(AssignedToId))]
         public User? AssignedTo { get; set; }
 
         [ForeignKey(nameof(ContactId))]
         public Contact? Contact { get; set; }
 
-        public ICollection<CrmTask> Tasks { get; set; } = new List<CrmTask>();
-        public ICollection<Meeting> Meetings { get; set; } = new List<Meeting>();
+        public ICollection<CrmTask> Tasks { get; set; } = [];
+        public ICollection<Meeting> Meetings { get; set; } = [];
     }
 }

@@ -40,9 +40,11 @@ export enum PermissionKey {
     TeamMembersEdit = 'TeamMembersEdit',
     TeamMembersDelete = 'TeamMembersDelete',
 
-    AuditHistoryView = 'AuditHistoryView'
-}
+    AuditHistoryView = 'AuditHistoryView',
 
+    SettingsView = 'SettingsView',
+    SettingsEdit = 'SettingsEdit',
+}
 
 export const PermissionCodeMap: Record<PermissionKey, string> = {
     [PermissionKey.DashboardView]: 'Dashboard.View',
@@ -86,5 +88,8 @@ export const PermissionCodeMap: Record<PermissionKey, string> = {
     [PermissionKey.TeamMembersEdit]: 'TeamMembers.Edit',
     [PermissionKey.TeamMembersDelete]: 'TeamMembers.Delete',
 
-    [PermissionKey.AuditHistoryView]: 'AuditHistory.View'
+    [PermissionKey.AuditHistoryView]: 'AuditHistory.View',
+
+    [PermissionKey.SettingsView]: 'Settings.View',
+    [PermissionKey.SettingsEdit]: 'Settings.Edit',
 };

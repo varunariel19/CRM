@@ -11,7 +11,6 @@ namespace ArielCRM.API.Controllers
     {
         private readonly INoteService _service = service;
 
-        // GET api/notes?relatedTo=Contact&relatedId=abc123
         [HttpGet]
         public async Task<IActionResult> GetNotes(
             [FromQuery] RelatedEntityType relatedTo,
@@ -20,8 +19,15 @@ namespace ArielCRM.API.Controllers
             if (string.IsNullOrWhiteSpace(relatedId))
                 return BadRequest("relatedId is required.");
 
-            var notes = await _service.GetNotesAsync(relatedTo, relatedId);
-            return Ok(notes);
+            try
+            {
+                var notes = await _service.GetNotesAsync(relatedTo, relatedId);
+                return Ok(notes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while retrieving notes.", details = ex.Message });
+            }
         }
 
         [HttpPost]
@@ -36,31 +42,53 @@ namespace ArielCRM.API.Controllers
             if (string.IsNullOrWhiteSpace(request.CreatedById))
                 return BadRequest("CreatedBy is required.");
 
-            var note = await _service.CreateNoteAsync(request);
-            return CreatedAtAction(nameof(GetNotes), new { relatedTo = request.RelatedTo, relatedId = request.RelatedId }, note);
+            try
+            {
+                var note = await _service.CreateNoteAsync(request);
+                return CreatedAtAction(nameof(GetNotes), new { relatedTo = request.RelatedTo, relatedId = request.RelatedId }, note);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while creating the note.", details = ex.Message });
+            }
         }
 
+        [HttpPost("{id}")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateNote(string id, [FromBody] UpdateNoteRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Content))
                 return BadRequest("Content is required.");
 
-            var updated = await _service.UpdateNoteAsync(id, request);
-            if (updated is null)
-                return NotFound($"Note '{id}' not found.");
+            try
+            {
+                var updated = await _service.UpdateNoteAsync(id, request);
+                if (updated is null)
+                    return NotFound($"Note '{id}' not found.");
 
-            return Ok(updated);
+                return Ok(updated);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = $"An error occurred while updating note {id}.", details = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteNote(string id)
         {
-            var deleted = await _service.DeleteNoteAsync(id);
-            if (!deleted)
-                return NotFound($"Note '{id}' not found.");
+            try
+            {
+                var deleted = await _service.DeleteNoteAsync(id);
+                if (!deleted)
+                    return NotFound($"Note '{id}' not found.");
 
-            return NoContent();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = $"An error occurred while deleting note {id}.", details = ex.Message });
+            }
         }
     }
 }

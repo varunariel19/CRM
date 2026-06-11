@@ -16,4 +16,8 @@ export class App {
 
   constructor(public authState: AuthState) { }
 
+
+  get LogoUrl() {
+     return this.authState.logoUrl();
+  }
 }

@@ -14,12 +14,11 @@
 .left-section {
   display: flex;
   align-items: center;
-  gap: 14px;
 }
 
 .logo {
-  width: 42px;
-  height: 42px;
+  width: 100px;
+  height: 45px;
 
   border-radius: 12px;
 
@@ -36,10 +35,20 @@
 }
 
 .brand {
-  font-size: 20px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 1px;
+  width: 100%;
 }
 
+.brand-logo {
+  max-width: 120px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
 /* CENTER */
 
 .center-section {
@@ -176,7 +185,7 @@
 /* HEADER BUTTON */
 
 .toggle-btn {
-  width: 42px;
+  width: 100px;
   height: 42px;
 
   border: none;

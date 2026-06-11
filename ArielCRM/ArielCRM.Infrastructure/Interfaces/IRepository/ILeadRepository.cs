@@ -10,6 +10,7 @@ namespace ArielCRM.Infrastructure.Interfaces.IRepository
         Task<LeadResponseDto?> GetByIdAsync(string id);
         Task<LeadResponseDto> CreateAsync(Lead lead);
         Task<LeadResponseDto?> UpdateLeadAsync(string id, UpdateLeadDto dto);
+         Task<IEnumerable<LeadResponseDto>> GetAllByAssigneeAsync(string userId);
         Task<bool> DeleteAsync(string id);
     }
 

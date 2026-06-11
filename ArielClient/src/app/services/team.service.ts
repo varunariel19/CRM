@@ -14,17 +14,17 @@ export class TeamService {
 
   handleGetList(): Observable<TeamMember[]> {
     return this.http
-      .get<TeamMember[]>(endpoints.teamMembers)
+      .get<TeamMember[]>(endpoints.teamMembers, { withCredentials: true })
       .pipe(tap(members => this.teamState.setTeamMembers(members)));
   }
 
   handleGetById(id: string): Observable<TeamMember> {
-    return this.http.get<TeamMember>(`${endpoints.teamMembers}/${id}`);
+    return this.http.get<TeamMember>(`${endpoints.teamMembers}/${id}`, { withCredentials: true });
   }
 
   handleCreateTeamMember(dto: CreateTeamMemberDto): Observable<TeamMember> {
     return this.http
-      .post<TeamMember>(`${endpoints.teamMembers}/register`, dto)
+      .post<TeamMember>(`${endpoints.teamMembers}/register`, dto, { withCredentials: true })
       .pipe(
         tap(member =>
           this.teamState.setTeamMembers([...this.teamState.teamMembers(), member])
@@ -34,7 +34,7 @@ export class TeamService {
 
   handleUpdateTeamMember(id: string, dto: UpdateTeamMemberDto): Observable<TeamMember> {
     return this.http
-      .put<TeamMember>(`${endpoints.teamMembers}/${id}`, dto)
+      .put<TeamMember>(`${endpoints.teamMembers}/${id}`, dto, { withCredentials: true })
       .pipe(
         tap(updatedMember => {
           const updated = this.teamState
@@ -48,7 +48,7 @@ export class TeamService {
 
   handleDeleteTeamMember(id: string): Observable<void> {
     return this.http
-      .delete<void>(`${endpoints.teamMembers}/${id}`)
+      .delete<void>(`${endpoints.teamMembers}/${id}`, { withCredentials: true })
       .pipe(
         tap(() => {
           const updated = this.teamState

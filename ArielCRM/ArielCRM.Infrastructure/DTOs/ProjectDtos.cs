@@ -17,7 +17,7 @@ namespace ArielCRM.Infrastructure.DTOs
 
         public DateTime? EndDate { get; set; }
 
-        public string? DealId { get; set; }
+        public string? ContactId { get; set; }
 
         public List<IFormFile> Documents { get; set; } = [];
     }
@@ -48,7 +48,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public bool IsActive { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
-        public string? DealId { get; set; }
+        public string? ContactId { get; set; }
 
         public ClientDto? Client { get; set; } = null;
         public string ProjectKey { get; set; } = string.Empty;

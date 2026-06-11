@@ -37,9 +37,9 @@ namespace ArielCRM.DataLayer.Entities
         [Column("end_date")]
         public DateTime? EndDate { get; set; }
 
-        [Column("deal_id")]
+        [Column("contact_id")]
         [MaxLength(50)]
-        public string? DealId { get; set; }
+        public string? ContactId { get; set; }
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -50,8 +50,8 @@ namespace ArielCRM.DataLayer.Entities
         [ForeignKey(nameof(ProjectLeadId))]
         public User? ProjectLead { get; set; }
 
-        [ForeignKey(nameof(DealId))]
-        public Deal? Deal { get; set; } = null!;
+        [ForeignKey(nameof(ContactId))]
+        public Contact? Contact { get; set; } = null!;
 
         public ICollection<User> Members { get; set; } = [];
 

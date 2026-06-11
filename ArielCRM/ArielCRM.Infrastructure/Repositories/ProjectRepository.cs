@@ -48,15 +48,12 @@ namespace ArielCRM.Infrastructure.Repositories
         {
             return await _context.Projects
                 .Include(p => p.ProjectLead)
-                .Include(p => p.Deal)
-                    .ThenInclude(d => d!.Contact)
+                .Include(p => p.Contact)
                 .Include(p => p.Members)
                 .Include(p => p.Documents)
                 .Include(p => p.Tasks)
                 .ToListAsync();
         }
-
-
 
         public async Task<bool> AddMemberToProjectAsync(string projectId, string memberId)
         {

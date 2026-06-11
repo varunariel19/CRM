@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthState } from '../../state/auth.state';
 import { getAvatarColor } from '../../utils';
 import { GlobalState } from '../../state/global.state';
+import { UserService } from '../../core/services/user.service';
 @Component({
     selector: 'app-profile-section',
     imports: [CommonModule, FormsModule],
@@ -11,12 +12,17 @@ import { GlobalState } from '../../state/global.state';
     styleUrl: './profile-section.component.css',
 })
 export class ProfileSectionComponent {
-
     @Output() close = new EventEmitter<void>();
+
+    private userService = inject(UserService);
+    private selectedFile = signal<File | null>(null);
+
 
     authState = inject(AuthState);
     globalState = inject(GlobalState);
     activeTab = signal<'profile' | 'password'>('profile');
+
+
 
     // Profile
     editName = signal('');
@@ -47,6 +53,7 @@ export class ProfileSectionComponent {
     onImageSelect(event: Event): void {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (!file) return;
+        this.selectedFile.set(file);
         const reader = new FileReader();
         reader.onload = () => this.selectedImage.set(reader.result as string);
         reader.readAsDataURL(file);
@@ -56,11 +63,16 @@ export class ProfileSectionComponent {
         const name = this.editName().trim();
         if (!name) return;
         this.isSavingProfile.set(true);
-        // Call your API here
-        setTimeout(() => {
-            this.authState.setUser({ ...this.authState.user()!, name });
-            this.isSavingProfile.set(false);
-        }, 800);
+
+        this.userService.updateProfile(name, this.selectedFile() ?? undefined).subscribe({
+            next: (res) => {
+                this.authState.setUser({ ...this.authState.user()!, name });
+                this.isSavingProfile.set(false);
+            },
+            error: (err) => {
+                this.isSavingProfile.set(false);
+            }
+        });
     }
 
     savePassword(): void {
@@ -76,18 +88,25 @@ export class ProfileSectionComponent {
             return;
         }
         if (this.newPassword() !== this.confirmPassword()) {
-            this.passwordError.set('New password and confirm password do not match.');
+            this.passwordError.set('Passwords do not match.');
             return;
         }
 
         this.isSavingPassword.set(true);
-        setTimeout(() => {
-            this.passwordSuccess.set('Password changed successfully.');
-            this.currentPassword.set('');
-            this.newPassword.set('');
-            this.confirmPassword.set('');
-            this.isSavingPassword.set(false);
-        }, 800);
+
+        this.userService.changePassword(this.currentPassword(), this.newPassword(), this.confirmPassword()).subscribe({
+            next: (res) => {
+                this.passwordSuccess.set(res.message);
+                this.currentPassword.set('');
+                this.newPassword.set('');
+                this.confirmPassword.set('');
+                this.isSavingPassword.set(false);
+            },
+            error: (err) => {
+                this.passwordError.set(err?.error?.message || 'Failed to change password.');
+                this.isSavingPassword.set(false);
+            }
+        });
     }
 
     getInitials(): string {

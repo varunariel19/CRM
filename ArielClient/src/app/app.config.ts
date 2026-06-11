@@ -21,7 +21,7 @@ export const appConfig: ApplicationConfig = {
     }),
     provideAnimations(),
     provideToastr({
-      positionClass: 'toast-bottom-right',
+      positionClass: 'toast-top-right',
       easeTime: 300,
       easing: 'ease-in',
       timeOut: 3000,

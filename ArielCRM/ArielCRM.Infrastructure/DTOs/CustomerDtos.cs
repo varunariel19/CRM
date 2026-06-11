@@ -15,6 +15,10 @@ namespace ArielCRM.Infrastructure.DTOs
     }
     public class CreateContactDto
     {
+
+        [StringLength(100)]
+        public string? LeadId { get; set; } = string.Empty;
+
         [Required]
         [StringLength(100)]
         public string Name { get; set; } = string.Empty;

@@ -31,8 +31,8 @@ namespace ArielCRM.Application.Services
                 new(ClaimTypes.Email,          user.Email),
                 new("Department",              user.Department.Name),
                 new("Designation",             user.Designation.Name),
-                new("AccessLevel",             user.AccessLevel.Name),
-                new("Permissions",             string.Join(",", user.AccessLevel.Permissions.Select(p => p.Permission.Code)))
+                new("AccessLevelId",             user.AccessLevel.Id),
+                new("Permissions", string.Join("|", user.AccessLevel.Permissions.Select(p => p.Permission.Code)))
             };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

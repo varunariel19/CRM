@@ -120,18 +120,45 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.ToTable("activity_log");
                 });
 
-            modelBuilder.Entity("ArielCRM.DataLayer.Entities.CRMHistory", b =>
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.AuditLog", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("id");
 
+                    b.Property<string>("ActionDescription")
+                        .HasColumnType("text")
+                        .HasColumnName("action_description");
+
                     b.Property<string>("ActionTypeRaw")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
                         .HasColumnName("action_type");
+
+                    b.Property<string>("AffectedFields")
+                        .HasColumnType("text")
+                        .HasColumnName("affected_fields");
+
+                    b.Property<string>("BatchId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("batch_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<string>("DiffData")
+                        .HasColumnType("text")
+                        .HasColumnName("diff_data");
+
+                    b.Property<string>("EntityDisplayName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("entity_display_name");
 
                     b.Property<string>("EntityId")
                         .IsRequired()
@@ -145,6 +172,19 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("entity_name");
 
+                    b.Property<string>("EntityUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("entity_url");
+
+                    b.Property<string>("ExtraMetadata")
+                        .HasColumnType("text")
+                        .HasColumnName("extra_metadata");
+
+                    b.Property<string>("FailureReason")
+                        .HasColumnType("text")
+                        .HasColumnName("failure_reason");
+
                     b.Property<DateTime>("InitiatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("initiated_at");
@@ -155,9 +195,19 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("initiated_by_id");
 
-                    b.Property<string>("ModifiedData")
-                        .HasColumnType("text")
-                        .HasColumnName("modified_data");
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<bool>("IsReverted")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_reverted");
+
+                    b.Property<string>("ParentAuditId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("parent_audit_id");
 
                     b.Property<string>("PreviousState")
                         .HasColumnType("text")
@@ -165,9 +215,35 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.Property<string>("RevertTypeRaw")
                         .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("revert_type");
+
+                    b.Property<DateTime?>("RevertedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("reverted_at");
+
+                    b.Property<string>("RevertedById")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("reverted_by_id");
+
+                    b.Property<string>("SessionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("session_id");
+
+                    b.Property<string>("SourceRaw")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("source");
+
+                    b.Property<string>("StatusRaw")
+                        .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)")
-                        .HasColumnName("revert_type");
+                        .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -178,11 +254,86 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("updated_state");
 
+                    b.Property<string>("UserAgent")
+                        .HasColumnType("text")
+                        .HasColumnName("user_agent");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("InitiatedById");
+                    b.HasIndex("ActionTypeRaw")
+                        .HasDatabaseName("idx_auditlog_action");
 
-                    b.ToTable("crm_history", (string)null);
+                    b.HasIndex("BatchId")
+                        .HasDatabaseName("idx_auditlog_batch");
+
+                    b.HasIndex("InitiatedAt")
+                        .IsDescending()
+                        .HasDatabaseName("idx_auditlog_date");
+
+                    b.HasIndex("InitiatedById")
+                        .HasDatabaseName("idx_auditlog_initiator");
+
+                    b.HasIndex("IsReverted")
+                        .HasDatabaseName("idx_auditlog_reverted");
+
+                    b.HasIndex("ParentAuditId")
+                        .HasDatabaseName("idx_auditlog_parent");
+
+                    b.HasIndex("RevertedById");
+
+                    b.HasIndex("EntityName", "EntityId")
+                        .HasDatabaseName("idx_auditlog_entity");
+
+                    b.ToTable("audit_logs", (string)null);
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.AuditRevertHistory", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AuditLogId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("audit_log_id");
+
+                    b.Property<string>("RevertNote")
+                        .HasColumnType("text")
+                        .HasColumnName("revert_note");
+
+                    b.Property<DateTime>("RevertedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("reverted_at");
+
+                    b.Property<string>("RevertedById")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("reverted_by_id");
+
+                    b.Property<string>("SnapshotAfterRevert")
+                        .HasColumnType("text")
+                        .HasColumnName("snapshot_after_revert");
+
+                    b.Property<string>("SnapshotBeforeRevert")
+                        .HasColumnType("text")
+                        .HasColumnName("snapshot_before_revert");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuditLogId")
+                        .HasDatabaseName("idx_reverthistory_auditlog");
+
+                    b.HasIndex("RevertedAt")
+                        .IsDescending()
+                        .HasDatabaseName("idx_reverthistory_date");
+
+                    b.HasIndex("RevertedById");
+
+                    b.ToTable("audit_revert_history", (string)null);
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Comment", b =>
@@ -380,6 +531,9 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
 
+                    b.Property<string>("ProjectId")
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<string>("Stage")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -404,6 +558,8 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("ContactId")
                         .HasDatabaseName("idx_deals_contact");
 
+                    b.HasIndex("ProjectId");
+
                     b.HasIndex("Stage")
                         .HasDatabaseName("idx_deals_stage");
 
@@ -416,6 +572,12 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("id");
+
+                    b.Property<string>("DepartmentKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("department_key");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -508,6 +670,11 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("assigned_to");
 
+                    b.Property<decimal>("Budget")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("budget");
+
                     b.Property<string>("Company")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -522,6 +689,14 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
+
+                    b.Property<DateOnly?>("DealCloseDate")
+                        .HasColumnType("date")
+                        .HasColumnName("deal_close_date");
+
+                    b.Property<DateOnly>("DealStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("deal_start_date");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -540,6 +715,16 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("phone");
 
+                    b.Property<string>("ProjectTitle")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("project_title");
+
+                    b.Property<int>("ProjectType")
+                        .HasColumnType("int")
+                        .HasColumnName("project_type");
+
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -557,7 +742,9 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("AssignedToId")
                         .HasDatabaseName("idx_leads_assigned");
 
-                    b.HasIndex("ContactId");
+                    b.HasIndex("ContactId")
+                        .IsUnique()
+                        .HasFilter("[contact_id] IS NOT NULL");
 
                     b.HasIndex("Status")
                         .HasDatabaseName("idx_leads_status");
@@ -701,14 +888,14 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("nvarchar(50)")
                         .HasColumnName("id");
 
+                    b.Property<string>("ContactId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("contact_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
-
-                    b.Property<string>("DealId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("deal_id");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)")
@@ -749,9 +936,9 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DealId")
+                    b.HasIndex("ContactId")
                         .IsUnique()
-                        .HasFilter("[deal_id] IS NOT NULL");
+                        .HasFilter("[contact_id] IS NOT NULL");
 
                     b.HasIndex("ProjectKey")
                         .IsUnique()
@@ -1010,15 +1197,48 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasForeignKey("TicketTaskTaskId");
                 });
 
-            modelBuilder.Entity("ArielCRM.DataLayer.Entities.CRMHistory", b =>
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.AuditLog", b =>
                 {
                     b.HasOne("ArielCRM.DataLayer.Entities.User", "InitiatedBy")
                         .WithMany()
                         .HasForeignKey("InitiatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ArielCRM.DataLayer.Entities.AuditLog", "ParentAudit")
+                        .WithMany()
+                        .HasForeignKey("ParentAuditId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ArielCRM.DataLayer.Entities.User", "RevertedBy")
+                        .WithMany()
+                        .HasForeignKey("RevertedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("InitiatedBy");
+
+                    b.Navigation("ParentAudit");
+
+                    b.Navigation("RevertedBy");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.AuditRevertHistory", b =>
+                {
+                    b.HasOne("ArielCRM.DataLayer.Entities.AuditLog", "AuditLog")
+                        .WithMany()
+                        .HasForeignKey("AuditLogId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("InitiatedBy");
+                    b.HasOne("ArielCRM.DataLayer.Entities.User", "RevertedBy")
+                        .WithMany()
+                        .HasForeignKey("RevertedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AuditLog");
+
+                    b.Navigation("RevertedBy");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Comment", b =>
@@ -1076,13 +1296,18 @@ namespace ArielCRM.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ArielCRM.DataLayer.Entities.Contact", "Contact")
-                        .WithMany("Deals")
-                        .HasForeignKey("ContactId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .WithMany()
+                        .HasForeignKey("ContactId");
+
+                    b.HasOne("ArielCRM.DataLayer.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId");
 
                     b.Navigation("AssignedTo");
 
                     b.Navigation("Contact");
+
+                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Designation", b =>
@@ -1116,8 +1341,8 @@ namespace ArielCRM.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ArielCRM.DataLayer.Entities.Contact", "Contact")
-                        .WithMany("Leads")
-                        .HasForeignKey("ContactId")
+                        .WithOne("Lead")
+                        .HasForeignKey("ArielCRM.DataLayer.Entities.Lead", "ContactId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("AssignedTo");
@@ -1137,9 +1362,9 @@ namespace ArielCRM.Infrastructure.Migrations
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Project", b =>
                 {
-                    b.HasOne("ArielCRM.DataLayer.Entities.Deal", "Deal")
+                    b.HasOne("ArielCRM.DataLayer.Entities.Contact", "Contact")
                         .WithOne("Project")
-                        .HasForeignKey("ArielCRM.DataLayer.Entities.Project", "DealId")
+                        .HasForeignKey("ArielCRM.DataLayer.Entities.Project", "ContactId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("ArielCRM.DataLayer.Entities.User", "ProjectLead")
@@ -1147,7 +1372,7 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasForeignKey("ProjectLeadId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("Deal");
+                    b.Navigation("Contact");
 
                     b.Navigation("ProjectLead");
                 });
@@ -1245,17 +1470,16 @@ namespace ArielCRM.Infrastructure.Migrations
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Contact", b =>
                 {
-                    b.Navigation("Deals");
+                    b.Navigation("Lead");
 
-                    b.Navigation("Leads");
+                    b.Navigation("Project")
+                        .IsRequired();
 
                     b.Navigation("Tickets");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Deal", b =>
                 {
-                    b.Navigation("Project");
-
                     b.Navigation("Tasks");
                 });
 

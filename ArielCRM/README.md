@@ -44,3 +44,28 @@ password : amit@45,
 adminKey : 4bb068cbd6115d58eedad84903784b005ee8eb8ffe651089713fdd639a12
 
 }
+
+
+
+## How to do the integration with keka 
+
+1. Need all these details : 
+
+https://{company}.{environment}.com/api/v1/hris/employees
+
+var tokenRequest = new
+{
+    client_id = "your-client-id",
+    client_secret = "your-client-secret",
+    api_key = "your-api-key",
+    grant_type = "kekaapi",
+    scope = "kekaapi"
+};
+
+
+
+
+endpoints : 
+1. To sync all members => get all details from keka => 
+and register all member in CRM platform ! 
+2. 

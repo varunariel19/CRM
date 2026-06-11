@@ -9,6 +9,9 @@ export const endpoints = {
     logout: `${BASE_URL}/api/auth/logout`,
     authenticate: `${BASE_URL}/api/auth/me`,
 
+    // user
+     user : `${BASE_URL}/api/user`,
+       
 
     // leads 
     getLeads: `${BASE_URL}/api/leads`,

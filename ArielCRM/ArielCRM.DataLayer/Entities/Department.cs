@@ -16,6 +16,12 @@ namespace ArielCRM.DataLayer.Entities
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
 
+
+        [Required]
+        [Column("department_key")]
+        [MaxLength(100)]
+        public string DepartmentKey { get; set; } = string.Empty;
+
         public ICollection<User> Users { get; set; } = [];
     }
 }

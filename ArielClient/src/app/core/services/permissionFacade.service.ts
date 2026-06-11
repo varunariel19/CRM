@@ -34,10 +34,23 @@ class AppointmentPermissions {
 class SinglePermission {
     constructor(
         private svc: PermissionService,
-        private view: PermissionKey
+        private view: PermissionKey,
     ) { }
 
     canView() { return this.svc.has(this.view); }
+    
+}
+
+class DoublePermission {
+    constructor(
+        private svc: PermissionService,
+        private view: PermissionKey,
+        private edit: PermissionKey,
+
+    ) { }
+
+    canView() { return this.svc.has(this.view); }
+    canEdit() { return this.svc.has(this.edit); }
 }
 
 @Injectable({ providedIn: 'root' })
@@ -53,6 +66,8 @@ export class PermissionFacade {
     readonly tickets = new ModulePermissions(this.svc, PermissionKey.TicketsView, PermissionKey.TicketsCreate, PermissionKey.TicketsEdit, PermissionKey.TicketsDelete);
     readonly teamMembers = new ModulePermissions(this.svc, PermissionKey.TeamMembersView, PermissionKey.TeamMembersCreate, PermissionKey.TeamMembersEdit, PermissionKey.TeamMembersDelete);
     readonly appointments = new AppointmentPermissions(this.svc, PermissionKey.AppointmentsView, PermissionKey.AppointmentsCreate, PermissionKey.AppointmentsEdit);
+    readonly settings = new DoublePermission(this.svc, PermissionKey.SettingsView , PermissionKey.SettingsEdit);
     readonly dashboard = new SinglePermission(this.svc, PermissionKey.DashboardView);
     readonly auditHistory = new SinglePermission(this.svc, PermissionKey.AuditHistoryView);
+
 }

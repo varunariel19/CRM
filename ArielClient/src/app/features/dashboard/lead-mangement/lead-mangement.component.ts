@@ -4,7 +4,7 @@ import {
   ChangeDetectorRef,
   NgZone,
 } from '@angular/core';
-import { CreateLeadDto, Lead, LeadSource, LeadStatus, UpdateLeadDto } from '../../../core/types/lead.type';
+import { CreateLeadDto, Lead, LeadSource, LeadStatus, UpdateLeadDto, ProjectType } from '../../../core/types/lead.type';
 import { TeamMember } from '../../../core/types/global.type';
 import { LeadService } from '../../../services/lead.service';
 import { CommonModule } from '@angular/common';
@@ -17,8 +17,13 @@ import { TeamState } from '../../../state/team.state';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 import { ProjectService } from '../../../services/project.service';
 import { ContactService } from '../../../services/contact.service';
-import { switchMap } from 'rxjs';
-import { } from '../deals-pipeline/deals-pipeline.component';
+import { map, switchMap } from 'rxjs';
+import { AuthState } from '../../../state/auth.state';
+import { DepartmentItem, GlobalState } from '../../../state/global.state';
+import { DepartmentKey } from '../../../core/constants/global';
+import { HistoryState } from '../../../state/history.state';
+import { AuditHistoryStore } from '../../../state/audit-history.state';
+
 
 export interface ProjectDocument {
   name: string;
@@ -26,12 +31,13 @@ export interface ProjectDocument {
   file: File;
 }
 
+
 export interface CreateProjectPayload {
   name: string;
   projectLeadId: string;
   description?: string;
   startDate?: string;
-  endDate?: string;
+  endDate?: string | null;
   leadId: string;
   documents: ProjectDocument[];
 }
@@ -51,6 +57,17 @@ export interface LeadPipelineColumn {
   leads: Lead[];
 }
 
+export const leadSourceOptions: { value: LeadSource; label: string }[] = [
+  { value: 'MarketingPlatform', label: 'Marketing Platform' },
+  { value: 'Website', label: 'Website' },
+  { value: 'Referrals', label: 'Referrals' },
+  { value: 'LinkedIn', label: 'LinkedIn' },
+  { value: 'Events', label: 'Events' },
+  { value: 'Partners', label: 'Partners' },
+  { value: 'ColdOutreach', label: 'Cold Outreach' }
+];
+
+
 @Component({
   selector: 'app-lead-management',
   imports: [CommonModule, FormsModule],
@@ -59,76 +76,94 @@ export interface LeadPipelineColumn {
 })
 export class LeadManagementComponent {
 
-  leadState        = inject(LeadState);
-  toastService     = inject(ToastService);
-  private loader   = inject(LoaderService);
-  private cdr      = inject(ChangeDetectorRef);
-  private zone     = inject(NgZone);
+  leadState = inject(LeadState);
+  authState = inject(AuthState);
+  globalState = inject(GlobalState);
+  toastService = inject(ToastService);
+  private loader = inject(LoaderService);
+  private cdr = inject(ChangeDetectorRef);
+  private zone = inject(NgZone);
   private projectService = inject(ProjectService);
   private contactService = inject(ContactService);
-  perm             = inject(PermissionFacade);
+  perm = inject(PermissionFacade);
+  history = inject(AuditHistoryStore);
 
   viewMode: 'list' | 'pipeline' = 'pipeline';
 
   showCreateModal = false;
-  showEditModal   = false;
+  showEditModal = false;
   editLead: Partial<UpdateLeadDto & { id: string }> = {};
 
   showDetailModal = false;
   detailLead: Lead | null = null;
 
-  showConvertModal  = false;
+  showConvertModal = false;
   conversionStep: 1 | 2 = 1;
   convertingLead: Lead | null = null;
   private convertingLeadPreviousStatus: LeadStatus | null = null;
 
   projectForm: CreateProjectPayload = this.resetProjectForm();
-  clientForm:  CreateClientPayload  = this.resetClientForm();
+  clientForm: CreateClientPayload = this.resetClientForm();
 
-  isDragOver        = false;
-  draggedLead: Lead | null        = null;
+  isDragOver = false;
+  draggedLead: Lead | null = null;
   draggedFromStatus: LeadStatus | null = null;
 
-  openStatusIndex:   number | null = null;
+  openStatusIndex: number | null = null;
   openAssigneeIndex: number | null = null;
 
-  searchText    = '';
+  searchText = '';
   filterStatus: LeadStatus | '' = '';
   filterSource: LeadSource | '' = '';
 
+  leadSourceOptions = leadSourceOptions;
+
   newLead: CreateLeadDto = this.resetNewLead();
 
+  readonly projectTypeOptions: ProjectType[] = ['Hourly', 'FixedPrice', 'ManMonth'];
+
   readonly statusOptions: { label: LeadStatus; value: LeadStatus; className: string }[] = [
-    { label: 'New',        value: 'New',        className: 'new'        },
-    { label: 'Contracted', value: 'Contracted',  className: 'contracted' },
-    { label: 'Qualified',  value: 'Qualified',   className: 'qualified'  },
-    { label: 'Converted',  value: 'Converted',   className: 'converted'  },
-    { label: 'Lost',       value: 'Lost',        className: 'lost'       },
+    { label: 'Contracted', value: 'Contracted', className: 'contracted' },
+    { label: 'Qualified', value: 'Qualified', className: 'qualified' },
+    { label: 'Converted', value: 'Converted', className: 'converted' },
+    { label: 'Lost', value: 'Lost', className: 'lost' },
   ];
 
-  readonly sourceOptions: LeadSource[] = ['Website', 'Referral', 'Instagram', 'ColdCall'];
 
   readonly pipelineColumns: LeadPipelineColumn[] = [
-    { key: 'New',        title: 'New Leads',  color: '#6366f1', leads: [] },
     { key: 'Contracted', title: 'Contracted', color: '#f59e0b', leads: [] },
-    { key: 'Qualified',  title: 'Qualified',  color: '#8b5cf6', leads: [] },
-    { key: 'Converted',  title: 'Converted',  color: '#10b981', leads: [] },
-    { key: 'Lost',       title: 'Lost',       color: '#ef4444', leads: [] },
+    { key: 'Qualified', title: 'Qualified', color: '#8b5cf6', leads: [] },
+    { key: 'Converted', title: 'Converted', color: '#10b981', leads: [] },
+    { key: 'Lost', title: 'Lost', color: '#ef4444', leads: [] },
   ];
 
   constructor(
-    private teamState:  TeamState,
-    private menuState:  MenuState,
+    private teamState: TeamState,
+    private menuState: MenuState,
     private leadService: LeadService,
   ) { }
 
-  // ── Getters ──
+
+  get businessDepartment(): DepartmentItem | undefined {
+    return this.globalState.departments().find(department => department.departmentKey == DepartmentKey.BUSINESS_MANAGEMENT);
+  }
+
+  get managerDepartment() {
+    return this.globalState.departments().find(department => department.departmentKey == DepartmentKey.PROJECT_MANAGEMENT);
+
+  }
 
   get teamMembers(): TeamMember[] {
-    return this.teamState.teamMembers();
+    return this.teamState.teamMembers().filter(member => member.departmentId == this.businessDepartment!.id);
+  }
+
+  get projectManagers() {
+    return this.teamState.teamMembers().filter(member => member.departmentId == this.managerDepartment!.id);
   }
 
   get leadList(): Lead[] {
+    const userId = this.authState.userId();
+    if (!userId) return [];
     return this.leadState.leads();
   }
 
@@ -145,6 +180,10 @@ export class LeadManagementComponent {
     });
   }
 
+  getSourceOptionLabel(value: string): string {
+    return leadSourceOptions.find(s => s.value == value)!.label ?? "Unknown";
+  }
+
   getColumnLeads(status: LeadStatus): Lead[] {
     return this.filteredLeads.filter(l => l.status === status);
   }
@@ -156,7 +195,19 @@ export class LeadManagementComponent {
   // ── Reset helpers ──
 
   private resetNewLead(): CreateLeadDto {
-    return { name: '', company: '', email: '', phone: '', source: 'Website', assignedToId: '' };
+    return {
+      name: '',
+      company: '',
+      email: '',
+      phone: '',
+      source: 'Website',
+      assignedToId: '',
+      projectTitle: '',
+      budget: null,
+      projectType: '',
+      dealStartDate: '',
+      dealCloseDate: null,
+    };
   }
 
   private resetProjectForm(): CreateProjectPayload {
@@ -165,7 +216,7 @@ export class LeadManagementComponent {
       projectLeadId: '',
       description: '',
       startDate: new Date().toISOString().split('T')[0],
-      endDate: '',
+      endDate: null,
       leadId: '',
       documents: [],
     };
@@ -175,7 +226,42 @@ export class LeadManagementComponent {
     return { name: '', company: '', email: '', phone: '', leadId: '' };
   }
 
-  // ── Create Lead ──
+
+  getBudgetLabel(projectType: ProjectType | '' | undefined): string {
+    switch (projectType) {
+      case 'Hourly': return 'Hourly Rate ($/hr)';
+      case 'ManMonth': return 'Monthly Rate ($/month)';
+      case 'FixedPrice':
+      default: return 'Budget ($)';
+    }
+  }
+
+  getBudgetPlaceholder(projectType: ProjectType | '' | undefined): string {
+    switch (projectType) {
+      case 'Hourly': return 'e.g. 75';
+      case 'ManMonth': return 'e.g. 5000';
+      default: return 'e.g. 10000';
+    }
+  }
+  formatBudgetDisplay(lead: Lead): string {
+    if (!lead.budget) return '—';
+    const formatted = `$${Number(lead.budget).toLocaleString()}`;
+    switch (lead.projectType) {
+      case 'Hourly': return `${formatted}/hr`;
+      case 'ManMonth': return `${formatted}/mo`;
+      default: return formatted;
+    }
+  }
+
+  getProjectTypeClass(type: ProjectType | '' | undefined): string {
+    switch (type) {
+      case 'Hourly': return 'hourly';
+      case 'FixedPrice': return 'fixed-price';
+      case 'ManMonth': return 'man-month';
+      default: return '';
+    }
+  }
+
 
   submitCreateLead(): void {
     if (!this.newLead.name || !this.newLead.company || !this.newLead.email) return;
@@ -200,14 +286,19 @@ export class LeadManagementComponent {
 
   openEditModal(lead: Lead): void {
     this.editLead = {
-      id:           lead.id,
-      name:         lead.name,
-      company:      lead.company,
-      email:        lead.email,
-      phone:        lead.phone ?? '',
-      source:       lead.source as LeadSource,
-      status:       lead.status as LeadStatus,
+      id: lead.id,
+      name: lead.name,
+      company: lead.company,
+      email: lead.email,
+      phone: lead.phone ?? '',
+      source: lead.source as LeadSource,
+      status: lead.status as LeadStatus,
       assignedToId: lead.assignedToId,
+      projectTitle: lead.projectTitle ?? '',
+      budget: lead.budget ?? null,
+      projectType: lead.projectType ?? '',
+      dealStartDate: lead.dealStartDate ?? '',
+      dealCloseDate: lead.dealCloseDate ?? '',
     };
     this.showEditModal = true;
   }
@@ -226,34 +317,31 @@ export class LeadManagementComponent {
     });
   }
 
-  // ── Detail Popup ──
 
   openDetailModal(lead: Lead): void {
-    this.detailLead      = lead;
+    this.detailLead = lead;
     this.showDetailModal = true;
   }
 
   closeDetailModal(): void {
     this.showDetailModal = false;
-    this.detailLead      = null;
+    this.detailLead = null;
   }
 
-  // ── Delete Lead ──
 
   deleteLead(id: string): void {
     this.menuState.open({
-      title:   'Delete Lead',
+      title: 'Delete Lead',
       message: 'Are you sure you want to delete this lead? This action cannot be undone.',
       onConfirm: () => {
         this.leadService.handleRemoveLead(id).subscribe({
-          next:  () => { this.leadState.removeLead(id); },
+          next: () => { this.leadState.removeLead(id); },
           error: (err) => console.error('Failed to delete lead', err),
         });
       },
     });
   }
 
-  // ── Status / Assignee (list view) ──
 
   setStatus(lead: Lead, status: LeadStatus): void {
     this.openStatusIndex = null;
@@ -263,11 +351,11 @@ export class LeadManagementComponent {
   setAssignee(lead: Lead, memberId: string): void {
     const memberName = this.teamMembers.find(m => m.id === memberId)?.name ?? '';
     this.menuState.open({
-      title:   'Assign Lead',
+      title: 'Assign Lead',
       message: `Are you sure to assign this lead to ${memberName}?`,
       onConfirm: () => {
         const prev = { assignedToId: lead.assignedToId, assignedToName: lead.assignedToName };
-        lead.assignedToId   = memberId;
+        lead.assignedToId = memberId;
         lead.assignedToName = memberName;
         this.leadService.handleUpdateLead(lead.id, { assignedToId: memberId }).subscribe({
           next: () => {
@@ -275,7 +363,7 @@ export class LeadManagementComponent {
             this.openAssigneeIndex = null;
           },
           error: (err) => {
-            lead.assignedToId   = prev.assignedToId;
+            lead.assignedToId = prev.assignedToId;
             lead.assignedToName = prev.assignedToName;
             this.openAssigneeIndex = null;
             console.error(err);
@@ -285,10 +373,9 @@ export class LeadManagementComponent {
     });
   }
 
-  // ── Pipeline drag-drop ──
 
   dragLead(event: DragEvent, lead: Lead, status: LeadStatus): void {
-    this.draggedLead       = lead;
+    this.draggedLead = lead;
     this.draggedFromStatus = status;
   }
 
@@ -298,19 +385,19 @@ export class LeadManagementComponent {
     event.preventDefault();
     if (!this.draggedLead || this.draggedFromStatus === targetStatus) return;
     this.moveLeadToStatus(this.draggedLead, targetStatus);
-    this.draggedLead       = null;
+    this.draggedLead = null;
     this.draggedFromStatus = null;
   }
 
   moveLeadLeft(lead: Lead): void {
-    const order: LeadStatus[] = ['New', 'Contracted', 'Qualified', 'Converted', 'Lost'];
+    const order: LeadStatus[] = ['Contracted', 'Qualified', 'Converted', 'Lost'];
     const idx = order.indexOf(lead.status as LeadStatus);
     if (idx <= 0) return;
     this.moveLeadToStatus(lead, order[idx - 1]);
   }
 
   moveLeadRight(lead: Lead): void {
-    const order: LeadStatus[] = ['New', 'Contracted', 'Qualified', 'Converted', 'Lost'];
+    const order: LeadStatus[] = ['Contracted', 'Qualified', 'Converted', 'Lost'];
     const idx = order.indexOf(lead.status as LeadStatus);
     if (idx >= order.length - 1) return;
     this.moveLeadToStatus(lead, order[idx + 1]);
@@ -319,9 +406,9 @@ export class LeadManagementComponent {
   private moveLeadToStatus(lead: Lead, newStatus: LeadStatus): void {
     if (lead.status === newStatus) return;
 
-    if (newStatus === 'Converted') {
+    if (newStatus === 'Converted' && !lead.contactId) {
       this.menuState.open({
-        title:   'Convert Lead',
+        title: 'Convert Lead',
         message: `Convert "${lead.name}" to a client and project?`,
         onConfirm: () => {
           const previousStatus = lead.status as LeadStatus;
@@ -333,7 +420,7 @@ export class LeadManagementComponent {
     }
 
     this.menuState.open({
-      title:   'Move Lead',
+      title: 'Move Lead',
       message: `Move "${lead.name}" to ${newStatus}?`,
       onConfirm: () => {
         this.loader.show();
@@ -355,25 +442,25 @@ export class LeadManagementComponent {
   }
 
   private openConversionFlow(lead: Lead, previousStatus: LeadStatus): void {
+    if (lead.contactId) return;
     this.zone.run(() => {
-      this.convertingLead               = { ...lead };
+      this.convertingLead = { ...lead };
       this.convertingLeadPreviousStatus = previousStatus;
-      this.projectForm = { ...this.resetProjectForm(), leadId: lead.id, name: lead.name };
-      this.clientForm  = {
+      this.projectForm = { ...this.resetProjectForm(), leadId: lead.id, startDate: lead.dealStartDate, endDate: lead.dealCloseDate ?? null, name: lead.projectTitle };
+      this.clientForm = {
         ...this.resetClientForm(),
-        leadId:  lead.id,
-        name:    lead.name,
+        leadId: lead.id,
+        name: lead.name,
         company: lead.company,
-        email:   lead.email,
-        phone:   lead.phone ?? '',
+        email: lead.email,
+        phone: lead.phone ?? '',
       };
-      this.conversionStep   = 1;
+      this.conversionStep = 1;
       this.showConvertModal = true;
       this.cdr.detectChanges();
     });
   }
 
-  // Cancel button / overlay click — reverts optimistic status then closes
   closeConvertModal(): void {
     if (this.convertingLead && this.convertingLeadPreviousStatus) {
       this.leadState.updateLead(this.convertingLead.id, { status: this.convertingLeadPreviousStatus });
@@ -399,75 +486,96 @@ export class LeadManagementComponent {
     this.conversionStep = 1;
   }
 
-  // ── Conversion submit: lead update → CLIENT → PROJECT ──
-
   submitConversion(): void {
     if (!this.clientForm.name || !this.clientForm.company || !this.clientForm.email) {
       this.toastService.error('Client name, company and email are required.');
       return;
     }
+
     if (!this.convertingLead) return;
 
     const formData = new FormData();
-    formData.append('name',          this.projectForm.name);
+    formData.append('name', this.projectForm.name);
     formData.append('projectLeadId', this.projectForm.projectLeadId);
-    formData.append('leadId',        this.projectForm.leadId);
-    if (this.projectForm.description) formData.append('description', this.projectForm.description);
-    if (this.projectForm.startDate)   formData.append('startDate',   this.projectForm.startDate);
-    if (this.projectForm.endDate)     formData.append('endDate',     this.projectForm.endDate);
+
+    if (this.projectForm.description) {
+      formData.append('description', this.projectForm.description);
+    }
+
+    if (this.projectForm.startDate) {
+      formData.append('startDate', this.projectForm.startDate);
+    }
+
+    if (this.projectForm.endDate) {
+      formData.append('endDate', this.projectForm.endDate);
+    }
+
     this.projectForm.documents.forEach(doc =>
       formData.append('documents', doc.file, doc.name)
     );
 
-    // Capture values now — state is wiped before next/error fires
-    const leadId         = this.convertingLead.id;
-    const leadName       = this.convertingLead.name;
-    const clientName     = this.clientForm.name;
-    const projectName    = this.projectForm.name;
+    const leadId = this.convertingLead.id;
+    const leadName = this.convertingLead.name;
+    const projectName = this.projectForm.name;
     const previousStatus = this.convertingLeadPreviousStatus;
 
     this.loader.show('Converting lead...', 'lg');
-
-    this.leadService.handleUpdateLead(leadId, { status: 'Converted' })
+    this.contactService.createContact(this.clientForm)
       .pipe(
-        switchMap(() => this.contactService.createContact(this.clientForm)),  // client first
-        switchMap(() => this.projectService.createProject(formData)),         // project second
+        switchMap((contact) => {
+          return this.leadService.handleUpdateLead(leadId, {
+            status: 'Converted',
+            contactId: contact.id
+          }).pipe(map(() => contact));
+        }),
+
+        switchMap((contact) => {
+          formData.append('contactId', contact.id);
+          this.leadState.updateLead(leadId, { contactId: contact.id });
+          return this.projectService.createProject(formData);
+        })
       )
       .subscribe({
         next: () => {
           this.loader.hide();
-          this.toastService.success(`Client "${clientName}" created!`);
-          this.toastService.success(`Project "${projectName}" created!`);
-          this.toastService.success(`Lead "${leadName}" converted successfully!`);
-          this._closeConvertModalAndReset();    // ← closes on success
+          this.toastService.success(`Lead "${leadName}" successfully converted to client and project "${projectName}" created.`);
+          this._closeConvertModalAndReset();
         },
+
         error: (err) => {
           this.loader.hide();
+
           this.toastService.error('Conversion failed. Please try again.');
-          // Revert optimistic lead status so the user can retry
+
           if (previousStatus) {
-            this.leadState.updateLead(leadId, { status: previousStatus });
+            this.leadState.updateLead(leadId, {
+              status: previousStatus
+            });
           }
-          this._closeConvertModalAndReset();    // ← closes on error too
+
+          this._closeConvertModalAndReset();
           console.error(err);
-        },
+        }
       });
   }
 
-  /**
-   * Single source of truth for tearing down the conversion modal.
-   * Status reversion is the caller's responsibility before invoking this.
-   */
+
   private _closeConvertModalAndReset(): void {
-    this.showConvertModal             = false;
-    this.conversionStep               = 1;
-    this.convertingLead               = null;
+    this.showConvertModal = false;
+    this.conversionStep = 1;
+    this.convertingLead = null;
     this.convertingLeadPreviousStatus = null;
-    this.projectForm                  = this.resetProjectForm();
-    this.clientForm                   = this.resetClientForm();
+    this.projectForm = this.resetProjectForm();
+    this.clientForm = this.resetClientForm();
+    this.cdr.detectChanges();
   }
 
   // ── File upload ──
+
+  openHistory(lead: Lead) {
+    this.history.open('Lead', lead.id, lead.name);
+    // title becomes: "Lead history — John Doe"
+  }
 
   onDocFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -508,18 +616,18 @@ export class LeadManagementComponent {
   getFileIcon(fileName: string): string {
     const ext = fileName.split('.').pop()?.toLowerCase();
     switch (ext) {
-      case 'pdf':                              return 'fa-file-pdf';
-      case 'doc':  case 'docx':               return 'fa-file-word';
-      case 'xls':  case 'xlsx':               return 'fa-file-excel';
-      case 'png':  case 'jpg': case 'jpeg':
-      case 'gif':  case 'webp':               return 'fa-file-image';
-      case 'zip':  case 'rar':                return 'fa-file-archive';
-      default:                                return 'fa-file-alt';
+      case 'pdf': return 'fa-file-pdf';
+      case 'doc': case 'docx': return 'fa-file-word';
+      case 'xls': case 'xlsx': return 'fa-file-excel';
+      case 'png': case 'jpg': case 'jpeg':
+      case 'gif': case 'webp': return 'fa-file-image';
+      case 'zip': case 'rar': return 'fa-file-archive';
+      default: return 'fa-file-alt';
     }
   }
 
   formatFileSize(bytes: number): string {
-    if (bytes < 1024)         return `${bytes} B`;
+    if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
@@ -531,13 +639,13 @@ export class LeadManagementComponent {
   statusClass(status: string): string { return status.toLowerCase(); }
 
   toggleStatus(index: number): void {
-    this.openStatusIndex   = this.openStatusIndex === index ? null : index;
+    this.openStatusIndex = this.openStatusIndex === index ? null : index;
     this.openAssigneeIndex = null;
   }
 
   toggleAssignee(index: number): void {
     this.openAssigneeIndex = this.openAssigneeIndex === index ? null : index;
-    this.openStatusIndex   = null;
+    this.openStatusIndex = null;
   }
 
   getAssigneeName(memberId: string): string {
@@ -560,5 +668,9 @@ export class LeadManagementComponent {
     if ((event.target as HTMLElement).classList.contains('modal-overlay')) {
       this.closeDetailModal();
     }
+  }
+
+  hasDealInfo(lead: any): boolean {
+    return !!(lead?.projectTitle || lead?.budget || lead?.projectType || lead?.dealStartDate || lead?.dealCloseDate);
   }
 }

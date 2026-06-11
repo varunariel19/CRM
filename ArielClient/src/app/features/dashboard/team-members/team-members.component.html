@@ -109,8 +109,7 @@
       </svg>
     </div>
     <p class="tm-empty__title">{{ hasActiveFilters ? 'No members match your filters' : 'No team members yet' }}</p>
-    <p class="tm-empty__sub">{{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Add your first team
-      member to get started.' }}</p>
+    <p class="tm-empty__sub">{{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Add your first team member to get started.' }}</p>
 
     @if(!hasActiveFilters && perm.teamMembers.canCreate()) {
     <button class="tm-btn-primary" (click)="openAddModal()">Add First Member</button>

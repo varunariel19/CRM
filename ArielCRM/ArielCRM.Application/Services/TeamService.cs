@@ -54,7 +54,7 @@ namespace ArielCRM.Application.Services
                 Name = user.Name,
                 Email = user.Email,
                 DepartmentId = dto.DepartmentId,
-                DesignationId = dto.DepartmentId,
+                DesignationId = dto.DesignationId,
                 CreatedAt = user.CreatedAt
             };
         }

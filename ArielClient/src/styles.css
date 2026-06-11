@@ -315,6 +315,7 @@ th {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app-header {
@@ -338,6 +339,7 @@ th {
   background: var(--remaining-bg);
   transition: width 0.25s ease;
   overflow: hidden;
+  height: 100%;
   flex-shrink: 0;
 }
 

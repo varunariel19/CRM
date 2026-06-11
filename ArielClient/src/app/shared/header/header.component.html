@@ -7,7 +7,7 @@
     </div>
 
     <div class="brand">
-      Ariel CRM
+      <img [src]="LogoUrl" alt="Ariel CRM Logo" class="brand-logo" />
     </div>
 
     <button class="toggle-btn" type="button" (click)="onToggleSidebar()">
@@ -32,35 +32,34 @@
 
     <button class="icon-btn" type="button"
       [attr.aria-label]="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
-      [attr.title]="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
-      (click)="themeService.toggleTheme()">
+      [attr.title]="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'" (click)="themeService.toggleTheme()">
       <i class="fa-solid" [class.fa-sun]="isDarkTheme" [class.fa-moon]="!isDarkTheme"></i>
     </button>
 
-    @if(perm.dashboard.canView()) {
-      <button class="icon-btn" type="button" (click)="showSettings.set(true)">
-        <i class="fa-solid fa-gear"></i>
-      </button>
+    @if(perm.settings.canView()) {
+    <button class="icon-btn" type="button" (click)="showSettings.set(true)">
+      <i class="fa-solid fa-gear"></i>
+    </button>
 
-      @if(showSettings()) {
-        <app-settings (close)="showSettings.set(false)" />
-      }
+    @if(showSettings()) {
+    <app-settings (close)="showSettings.set(false)" />
+    }
     }
 
     @if(userDetails) {
-      <div (click)="showProfile.set(true)" style="cursor:pointer">
-        @if(userDetails.profileImage) {
-          <img [src]="userDetails.profileImage" alt="profile" />
-        } @else {
-          <div class="avatar" [style.background]="getProfileColor(userDetails.name)">
-            {{ userDetails.name.charAt(0).toUpperCase() }}
-          </div>
-        }
+    <div (click)="showProfile.set(true)" style="cursor:pointer">
+      @if(userDetails.profileImage) {
+      <img [src]="userDetails.profileImage" alt="profile" />
+      } @else {
+      <div class="avatar" [style.background]="getProfileColor(userDetails.name)">
+        {{ userDetails.name.charAt(0).toUpperCase() }}
       </div>
+      }
+    </div>
     }
 
     @if(showProfile()) {
-      <app-profile-section (close)="showProfile.set(false)" />
+    <app-profile-section (close)="showProfile.set(false)" />
     }
 
     <button class="logout-btn" type="button" aria-label="Logout" title="Logout" (click)="logout()">

@@ -8,6 +8,7 @@ import { TeamService } from '../../../services/team.service';
 import { getAvatarColor } from '../../../utils';
 import { PermissionService } from '../../../core/services/permission.service';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-team-members',
@@ -21,6 +22,7 @@ export class TeamMembersComponent implements OnInit {
   globalState = inject(GlobalState);
   teamService = inject(TeamService);
   permissionService = inject(PermissionService);
+  toast = inject(ToastService);
   perm = inject(PermissionFacade);
   searchQuery = signal('');
   filterDepartment = signal('');
@@ -173,9 +175,11 @@ export class TeamMembersComponent implements OnInit {
       next: () => {
         this.isSubmitting.set(false);
         this.closeAddModal();
+        this.toast.success(`${this.newMember.name} as a team Member added successfully !`);
       },
       error: () => {
         this.isSubmitting.set(false);
+        this.toast.error("Failed to add team member !");
         this.formError.set('Failed to add member. Please try again.');
       },
     });

@@ -2,21 +2,32 @@
 {
     public enum LeadSource
     {
+        MarketingPlatform,
         Website,
-        Referral,
+        Referrals,
         LinkedIn,
-        Instagram,
-        ColdCall
+        Events,
+        Partners,
+        ColdOutreach
     }
 
     public enum LeadStatus
     {
-        New,
         Contracted,
         Qualified,
         Converted,
         Lost,
 
+    }
+
+    namespace ArielCRM.DataLayer.Enums
+    {
+        public enum ProjectType
+        {
+            Hourly,
+            FixedPrice,
+            ManMonth
+        }
     }
 
     public enum DealStage

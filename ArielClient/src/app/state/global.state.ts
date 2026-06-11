@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { DepartmentKey } from '../core/constants/global';
 
 export interface PermissionItem {
     id: string;
@@ -16,6 +17,7 @@ export interface AccessLevelItem {
 export interface DepartmentItem {
     id: string;
     name: string;
+    departmentKey: DepartmentKey;
 }
 
 export interface DesignationItem {

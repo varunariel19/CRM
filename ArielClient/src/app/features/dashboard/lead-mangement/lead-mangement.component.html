@@ -1,126 +1,238 @@
 <div class="lead-management-wrapper">
 
-  <!-- ══════════════════════════════════════════════
-       CREATE LEAD MODAL
-  ══════════════════════════════════════════════ -->
+
   <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModal($event)">
-    <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-box create-modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Onboard New Lead</h2>
+        <div class="modal-title-group">
+          <div class="modal-icon-badge">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <div>
+            <h2>Onboard New Lead</h2>
+            <p class="modal-subtitle">Fill in the details to register a new lead</p>
+          </div>
+        </div>
         <button class="modal-close" (click)="showCreateModal = false"><i class="fas fa-times"></i></button>
       </div>
+
       <div class="modal-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Company / Enterprise <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="newLead.company" placeholder="e.g. Initech Corp" />
+
+        <!-- Contact Info Section -->
+        <div class="form-section">
+          <div class="form-section-label">
+            <i class="fas fa-address-card"></i> Contact Information
           </div>
-          <div class="form-group">
-            <label>Primary Contact Name <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="newLead.name" placeholder="e.g. John Doe" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Company / Enterprise <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="newLead.company" placeholder="e.g. Initech Corp" />
+            </div>
+            <div class="form-group">
+              <label>Primary Contact Name <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="newLead.name" placeholder="e.g. John Doe" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email Address <span class="required">*</span></label>
+              <input type="email" [(ngModel)]="newLead.email" placeholder="john@firm.com" />
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" [(ngModel)]="newLead.phone" placeholder="+1 555-0199" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Source Pipeline</label>
+              <select [(ngModel)]="newLead.source">
+                <option *ngFor="let source of leadSourceOptions" [value]="source.value">{{ source.label }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Assigned Representative</label>
+              <select [(ngModel)]="newLead.assignedToId">
+                <option value="" disabled>Select Member</option>
+                <option *ngFor="let member of teamMembers" [value]="member.id">{{ member.name }}</option>
+              </select>
+            </div>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Email Address <span class="required">*</span></label>
-            <input type="email" [(ngModel)]="newLead.email" placeholder="john@firm.com" />
+
+        <!-- Project / Deal Info Section -->
+        <div class="form-section">
+          <div class="form-section-label">
+            <i class="fas fa-briefcase"></i> Project / Deal Info
+            <!-- <span class="optional-tag">Optional</span> -->
           </div>
-          <div class="form-group">
-            <label>Phone Number</label>
-            <input type="tel" [(ngModel)]="newLead.phone" placeholder="+1 555-0199" />
+          <div class="form-group full-width">
+            <label>Project Title</label>
+            <input type="text" [(ngModel)]="newLead.projectTitle" placeholder="e.g. CRM Integration for Initech" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Project Type</label>
+              <select [(ngModel)]="newLead.projectType">
+                <option value="">Select Type</option>
+                <option *ngFor="let type of projectTypeOptions" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>{{ getBudgetLabel(newLead.projectType) }}</label>
+              <div class="budget-input-wrap">
+                <span class="budget-prefix">$</span>
+                <input type="number" [(ngModel)]="newLead.budget"
+                  [placeholder]="getBudgetPlaceholder(newLead.projectType)" min="0" />
+                <span class="budget-suffix" *ngIf="newLead.projectType === 'Hourly'">/hr</span>
+                <span class="budget-suffix" *ngIf="newLead.projectType === 'ManMonth'">/mo</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" [(ngModel)]="newLead.dealStartDate" />
+            </div>
+            <div class="form-group">
+              <label>Close Date</label>
+              <input type="date" [(ngModel)]="newLead.dealCloseDate" />
+            </div>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Source Pipeline</label>
-            <select [(ngModel)]="newLead.source">
-              <option value="Website">Website</option>
-              <option value="Referral">Referral</option>
-              <option value="Instagram">Instagram</option>
-              <option value="ColdCall">Cold Call</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Assigned Representative</label>
-            <select [(ngModel)]="newLead.assignedToId">
-              <option value="" disabled>Select Member</option>
-              <option *ngFor="let member of teamMembers" [value]="member.id">{{ member.name }}</option>
-            </select>
-          </div>
-        </div>
+
       </div>
+
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
-        <button class="btn-register" (click)="submitCreateLead()">Register Lead</button>
+        <button class="btn-register" (click)="submitCreateLead()">
+          <i class="fas fa-plus-circle"></i> Register Lead
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       EDIT LEAD MODAL
-  ══════════════════════════════════════════════ -->
+
+
   <div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal($event)">
-    <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-box create-modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Modify Lead File</h2>
+        <div class="modal-title-group">
+          <div class="modal-icon-badge edit-icon-badge">
+            <i class="fas fa-pen"></i>
+          </div>
+          <div>
+            <h2>Modify Lead Details</h2>
+            <p class="modal-subtitle">Update contact and deal information</p>
+          </div>
+        </div>
         <button class="modal-close" (click)="showEditModal = false"><i class="fas fa-times"></i></button>
       </div>
+
       <div class="modal-body">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Company / Enterprise <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="editLead.company" placeholder="e.g. Initech Corp" />
+
+        <!-- Contact Info Section -->
+        <div class="form-section">
+          <div class="form-section-label">
+            <i class="fas fa-address-card"></i> Contact Information
           </div>
-          <div class="form-group">
-            <label>Primary Contact Name <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="editLead.name" placeholder="e.g. John Doe" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Company / Enterprise <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="editLead.company" placeholder="e.g. Initech Corp" />
+            </div>
+            <div class="form-group">
+              <label>Primary Contact Name <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="editLead.name" placeholder="e.g. John Doe" />
+            </div>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Email Address <span class="required">*</span></label>
-            <input type="email" [(ngModel)]="editLead.email" placeholder="john@firm.com" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email Address <span class="required">*</span></label>
+              <input type="email" [(ngModel)]="editLead.email" placeholder="john@firm.com" />
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" [(ngModel)]="editLead.phone" placeholder="+1 555-0199" />
+            </div>
           </div>
-          <div class="form-group">
-            <label>Phone Number</label>
-            <input type="tel" [(ngModel)]="editLead.phone" placeholder="+1 555-0199" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Source Pipeline</label>
+              <select [(ngModel)]="editLead.source">
+                <option *ngFor="let source of leadSourceOptions" [value]="source.value">{{ source.label }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Assigned Representative</label>
+              <select [(ngModel)]="editLead.assignedToId">
+                <option value="" disabled>Select Member</option>
+                <option *ngFor="let member of teamMembers" [value]="member.id">{{ member.name }}</option>
+              </select>
+            </div>
           </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Source Pipeline</label>
-            <select [(ngModel)]="editLead.source">
-              <option value="Website">Website</option>
-              <option value="Referral">Referral</option>
-              <option value="Instagram">Instagram</option>
-              <option value="ColdCall">Cold Call</option>
+          <div class="form-group full-width">
+            <label>Lead Status</label>
+            <select [(ngModel)]="editLead.status">
+              <option *ngFor="let status of statusOptions" [value]="status.value">{{ status.label }}</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Assigned Representative</label>
-            <select [(ngModel)]="editLead.assignedToId">
-              <option value="" disabled>Select Member</option>
-              <option *ngFor="let member of teamMembers" [value]="member.id">{{ member.name }}</option>
-            </select>
+        </div>
+
+        <!-- Project / Deal Info Section -->
+        <div class="form-section">
+          <div class="form-section-label">
+            <i class="fas fa-briefcase"></i> Project / Deal Info
+            <!-- <span class="optional-tag">Optional</span> -->
+          </div>
+          <div class="form-group full-width">
+            <label>Project Title</label>
+            <input type="text" [(ngModel)]="editLead.projectTitle" placeholder="e.g. CRM Integration for Initech" />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Project Type</label>
+              <select [(ngModel)]="editLead.projectType">
+                <option value="">Select Type</option>
+                <option *ngFor="let type of projectTypeOptions" [value]="type">{{ type }}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>{{ getBudgetLabel(editLead.projectType) }}</label>
+              <div class="budget-input-wrap">
+                <span class="budget-prefix">$</span>
+                <input type="number" [(ngModel)]="editLead.budget"
+                  [placeholder]="getBudgetPlaceholder(editLead.projectType)" min="0" />
+                <span class="budget-suffix" *ngIf="editLead.projectType === 'Hourly'">/hr</span>
+                <span class="budget-suffix" *ngIf="editLead.projectType === 'ManMonth'">/mo</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Start Date</label>
+              <input type="date" [(ngModel)]="editLead.dealStartDate" />
+            </div>
+            <div class="form-group">
+              <label>Close Date</label>
+              <input type="date" [(ngModel)]="editLead.dealCloseDate" />
+            </div>
           </div>
         </div>
-        <div class="form-group full-width">
-          <label>Lead Status</label>
-          <select [(ngModel)]="editLead.status">
-            <option *ngFor="let status of statusOptions" [value]="status.value">{{ status.label }}</option>
-          </select>
-        </div>
+
       </div>
+
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showEditModal = false">Cancel</button>
-        <button class="btn-register" (click)="submitEditLead()">Update Lead</button>
+        <button class="btn-register" (click)="submitEditLead()">
+          <i class="fas fa-check"></i> Update Lead
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       LEAD DETAIL MODAL
-  ══════════════════════════════════════════════ -->
+
+
   <div class="modal-overlay" *ngIf="showDetailModal && detailLead" (click)="closeDetailModalOnOverlay($event)">
     <div class="modal-box detail-modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
@@ -140,6 +252,8 @@
       </div>
 
       <div class="detail-body">
+
+        <!-- Contact Info -->
         <div class="detail-section">
           <div class="detail-section-title"><i class="fas fa-address-card"></i> Contact Information</div>
           <div class="detail-grid">
@@ -153,38 +267,100 @@
             </div>
             <div class="detail-item">
               <span class="detail-label">Source</span>
-              <span class="detail-value"><i class="fas fa-signal"></i> {{ detailLead.source }}</span>
+              <span class="detail-value"><i class="fas fa-signal"></i> {{ getSourceOptionLabel(detailLead.source)
+                }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Assigned To</span>
-              <span class="detail-value"><i class="fas fa-user-tie"></i> {{ getAssigneeName(detailLead.assignedToId) }}</span>
+              <span class="detail-value"><i class="fas fa-user-tie"></i> {{ getAssigneeName(detailLead.assignedToId)
+                }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Created</span>
-              <span class="detail-value"><i class="fas fa-calendar"></i> {{ detailLead.createdAt | date:'MMM d, yyyy' }}</span>
+              <span class="detail-value"><i class="fas fa-calendar"></i> {{ detailLead.createdAt | date:'MMM d, yyyy'
+                }}</span>
             </div>
           </div>
         </div>
+
+        <div class="detail-section" *ngIf="hasDealInfo(detailLead)">
+          <div class="detail-section-title"><i class="fas fa-briefcase"></i> Project / Deal Info</div>
+
+          <div class="detail-grid">
+            <!-- Project Title -->
+            <div class="detail-item detail-item-full" *ngIf="detailLead.projectTitle">
+              <span class="detail-label">Project Title</span>
+              <span class="detail-value">
+                <i class="fas fa-folder-open"></i> {{ detailLead.projectTitle }}
+              </span>
+            </div>
+
+            <!-- Project Type -->
+            <div class="detail-item" *ngIf="detailLead.projectType">
+              <span class="detail-label">Project Type</span>
+              <span class="detail-value">
+                <span class="project-type-pill" [ngClass]="getProjectTypeClass(detailLead.projectType)">
+                  <i
+                    class="fas fa-{{ detailLead.projectType === 'Hourly' ? 'clock' : detailLead.projectType === 'ManMonth' ? 'users' : 'tag' }}"></i>
+                  {{ detailLead.projectType }}
+                </span>
+              </span>
+            </div>
+
+            <!-- Budget -->
+            <div class="detail-item" *ngIf="detailLead.budget">
+              <span class="detail-label">{{ getBudgetLabel(detailLead.projectType) }}</span>
+              <span class="detail-value budget-value">
+                <i class="fas fa-dollar-sign"></i>
+                {{ formatBudgetDisplay(detailLead) }}
+              </span>
+            </div>
+
+            <!-- Start Date -->
+            <div class="detail-item" *ngIf="detailLead.dealStartDate">
+              <span class="detail-label">Start Date</span>
+              <span class="detail-value">
+                <i class="fas fa-calendar-check"></i>
+                {{ detailLead.dealStartDate | date:'MMM d, yyyy' }}
+              </span>
+            </div>
+
+            <!-- Close Date -->
+            <div class="detail-item">
+              <span class="detail-label">Close Date</span>
+
+              <span class="detail-value" *ngIf="detailLead.dealCloseDate; else ongoingTemplate">
+                <i class="fas fa-calendar-xmark"></i>
+                {{ detailLead.dealCloseDate | date:'MMM d, yyyy' }}
+              </span>
+
+              <ng-template #ongoingTemplate>
+                <span class="status-badge status-badge--ongoing">
+                  Ongoing
+                </span>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div class="modal-footer detail-footer">
         <button class="btn-cancel" (click)="closeDetailModal()">Close</button>
         @if(perm.leads.canEdit()) {
-          <button class="btn-register" (click)="closeDetailModal(); openEditModal(detailLead)">
-            <i class="fas fa-pen"></i> Edit Lead
-          </button>
+        <button class="btn-register" (click)="openEditModal(detailLead); closeDetailModal()">
+          <i class="fas fa-pen"></i> Edit Lead
+        </button>
         }
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       CONVERSION MODAL (2-step)
-  ══════════════════════════════════════════════ -->
+
+
   <div class="modal-overlay convert-overlay" *ngIf="showConvertModal" (click)="closeConvertModalOnOverlay($event)">
     <div class="modal-box convert-modal-box" (click)="$event.stopPropagation()">
 
-      <!-- Step indicators -->
       <div class="convert-steps">
         <div class="convert-step" [class.active]="conversionStep === 1" [class.done]="conversionStep > 1">
           <div class="step-num">{{ conversionStep > 1 ? '✓' : '1' }}</div>
@@ -212,7 +388,6 @@
         <button class="modal-close" (click)="closeConvertModal()"><i class="fas fa-times"></i></button>
       </div>
 
-      <!-- Lead reference banner -->
       <div class="deal-ref-banner">
         <i class="fas fa-link"></i>
         <span>Converting lead:</span>
@@ -220,7 +395,6 @@
         <span class="deal-value-badge source-tag">{{ convertingLead?.source }}</span>
       </div>
 
-      <!-- ── STEP 1: Project Form ── -->
       <div class="modal-body" *ngIf="conversionStep === 1">
         <div class="convert-section-label"><i class="fas fa-folder-open"></i> Project Identity</div>
 
@@ -233,13 +407,14 @@
           <label>Project Lead <span class="required">*</span></label>
           <select [(ngModel)]="projectForm.projectLeadId">
             <option value="" disabled>Assign Project Lead</option>
-            <option *ngFor="let member of teamMembers" [value]="member.id">{{ member.name }}</option>
+            <option *ngFor="let manager of projectManagers" [value]="manager.id">{{ manager.name }}</option>
           </select>
         </div>
 
         <div class="form-group full-width">
           <label>Description</label>
-          <textarea [(ngModel)]="projectForm.description" placeholder="Describe scope and objectives..." rows="3"></textarea>
+          <textarea [(ngModel)]="projectForm.description" placeholder="Describe scope and objectives..."
+            rows="3"></textarea>
         </div>
 
         <div class="convert-section-label"><i class="fas fa-calendar-alt"></i> Project Timeline</div>
@@ -279,7 +454,6 @@
         </div>
       </div>
 
-      <!-- ── STEP 2: Client Form ── -->
       <div class="modal-body" *ngIf="conversionStep === 2">
         <div class="convert-section-label"><i class="fas fa-user-tie"></i> Client Details</div>
 
@@ -322,18 +496,16 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       TOP TOOLBAR
-  ══════════════════════════════════════════════ -->
+
   <div class="page-header">
     <div class="page-header-left">
       <h2><i class="fas fa-users"></i> Lead Management</h2>
       <p>Track and manage your lead pipeline from discovery to conversion.</p>
     </div>
     @if(perm.leads.canCreate()) {
-      <button class="new-lead-btn" (click)="showCreateModal = true">
-        <i class="fas fa-plus"></i> New Lead
-      </button>
+    <button class="new-lead-btn" (click)="showCreateModal = true">
+      <i class="fas fa-plus"></i> New Lead
+    </button>
     }
   </div>
 
@@ -353,13 +525,14 @@
         </select>
         <select [(ngModel)]="filterSource" class="filter-select">
           <option value="">All Sources</option>
-          <option *ngFor="let src of sourceOptions" [value]="src">{{ src }}</option>
+          <option *ngFor="let src of leadSourceOptions" [value]="src.value">{{ src.label }}</option>
         </select>
       </div>
     </div>
 
     <div class="view-toggle">
-      <button class="toggle-btn" [class.active]="viewMode === 'pipeline'" (click)="viewMode = 'pipeline'" title="Pipeline View">
+      <button class="toggle-btn" [class.active]="viewMode === 'pipeline'" (click)="viewMode = 'pipeline'"
+        title="Pipeline View">
         <i class="fas fa-columns"></i>
       </button>
       <button class="toggle-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'" title="List View">
@@ -368,9 +541,8 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       PIPELINE / KANBAN VIEW
-  ══════════════════════════════════════════════ -->
+
+
   <div class="pipeline-board" *ngIf="viewMode === 'pipeline'">
     <div class="pipeline-column" *ngFor="let col of pipelineColumns">
       <div class="column-header">
@@ -386,10 +558,8 @@
           <i class="fas fa-inbox"></i> No leads here
         </div>
 
-        <div class="lead-card" *ngFor="let lead of getColumnLeads(col.key)"
-          [draggable]="perm.leads.canEdit()"
-          (dragstart)="perm.leads.canEdit() && dragLead($event, lead, col.key)"
-          (click)="openDetailModal(lead)">
+        <div class="lead-card" *ngFor="let lead of getColumnLeads(col.key)" [draggable]="perm.leads.canEdit()"
+          (dragstart)="perm.leads.canEdit() && dragLead($event, lead, col.key)" (click)="openDetailModal(lead)">
 
           <div class="lead-card-header">
             <div class="lead-avatar">{{ lead.name.charAt(0) }}</div>
@@ -399,11 +569,13 @@
             </div>
             <div class="card-actions-top" (click)="$event.stopPropagation()">
               @if(perm.leads.canEdit()) {
-                <i class="fas fa-pen card-action-icon" (click)="openEditModal(lead)" title="Edit"></i>
+              <i class="fas fa-pen card-action-icon" (click)="openEditModal(lead)" title="Edit"></i>
               }
               @if(perm.leads.canDelete()) {
-                <i class="fas fa-trash card-action-icon danger" (click)="deleteLead(lead.id)" title="Delete"></i>
+              <i class="fas fa-trash card-action-icon danger" (click)="deleteLead(lead.id)" title="Delete"></i>
               }
+              <i class="fas fa-history card-action-icon" (click)="openHistory(lead)" title="History">
+              </i>
             </div>
           </div>
 
@@ -416,14 +588,16 @@
               <i class="fas fa-phone"></i>
               <span>{{ lead.phone }}</span>
             </div>
+
           </div>
 
           <div class="lead-card-footer">
-            <span class="source-chip">{{ lead.source }}</span>
             <div class="card-nav-actions" (click)="$event.stopPropagation()">
               @if(perm.leads.canEdit()) {
-                <button class="nav-btn" (click)="moveLeadLeft(lead)" title="Move left"><i class="fas fa-chevron-left"></i></button>
-                <button class="nav-btn" (click)="moveLeadRight(lead)" title="Move right"><i class="fas fa-chevron-right"></i></button>
+              <button class="nav-btn" (click)="moveLeadLeft(lead)" title="Move left"><i
+                  class="fas fa-chevron-left"></i></button>
+              <button class="nav-btn" (click)="moveLeadRight(lead)" title="Move right"><i
+                  class="fas fa-chevron-right"></i></button>
               }
             </div>
             <div class="assignee-chip">
@@ -437,15 +611,13 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════════════════════════
-       LIST VIEW
-  ══════════════════════════════════════════════ -->
+
   <div class="table-wrapper" *ngIf="viewMode === 'list'">
     <div class="table-header">
       <div>PROSPECT / COMPANY</div>
       <div>CONTACT METHODS</div>
       <div>SOURCE</div>
-      <div>STATUS</div>
+      <div>LEAD STATUS</div>
       <div>ASSIGNEE</div>
       @if(perm.leads.canEditOrDel()) { <div>ACTIONS</div> }
     </div>
@@ -470,7 +642,7 @@
       </div>
 
       <div>
-        <span class="source-badge">{{ lead.source }}</span>
+        <span class="source-badge"> {{ getSourceOptionLabel(lead.source) }}</span>
       </div>
 
       <div class="crm-status-container">
@@ -482,8 +654,8 @@
             <i class="fas fa-chevron-down"></i>
           </button>
           <div class="dropdown-menu status-menu" *ngIf="openStatusIndex === rowIndex">
-            <button type="button" class="dropdown-option" *ngFor="let s of statusOptions"
-              [ngClass]="s.className" (click)="setStatus(lead, s.value)">
+            <button type="button" class="dropdown-option" *ngFor="let s of statusOptions" [ngClass]="s.className"
+              (click)="setStatus(lead, s.value)">
               <span class="status-dot"></span><span>{{ s.label }}</span>
             </button>
           </div>
@@ -512,15 +684,19 @@
           <i class="fas fa-eye"></i>
         </button>
         @if(perm.leads.canEdit()) {
-          <button class="action-btn edit-btn" (click)="openEditModal(lead)">
-            <i class="fas fa-pen"></i>
-          </button>
+        <button class="action-btn edit-btn" (click)="openEditModal(lead)">
+          <i class="fas fa-pen"></i>
+        </button>
         }
         @if(perm.leads.canDelete()) {
-          <button class="action-btn delete-btn" (click)="deleteLead(lead.id)">
-            <i class="fas fa-trash"></i>
-          </button>
+        <button class="action-btn delete-btn" (click)="deleteLead(lead.id)">
+          <i class="fas fa-trash"></i>
+        </button>
         }
+
+        <button class="action-btn delete-btn" (click)="openHistory(lead)">
+          <i class="fas fa-history card-action-icon" title="History"></i>
+        </button>
       </div>
     </div>
   </div>
