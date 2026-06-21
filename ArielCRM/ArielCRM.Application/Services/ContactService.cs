@@ -6,16 +6,10 @@ using System.Text.Json;
 
 namespace ArielCRM.Application.Services
 {
-    public class ContactService : IContactService
+    public class ContactService(IContactRepository contactRepository, IHistoryService historyService) : IContactService
     {
-        private readonly IContactRepository _contactRepository;
-        private readonly IHistoryService _historyService;
-
-        public ContactService(IContactRepository contactRepository, IHistoryService historyService)
-        {
-            _contactRepository = contactRepository;
-            _historyService = historyService;
-        }
+        private readonly IContactRepository _contactRepository = contactRepository;
+        private readonly IHistoryService _historyService = historyService;
 
         public async Task<IEnumerable<Contact>> GetAllContactsAsync()
         {

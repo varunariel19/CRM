@@ -6,4 +6,4 @@ export enum DepartmentKey {
     SUPPORT = 'SUPPORT',
     PROJECT_MANAGEMENT = 'PROJECT_MANAGEMENT',
     HUMAN_RESOURCES = 'HUMAN_RESOURCES'
-}
+}   
