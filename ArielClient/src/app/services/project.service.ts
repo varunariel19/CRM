@@ -2,8 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { endpoints } from '../core/constants/endpoints';
-import { CreateProjectPayload } from '../features/dashboard/deals-pipeline/deals-pipeline.component';
-import { Project } from '../state/task-management.state';
+import { Project } from '../features/dashboard/projects/projects.component';
 
 
 @Injectable({
@@ -20,7 +19,7 @@ export class ProjectService {
     updateProject(projectId: string, payload: FormData): Observable<any> {
         return this.http.put(
             `${endpoints.projects}/${projectId}`,
-            payload
+            payload, { withCredentials: true }
         );
     }
 
@@ -30,7 +29,7 @@ export class ProjectService {
             .set('projectId', projectId)
             .set('memberId', memberId);
 
-        return this.http.patch(`${endpoints.projects}/add-member`, {}, { params });
+        return this.http.patch(`${endpoints.projects}/add-member`, {}, { params, withCredentials: true });
     }
 
     removeMemberFromProject(projectId: string, memberId: string) {
@@ -47,15 +46,9 @@ export class ProjectService {
         );
     }
 
-    getProject(projectId: string): Observable<Project> {
-        return this.http.get<Project>(
-            `${endpoints.projects}/${projectId}`
-        );
-    }
-
     fetchAllProjects(): Observable<Project[]> {
         return this.http.get<Project[]>(
-            endpoints.projects
+            endpoints.projects, { withCredentials: true }
         );
     }
 }

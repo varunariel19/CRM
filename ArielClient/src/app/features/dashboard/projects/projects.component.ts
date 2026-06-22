@@ -5,6 +5,7 @@ import { forkJoin } from 'rxjs';
 import { ProjectService } from '../../../services/project.service';
 import { ProjectState } from '../../../state/project.state';
 import { TeamState } from '../../../state/team.state';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 export interface ProjectMember {
   id: string;
@@ -56,6 +57,7 @@ export class ProjectsComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly projectState = inject(ProjectState);
   private readonly teamState = inject(TeamState);
+  perm = inject(PermissionFacade);
 
   searchQuery = signal('');
   filterStatus = signal('all');
@@ -68,6 +70,7 @@ export class ProjectsComponent implements OnInit {
   memberPickerSearch = signal('');
   pendingMembers = signal<ProjectMember[]>([]);
   isAddingMembers = signal(false);
+
 
   projects = this.projectState.projects;
   loading = this.projectState.loading;

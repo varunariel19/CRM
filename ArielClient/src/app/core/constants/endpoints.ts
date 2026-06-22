@@ -64,6 +64,9 @@ export const endpoints = {
     projects: `${BASE_URL}/api/projects`,
 
 
+    // task management ! 
+    taskM : `${BASE_URL}/api/tasks`,
+
 
 
     AIUrl: 'https://api.groq.com/openai/v1/chat/completions',

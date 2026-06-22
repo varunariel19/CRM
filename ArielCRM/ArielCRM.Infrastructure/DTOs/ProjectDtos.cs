@@ -58,7 +58,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public List<ProjectMemberDto> Members { get; set; } = [];
         public List<ProjectDocumentDto> Documents { get; set; } = [];
         public int TasksTotal { get; set; }
-        public int TasksCompleted { get; set; }
+        public int TasksCompleted { get; set; }  = 0;
     }
 
 

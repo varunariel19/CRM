@@ -1,12 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ArielCRM.Infrastructure.DTOs;
 
 namespace ArielCRM.Application.Interfaces
 {
-    internal interface ITaskManagementService
+    public interface ITaskManagementService
     {
+        Task<IEnumerable<TaskDetailDto>> GetAllAsync();
+
+        Task<TaskDetailDto?> GetByIdAsync(string taskId);
+
+        Task<string> CreateAsync(CreateTaskDto dto, string reportedById);
+
+        Task<bool> UpdateAsync(string taskId, UpdateTaskDto dto);
+
+        Task<bool> DeleteAsync(string taskId);
     }
 }

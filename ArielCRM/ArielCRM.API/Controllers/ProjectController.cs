@@ -1,16 +1,19 @@
 using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArielCRM.API.Controllers
 {
     [Route("api/projects")]
+    [Authorize]
     [ApiController]
     public class ProjectController(IProjectService projectService) : ControllerBase
     {
         private readonly IProjectService _projectService = projectService;
 
         [HttpPost]
+        [Authorize(Policy = "Permission:Projects.Create")]
         public async Task<IActionResult> Create([FromForm] CreateProjectDto dto)
         {
             try
@@ -34,6 +37,7 @@ namespace ArielCRM.API.Controllers
         }
 
         [HttpPut("{projectId}")]
+        [Authorize(Policy = "Permission:Projects.Edit")]
         public async Task<IActionResult> Update(string projectId, [FromForm] UpdateProjectDto dto)
         {
             try
@@ -65,6 +69,7 @@ namespace ArielCRM.API.Controllers
         }
 
         [HttpDelete("{projectId}")]
+        [Authorize(Policy = "Permission:Projects.Delete")]
         public async Task<IActionResult> Delete(string projectId)
         {
             try
@@ -96,11 +101,13 @@ namespace ArielCRM.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "Permission:Projects.View")]
         public async Task<IActionResult> GetAllProjects()
         {
             try
             {
-                var projects = await _projectService.GetAllAsync();
+
+                var projects = await _projectService.GetAllAsync(HttpContext);
                 return Ok(new { Success = true, Data = projects });
             }
             catch (Exception ex)
@@ -110,6 +117,7 @@ namespace ArielCRM.API.Controllers
         }
 
         [HttpGet("{projectId}")]
+        [Authorize(Policy = "Permission:Projects.View")]
         public async Task<IActionResult> GetProjectById(string projectId)
         {
             try
@@ -127,6 +135,7 @@ namespace ArielCRM.API.Controllers
         }
 
         [HttpPatch("add-member")]
+        [Authorize(Policy = "Permission:Projects.Edit")]
         public async Task<IActionResult> AddMemberToProject([FromQuery] string projectId, [FromQuery] string memberId)
         {
             try
@@ -145,6 +154,7 @@ namespace ArielCRM.API.Controllers
 
 
         [HttpPatch("remove-member")]
+        [Authorize(Policy = "Permission:Projects.Edit")]
         public async Task<IActionResult> RemoveMemberFromProject([FromQuery] string projectId, [FromQuery] string memberId)
         {
 

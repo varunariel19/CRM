@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ArielCRM.DataLayer.Entities
 {
-    [Table("ticket_tasks")] 
+    [Table("ticket_tasks")]
     public class TicketTask
     {
         [Key]
@@ -12,27 +12,27 @@ namespace ArielCRM.DataLayer.Entities
         [MaxLength(50)]
         public string TaskId { get; set; } = Guid.NewGuid().ToString();
 
-        [Column("ticket_id")] 
+        [Column("ticket_id")]
         public int? TicketId { get; set; }
 
         [Required]
         [Column("priority")]
-        public int Priority { get; set; }
+        public string Priority { get; set; } = TaskPriority.MEDIUM.ToString();
 
         [Required]
         [Column("title")]
         [MaxLength(255)]
         public string Title { get; set; } = string.Empty;
-
+    
         [Required]
         [Column("type")]
-        public string Type { get; set; } = string.Empty;
+        public string Type { get; set; } = TicketTaskType.TASK.ToString();
 
         [Column("description")]
         public string Description { get; set; } = string.Empty;
 
         [Column("status")]
-        public string Status { get; set; } = TicketStatus.Todo.ToString();
+        public string Status { get; set; } = TasksStatus.TODO.ToString();
 
         [Column("assign_to_id")]
         [MaxLength(50)]

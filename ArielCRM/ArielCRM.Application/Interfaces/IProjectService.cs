@@ -1,4 +1,5 @@
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Http;
 
 namespace ArielCRM.Application.Interfaces
 {
@@ -9,7 +10,7 @@ namespace ArielCRM.Application.Interfaces
         Task UpdateAsync(string projectId, UpdateProjectDto dto);
         Task<ProjectDetailDto?> GetByIdAsync(string projectId);
         Task<string> CreateAsync(CreateProjectDto dto);
-        Task<List<ProjectDetailDto>> GetAllAsync();
+        Task<IEnumerable<ProjectDetailDto>> GetAllAsync(HttpContext context);
         Task RemoveMemberFromProjectAsync(string projectId, string memberId);
         Task DeleteAsync(string projectId);
     }

@@ -20,16 +20,16 @@
         <div class="form-row">
           <div class="form-group">
             <label>Project <span class="required">*</span></label>
-            <select [(ngModel)]="newTask.projectId">
+            <select [ngModel]="newTask.projectId" (change)="handleSelectProject($event)">
               <option value="" disabled>Select Project</option>
-              <option *ngFor="let p of allProjects()" [value]="p.id">{{ p.name }}</option>
+              <option *ngFor="let p of allProjects" [value]="p.id">{{ p.name }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>Assignee <span class="required">*</span></label>
-            <select [(ngModel)]="newTask.assigneeId">
-              <option value="" disabled>Select Assignee</option>
-              <option *ngFor="let m of allMembers()" [value]="m.id">{{ m.name }}</option>
+            <select [(ngModel)]="newTask.assignToId" [disabled]="!newTask.projectId">
+              <option value="" disabled>{{ newTask.projectId ? 'Select Assignee' : 'Select a project first' }}</option>
+              <option *ngFor="let m of assignee" [value]="m.id">{{ m.name }}</option>
             </select>
           </div>
         </div>
@@ -48,19 +48,12 @@
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group">
+          <!-- <div class="form-group">
             <label>Due Date</label>
             <input type="date" [(ngModel)]="newTask.dueDate" />
-          </div>
-          <div class="form-group">
-            <label>Story Points</label>
-            <input type="number" [(ngModel)]="newTask.storyPoints" min="1" max="100" />
-          </div>
+          </div> -->
         </div>
-        <div class="form-group full-width">
-          <label>Tags <span class="hint">(comma separated)</span></label>
-          <input type="text" [(ngModel)]="newTask.tags" placeholder="e.g. auth, backend, urgent" />
-        </div>
+
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
@@ -110,25 +103,19 @@
           </div>
           <div class="form-group">
             <label>Assignee</label>
-            <select [(ngModel)]="editTask.assigneeId">
-              <option *ngFor="let m of allMembers()" [value]="m.id">{{ m.name }}</option>
+            <select [(ngModel)]="editTask.assignToId">
+              <option *ngFor="let m of allMembers" [value]="m.id">{{ m.name }}</option>
             </select>
           </div>
         </div>
         <div class="form-row">
-          <div class="form-group">
+          <!-- <div class="form-group">
             <label>Due Date</label>
             <input type="date" [(ngModel)]="editTask.dueDate" />
-          </div>
-          <div class="form-group">
-            <label>Story Points</label>
-            <input type="number" [(ngModel)]="editTask.storyPoints" min="1" />
-          </div>
+          </div> -->
+
         </div>
-        <div class="form-group full-width">
-          <label>Tags <span class="hint">(comma separated)</span></label>
-          <input type="text" [(ngModel)]="editTask.tags" />
-        </div>
+
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showEditModal = false; editTask = null">Cancel</button>
@@ -166,7 +153,7 @@
       <label><i class="fas fa-folder"></i> Project</label>
       <select [ngModel]="selectedProjectId()" (ngModelChange)="selectedProjectId.set($event); onProjectChange()">
         <option value="">All Projects</option>
-        <option *ngFor="let p of allProjects()" [value]="p.id">{{ p.name }}</option>
+        <option *ngFor="let p of allProjects" [value]="p.id">{{ p.name }}</option>
       </select>
     </div>
 
@@ -189,11 +176,8 @@
     </div>
 
     <!-- By Me toggle -->
-    <button
-      class="btn-by-me"
-      [class.active]="filterByMe()"
-      (click)="filterByMe.set(!filterByMe()); selectedMemberId.set('')"
-    >
+    <button class="btn-by-me" [class.active]="filterByMe()"
+      (click)="filterByMe.set(!filterByMe()); selectedMemberId.set('')">
       <i class="fas fa-user-check"></i>
       Assigned to Me
     </button>
@@ -208,7 +192,7 @@
     <div class="filter-chips">
       <span class="chip" *ngIf="selectedProjectId()">
         <i class="fas fa-folder"></i>
-        {{ allProjects().find(p => p.id === selectedProjectId())?.name }}
+        {{ allProjects.find(p => p.id === selectedProjectId())?.name }}
       </span>
       <span class="chip chip-blue" *ngIf="filterByMe()">
         <i class="fas fa-user"></i> My Tasks
@@ -231,33 +215,21 @@
           <h3>{{ col.title }}</h3>
           <span>{{ getColumnTasks(col.key).length }}</span>
         </div>
-        <strong class="col-points">{{ getTotalPoints(getColumnTasks(col.key)) }} pts</strong>
       </div>
 
-      <div class="deal-list"
-        (dragover)="allowDrop($event)"
-        (drop)="dropTask($event, col.key)"
-      >
+      <div class="deal-list" (dragover)="allowDrop($event)" (drop)="dropTask($event, col.key)">
 
         <div *ngIf="getColumnTasks(col.key).length === 0" class="empty-state">
           No tasks here.
         </div>
 
-        <div
-          class="deal-card"
-          *ngFor="let task of getColumnTasks(col.key)"
-          draggable="true"
-          (click)="viewTicket()"
-          (dragstart)="dragTask($event, task, col.key)"
-        >
+        <div class="deal-card" *ngFor="let task of getColumnTasks(col.key)" draggable="true" (click)="viewTicket()"
+          (dragstart)="dragTask($event, task, col.key)">
           <!-- Top row: ID + Priority badge -->
-          <div class="task-top" >
-            <span class="task-id">{{ task.id }}</span>
-            <span
-              class="priority-badge"
-              [style.color]="priorityMeta(task.priority).color"
-              [style.background]="priorityMeta(task.priority).bg"
-            >
+          <div class="task-top">
+            <span class="task-id">{{ task.taskId }}</span>
+            <span class="priority-badge" [style.color]="priorityMeta(task.priority).color"
+              [style.background]="priorityMeta(task.priority).bg">
               {{ priorityMeta(task.priority).icon }} {{ task.priority }}
             </span>
           </div>
@@ -276,40 +248,29 @@
             <div>
               <span>TYPE</span>
               <p>
-                <span
-                  class="type-badge"
-                  [style.color]="typeMeta(task.type).color"
-                  [style.background]="typeMeta(task.type).bg"
-                >{{ task.type }}</span>
+                <span class="type-badge" [style.color]="typeMeta(task.type).color"
+                  [style.background]="typeMeta(task.type).bg">{{ task.type }}</span>
               </p>
             </div>
-            <div>
+            <!-- <div>
               <span>Due Date</span>
               <p>
                 <i class="fas fa-calendar"></i>
                 {{ task.dueDate }}
               </p>
-            </div>
-            <div>
-              <span>Points</span>
-              <p><i class="fas fa-star"></i> {{ task.storyPoints }}</p>
-            </div>
+            </div> -->
           </div>
 
-          <!-- Tags -->
-          <div class="task-tags" *ngIf="task.tags.length">
-            <span class="tag" *ngFor="let tag of task.tags">{{ tag }}</span>
-          </div>
 
           <!-- Footer: assignee + actions -->
           <div class="deal-footer">
             <div class="owner">
-              <div class="avatar">{{ initials(task.assignee?.name ?? '?') }}</div>
-              {{ task.assignee?.name ?? '—' }}
+              <div class="avatar">{{ initials(task?.assignedToName ? task.assignedToName : '?') }}</div>
+              {{ task?.assignedToName ? task.assignedToName : '-' }}
             </div>
             <div class="deal-actions">
-              <i class="fas fa-pen"           title="Edit"       (click)="openEditModal(task)"></i>
-              <i class="fas fa-chevron-left"  title="Move Left"  (click)="moveLeft(col.key, task)"></i>
+              <i class="fas fa-pen" title="Edit" (click)="openEditModal(task)"></i>
+              <i class="fas fa-chevron-left" title="Move Left" (click)="moveLeft(col.key, task)"></i>
               <i class="fas fa-chevron-right" title="Move Right" (click)="moveRight(col.key, task)"></i>
             </div>
           </div>

@@ -1,19 +1,24 @@
+using System.Security.Claims;
 using ArielCRM.Application.Interfaces;
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.DataLayer.Enums;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using ArielCRM.Infrastructure.Interfaces.IService;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace ArielCRM.Application.Services
 {
 
     public class ProjectService(
         IProjectRepository projectRepository,
-        IAppwriteStorageService storageService) : IProjectService
+        IAppwriteStorageService storageService, IConfiguration configuration) : IProjectService
     {
         private readonly IProjectRepository _projectRepository = projectRepository;
         private readonly IAppwriteStorageService _storageService = storageService;
+
+        private readonly IConfiguration _configuration = configuration;
 
         public async Task<string> CreateAsync(CreateProjectDto dto)
         {
@@ -95,10 +100,28 @@ namespace ArielCRM.Application.Services
             return MapToDetailDto(project);
         }
 
-        public async Task<List<ProjectDetailDto>> GetAllAsync()
+        public async Task<IEnumerable<ProjectDetailDto>> GetAllAsync(HttpContext context)
         {
-            var projects = await _projectRepository.GetAllWithDetailsAsync();
-            return [.. projects.Select(MapToDetailDto)];
+            if (context.User.Identity is null || !context.User.Identity.IsAuthenticated)
+                return Enumerable.Empty<ProjectDetailDto>();
+
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                return Enumerable.Empty<ProjectDetailDto>();
+
+            var adminAccessLvlId = _configuration["Seeding:AdminLevel"];
+            var accessLevelId = context.User.FindFirst("AccessLevelId")?.Value;
+
+            if (accessLevelId == adminAccessLvlId)
+            {
+                var allProjects = await _projectRepository.GetAllProjectAsync();
+                return allProjects.Select(MapToDetailDto);
+            }
+
+            var projects = await _projectRepository.GetAllWithDetailsAsync(userId);
+
+            return projects.Select(MapToDetailDto);
         }
 
         private static ProjectDetailDto MapToDetailDto(Project p) => new()
@@ -139,7 +162,7 @@ namespace ArielCRM.Application.Services
                 UploadedAt = d.UploadedAt
             })],
             TasksTotal = p.Tasks.Count,
-            TasksCompleted = p.Tasks.Count(t => t.Status == TicketStatus.Done.ToString())
+            TasksCompleted = p.Tasks.Count(t => t.Status == TasksStatus.DONE.ToString())
         };
 
 

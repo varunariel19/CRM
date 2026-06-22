@@ -13,7 +13,8 @@
         <p class="page-subtitle">Manage and track all company projects</p>
       </div>
     </div>
-    <button class="btn-new-project" (click)="openCreateModal()">
+
+      <button class="btn-new-project" *ngIf="perm.projects.canCreate()" (click)="openCreateModal()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
         stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19" />
@@ -57,121 +58,140 @@
     <span>Loading projects…</span>
   </div>
 
-  <div class="projects-grid" *ngIf="!loading() && filteredProjects().length > 0; else emptyState">
-    <div class="project-card" *ngFor="let project of filteredProjects()" (click)="openProject(project)">
-      <div class="folder-tab"></div>
-      <div class="card-body">
+  <!-- canView guards the entire grid -->
+  <ng-container *ngIf="perm.projects.canView()">
 
-        <div class="card-top">
-          <div class="folder-icon-wrap">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-            </svg>
-          </div>
-          <span class="status-badge" [class.status-active]="project.isActive" [class.status-hold]="!project.isActive">
-            {{ project.isActive ? 'Active' : 'Inactive' }}
-          </span>
-        </div>
+    <div class="projects-grid" *ngIf="!loading() && filteredProjects().length > 0; else emptyState">
+      <div class="project-card" *ngFor="let project of filteredProjects()" (click)="openProject(project)">
+        <div class="folder-tab"></div>
+        <div class="card-body">
 
-        <div class="card-title-group">
-          <h3 class="card-title">{{ project.name }}</h3>
-          <span class="card-client">
-            <i class="fa-solid fa-key"></i>
-            {{ project.projectKey }}
-          </span>
-          <span class="card-client" *ngIf="project.client; else internalCardBadge">
-            <i class="fa-solid fa-building"></i>
-            {{ project.client.companyName || project.client.name }}
-          </span>
-          <ng-template #internalCardBadge>
-            <span class="internal-badge">
-              <i class="fa-solid fa-shield-halved"></i>
-              Internal
+          <div class="card-top">
+            <div class="folder-icon-wrap">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <span class="status-badge" [class.status-active]="project.isActive" [class.status-hold]="!project.isActive">
+              {{ project.isActive ? 'Active' : 'Inactive' }}
             </span>
-          </ng-template>
-        </div>
-
-        <div class="progress-section">
-          <div class="progress-header">
-            <span class="progress-label">Progress</span>
-            <span class="progress-pct">{{ getProgressPercent(project) }}%</span>
           </div>
-          <div class="progress-track">
-            <div class="progress-fill" [style.width.%]="getProgressPercent(project)"></div>
-          </div>
-        </div>
 
-        <div class="card-footer">
-          <div class="members-stack">
-            <div class="member-avatar" *ngFor="let m of project.members.slice(0, 4); let i = index"
-              [style.z-index]="10 - i" [title]="m.name">
-              {{ getInitials(m.name) }}
+          <div class="card-title-group">
+            <h3 class="card-title">{{ project.name }}</h3>
+            <span class="card-client">
+              <i class="fa-solid fa-key"></i>
+              {{ project.projectKey }}
+            </span>
+            <span class="card-client" *ngIf="project.client; else internalCardBadge">
+              <i class="fa-solid fa-building"></i>
+              {{ project.client.companyName || project.client.name }}
+            </span>
+            <ng-template #internalCardBadge>
+              <span class="internal-badge">
+                <i class="fa-solid fa-shield-halved"></i>
+                Internal
+              </span>
+            </ng-template>
+          </div>
+
+          <div class="progress-section">
+            <div class="progress-header">
+              <span class="progress-label">Progress</span>
+              <span class="progress-pct">{{ getProgressPercent(project) }}%</span>
             </div>
-            <div class="member-avatar extra" *ngIf="project.members.length > 4">
-              +{{ project.members.length - 4 }}
+            <div class="progress-track">
+              <div class="progress-fill" [style.width.%]="getProgressPercent(project)"></div>
             </div>
           </div>
-          <div class="deadline-chip" *ngIf="project.endDate" [class.overdue]="isOverdue(project.endDate)">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            {{ formatDaysLeft(project.endDate) }}
+
+          <div class="card-footer">
+            <div class="members-stack">
+              <div class="member-avatar" *ngFor="let m of project.members.slice(0, 4); let i = index"
+                [style.z-index]="10 - i" [title]="m.name">
+                {{ getInitials(m.name) }}
+              </div>
+              <div class="member-avatar extra" *ngIf="project.members.length > 4">
+                +{{ project.members.length - 4 }}
+              </div>
+            </div>
+            <div class="deadline-chip" *ngIf="project.endDate" [class.overdue]="isOverdue(project.endDate)">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              {{ formatDaysLeft(project.endDate) }}
+            </div>
           </div>
+
+          <div class="metrics-row">
+            <div class="metric">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 11 12 14 22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+              <span>{{ project.tasksCompleted }}/{{ project.tasksTotal }} tasks</span>
+            </div>
+            <div class="metric">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+              </svg>
+              <span>{{ project.documents.length }} docs</span>
+            </div>
+          </div>
+
         </div>
 
-        <div class="metrics-row">
-          <div class="metric">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="9 11 12 14 22 4" />
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-            </svg>
-            <span>{{ project.tasksCompleted }}/{{ project.tasksTotal }} tasks</span>
-          </div>
-          <div class="metric">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-            <span>{{ project.documents.length }} docs</span>
-          </div>
+        <div class="card-hover-arrow">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
         </div>
 
       </div>
-
-      <div class="card-hover-arrow">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12" />
-          <polyline points="12 5 19 12 12 19" />
-        </svg>
-      </div>
-
     </div>
+
+    <ng-template #emptyState>
+      <div class="empty-state" *ngIf="!loading()">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+          </svg>
+        </div>
+        <p class="empty-title">No projects found</p>
+        <p class="empty-sub">Try adjusting your search or filters</p>
+      </div>
+    </ng-template>
+
+  </ng-container>
+
+  <!-- No view permission -->
+  <div class="empty-state" *ngIf="!perm.projects.canView()">
+    <div class="empty-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+      </svg>
+    </div>
+    <p class="empty-title">Access Denied</p>
+    <p class="empty-sub">You don't have permission to view projects.</p>
   </div>
-
-  <ng-template #emptyState>
-    <div class="empty-state" *ngIf="!loading()">
-      <div class="empty-icon">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-        </svg>
-      </div>
-      <p class="empty-title">No projects found</p>
-      <p class="empty-sub">Try adjusting your search or filters</p>
-    </div>
-  </ng-template>
 
 </div>
 
 
+<!-- ───────────── VIEW / EDIT MODAL ───────────── -->
 <div class="modal-overlay" *ngIf="isModalOpen() && selectedProject()" (click)="onOverlayClick($event)">
   <div class="modal-panel" *ngIf="selectedProject() as proj">
 
@@ -243,7 +263,10 @@
         </svg>
         Overview
       </button>
-      <button class="tab-btn" [class.tab-active]="activeTab() === 'members'" (click)="setTab('members')">
+
+      <!-- canView guards Members tab visibility -->
+      <button class="tab-btn" *ngIf="perm.projects.canView()"
+        [class.tab-active]="activeTab() === 'members'" (click)="setTab('members')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
@@ -253,6 +276,7 @@
         Members
         <span class="tab-badge">{{ proj.members.length }}</span>
       </button>
+
       <button class="tab-btn" [class.tab-active]="activeTab() === 'documents'" (click)="setTab('documents')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -265,6 +289,7 @@
 
     <div class="modal-body">
 
+      <!-- ── OVERVIEW TAB ── -->
       <div *ngIf="activeTab() === 'overview'" class="tab-content">
 
         <div class="overview-description">
@@ -362,14 +387,28 @@
           </div>
         </div>
 
+        <!-- canDelete: Delete project button in overview -->
+        <div class="overview-danger" *ngIf="perm.projects.canDelete()">
+          <button class="btn-delete-project" >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14H6L5 6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+              <path d="M9 6V4h6v2" />
+            </svg>
+            Delete Project
+          </button>
+        </div>
+
       </div>
 
+      <!-- ── MEMBERS TAB ── -->
       <div *ngIf="activeTab() === 'members'" class="tab-content">
 
-        <!-- ── Current members list ── -->
         <ng-container *ngIf="!isMemberPickerOpen()">
 
-          <!-- Empty state -->
           <div class="members-empty" *ngIf="selectedProject()!.members.length === 0">
             <div class="members-empty-icon">
               <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
@@ -382,7 +421,8 @@
             </div>
             <p class="members-empty-title">No members added yet</p>
             <p class="members-empty-sub">Add team members to collaborate on this project.</p>
-            <button class="btn-add-member-primary" (click)="openMemberPicker()">
+            <!-- canEdit guards Add Member (empty state) -->
+            <button class="btn-add-member-primary" *ngIf="perm.projects.canEdit()" (click)="openMemberPicker()">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" />
@@ -392,7 +432,6 @@
             </button>
           </div>
 
-          <!-- Members list -->
           <ng-container *ngIf="selectedProject()!.members.length > 0">
             <div class="members-list">
               <div class="member-row" *ngFor="let member of selectedProject()!.members">
@@ -400,7 +439,9 @@
                 <div class="member-info">
                   <span class="member-name">{{ member.name }}</span>
                 </div>
-                <button class="btn-remove-member" (click)="removeMember(member.id)" title="Remove member">
+                <!-- canEditOrDel guards Remove Member button -->
+                <button class="btn-remove-member" *ngIf="perm.projects.canEditOrDel()"
+                  (click)="removeMember(member.id)" title="Remove member">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -410,8 +451,9 @@
               </div>
             </div>
 
-            <!-- Add more button -->
-            <button class="btn-add-member" *ngIf="availableToAdd().length > 0 || memberPickerSearch()"
+            <!-- canEdit guards Add More button -->
+            <button class="btn-add-member"
+              *ngIf="perm.projects.canEdit() && (availableToAdd().length > 0 || memberPickerSearch())"
               (click)="openMemberPicker()">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
@@ -424,10 +466,9 @@
 
         </ng-container>
 
-        <!-- ── Member picker ── -->
-        <div class="member-picker" *ngIf="isMemberPickerOpen()">
+        <!-- Member picker — only reachable if canEdit, but guard defensively -->
+        <div class="member-picker" *ngIf="isMemberPickerOpen() && perm.projects.canEdit()">
 
-          <!-- Header -->
           <div class="picker-header">
             <div class="picker-header-left">
               <span class="picker-title">Add team members</span>
@@ -444,7 +485,6 @@
             </button>
           </div>
 
-          <!-- Search -->
           <div class="picker-search-wrap">
             <svg class="picker-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -455,7 +495,6 @@
               [ngModel]="memberPickerSearch()" (ngModelChange)="memberPickerSearch.set($event)" />
           </div>
 
-          <!-- Selected (pending) tray -->
           <div class="picker-selected-tray" *ngIf="pendingMembers().length > 0">
             <span class="tray-label">Selected</span>
             <div class="tray-chips">
@@ -473,7 +512,6 @@
             </div>
           </div>
 
-          <!-- Available list -->
           <div class="picker-list-wrap">
             <div class="picker-list" *ngIf="availableToAdd().length > 0; else pickerEmpty">
               <button class="picker-item" *ngFor="let m of availableToAdd()" (click)="togglePendingMember(m)">
@@ -500,7 +538,6 @@
             </ng-template>
           </div>
 
-          <!-- Footer actions -->
           <div class="picker-footer">
             <button class="btn-cancel" (click)="closeMemberPicker()">Cancel</button>
             <button class="btn-confirm-add" [disabled]="pendingMembers().length === 0 || isAddingMembers()"
@@ -511,9 +548,7 @@
               </svg>
               <span *ngIf="!isAddingMembers()">
                 Confirm
-                <ng-container *ngIf="pendingMembers().length > 0">
-                  ({{ pendingMembers().length }})
-                </ng-container>
+                <ng-container *ngIf="pendingMembers().length > 0">({{ pendingMembers().length }})</ng-container>
               </span>
               <span *ngIf="isAddingMembers()">Adding…</span>
             </button>
@@ -523,6 +558,7 @@
 
       </div>
 
+      <!-- ── DOCUMENTS TAB ── -->
       <div *ngIf="activeTab() === 'documents'" class="tab-content">
         <div class="documents-list">
           <div class="document-row" *ngFor="let doc of proj.documents">
@@ -531,7 +567,8 @@
               <span class="doc-name">{{ doc.fileName }}</span>
               <span class="doc-meta">Uploaded: {{ doc.uploadedAt | date:'mediumDate' }}</span>
             </div>
-            <div class="doc-actions">
+            <!-- canView guards download action -->
+            <div class="doc-actions" *ngIf="perm.projects.canView()">
               <a [href]="doc.fileUrl" target="_blank" class="doc-action-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
@@ -541,6 +578,15 @@
                 </svg>
               </a>
             </div>
+            <!-- canDelete guards document delete -->
+            <button class="btn-remove-member" *ngIf="perm.projects.canDelete()"
+               title="Delete document">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -550,7 +596,10 @@
 </div>
 
 
-<div class="modal-overlay" *ngIf="isCreateModalOpen()" (click)="onCreateOverlayClick($event)">
+<!-- ───────────── CREATE MODAL ───────────── -->
+<!-- canCreate guards the entire create modal -->
+<div class="modal-overlay" *ngIf="isCreateModalOpen() && perm.projects.canCreate()"
+  (click)="onCreateOverlayClick($event)">
   <div class="modal-panel create-modal-panel" (click)="$event.stopPropagation()">
 
     <div class="modal-header">
@@ -575,8 +624,8 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Project Name <span class="required">*</span></label>
-            <input type="text" class="form-input" placeholder="e.g. CRM Platform Redesign" [ngModel]="newProject().name"
-              (ngModelChange)="updateNewProject('name', $event)" />
+            <input type="text" class="form-input" placeholder="e.g. CRM Platform Redesign"
+              [ngModel]="newProject().name" (ngModelChange)="updateNewProject('name', $event)" />
           </div>
         </div>
 
@@ -584,7 +633,8 @@
           <div class="form-group">
             <label class="form-label">Description</label>
             <textarea class="form-input form-textarea" placeholder="Brief description of the project…" rows="3"
-              [ngModel]="newProject().description" (ngModelChange)="updateNewProject('description', $event)"></textarea>
+              [ngModel]="newProject().description"
+              (ngModelChange)="updateNewProject('description', $event)"></textarea>
           </div>
         </div>
 
@@ -600,9 +650,6 @@
               (ngModelChange)="updateNewProject('endDate', $event)" />
           </div>
         </div>
-
-
-
 
         <div class="form-row">
           <div class="form-group">
@@ -630,7 +677,9 @@
 
         <div class="form-actions">
           <button class="btn-cancel" (click)="closeCreateModal()">Cancel</button>
-          <button class="btn-submit" (click)="submitCreateProject()" [disabled]="isCreating()">
+          <!-- canCreate also guards the submit button -->
+          <button class="btn-submit" *ngIf="perm.projects.canCreate()"
+            (click)="submitCreateProject()" [disabled]="isCreating()">
             <span *ngIf="!isCreating()">
               <i class="fa-solid fa-plus"></i>
               Create Project

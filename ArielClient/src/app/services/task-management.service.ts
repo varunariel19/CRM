@@ -1,22 +1,56 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { BASE_URL } from '../core/constants/endpoints';
+import { endpoints } from '../core/constants/endpoints';
+import { Observable } from 'rxjs';
 
-const apiEndPoints = {
-    tokenValidation: `${BASE_URL}/validate-token`,
-    updateticket: `${BASE_URL}/update-ticket`,
-    editComment: `${BASE_URL}/edit-comment`,
-    uploadTicket: `${BASE_URL}/upload-task`,
-    allTasks: `${BASE_URL}/fetch-all-task`,
-    addComment: `${BASE_URL}/add-comment`,
-    allComments: `${BASE_URL}/comments`,
-    allUsers: `${BASE_URL}/all-users`,
-    register: `${BASE_URL}/register`,
-    login: `${BASE_URL}/login`,
-    AIUrl: 'https://api.groq.com/openai/v1/chat/completions',
-    groqApiKey: ``,
-    geminiApiKey: '',
-};
+
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
+export type TaskPriority = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type TaskType = 'FEATURE' | 'BUG' | 'TASK' | 'CHORE';
+
+export interface Task {
+    taskId: string;
+    ticketId?: number;
+    title: string;
+    description: string;
+    priority: TaskPriority;
+    type: TaskType;
+    status: TaskStatus;
+    assignToId?: string;
+    assignedToName: string;
+    reportedById: string;
+    projectId: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface CreateTaskRequest {
+    ticketId?: number;
+    title: string;
+    description: string;
+    priority: TaskPriority;
+    type: TaskType;
+    assignToId?: string;
+    projectId: string;
+}
+
+export interface UpdateTaskRequest {
+    title: string;
+    description: string;
+    priority: TaskPriority;
+    type: TaskType;
+    status: TaskStatus;
+    assignToId: string;
+}
+
+export interface CreateTaskResponse {
+    success: boolean;
+    taskId: string;
+}
+
+export interface ApiResponse {
+    success: boolean;
+}
 
 
 @Injectable({
@@ -25,31 +59,59 @@ const apiEndPoints = {
 
 export class TaskManageService {
 
+
+    private readonly baseUrl = endpoints.taskM;
     constructor(private http: HttpClient) { }
 
-    addTask(task: any) {
-        return this.http.post(apiEndPoints.uploadTicket, task);
-    }
 
-    getAllTickets() {
-        return this.http.get(apiEndPoints.allTasks);
-    }
-
-    updateTicket(ticketId: string, updates: any) {
-        return this.http.post(apiEndPoints.updateticket, { taskId: ticketId, updates })
+    getAllTasks(): Observable<Task[]> {
+        return this.http.get<Task[]>(this.baseUrl, { withCredentials: true });
     }
 
 
-    handleAddComment(comment: any) {
-        return this.http.post(`${apiEndPoints.addComment}/${comment.taskId}`, { comment });
+    getTaskById(taskId: string): Observable<Task> {
+        return this.http.get<Task>(`${this.baseUrl}/${taskId}`, { withCredentials: true });
     }
 
-    handleGetAllComments(taskId: string) {
-        return this.http.get(`${apiEndPoints.allComments}/${taskId}`);
+    createTask(
+        payload: CreateTaskRequest
+    ): Observable<CreateTaskResponse> {
+        return this.http.post<CreateTaskResponse>(
+            this.baseUrl,
+            payload,
+            { withCredentials: true }
+        );
     }
 
-    handleUpdateComment(updates: any) {
-        return this.http.post(apiEndPoints.editComment, updates);
+    updateTask(
+        taskId: string,
+        payload: UpdateTaskRequest
+    ): Observable<ApiResponse> {
+        return this.http.put<ApiResponse>(
+            `${this.baseUrl}/${taskId}`,
+            payload,
+            { withCredentials: true }
+        );
     }
+
+
+    deleteTask(taskId: string): Observable<ApiResponse> {
+        return this.http.delete<ApiResponse>(
+            `${this.baseUrl}/${taskId}`,
+            { withCredentials: true }
+        );
+    }
+
+    // handleAddComment(comment: any) {
+    //     return this.http.post(`${apiEndPoints.addComment}/${comment.taskId}`, { comment });
+    // }
+
+    // handleGetAllComments(taskId: string) {
+    //     return this.http.get(`${apiEndPoints.allComments}/${taskId}`);
+    // }
+
+    // handleUpdateComment(updates: any) {
+    //     return this.http.post(apiEndPoints.editComment, updates);
+    // }
 
 }

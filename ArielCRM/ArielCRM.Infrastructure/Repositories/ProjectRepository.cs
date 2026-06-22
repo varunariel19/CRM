@@ -44,7 +44,22 @@ namespace ArielCRM.Infrastructure.Repositories
                 .FirstOrDefaultAsync(p => p.Id == projectId);
         }
 
-        public async Task<List<Project>> GetAllWithDetailsAsync()
+        public async Task<List<Project>> GetAllWithDetailsAsync(string userId)
+        {
+            return await _context.Projects
+                .Where(p =>
+                    p.ProjectLeadId == userId ||
+                    p.Members.Any(m => m.Id == userId))
+                .Include(p => p.ProjectLead)
+                .Include(p => p.Contact)
+                .Include(p => p.Members)
+                .Include(p => p.Documents)
+                .Include(p => p.Tasks)
+                .ToListAsync();
+        }
+
+
+        public async Task<List<Project>> GetAllProjectAsync()
         {
             return await _context.Projects
                 .Include(p => p.ProjectLead)
