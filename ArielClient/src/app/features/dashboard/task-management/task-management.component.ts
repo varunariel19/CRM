@@ -16,6 +16,8 @@ import {
 } from '../../../services/task-management.service';
 import { finalize } from 'rxjs';
 import { AuthState } from '../../../state/auth.state';
+import { LoaderService } from '../../../core/services/loader.service';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-task-management',
@@ -30,6 +32,8 @@ export class TaskManagementComponent {
   projectState = inject(ProjectState);
   authState = inject(AuthState);
   taskService = inject(TaskManageService);
+  loader = inject(LoaderService);
+  toast = inject(ToastService);
 
   readonly currentUserId = this.authState.userId();
 
@@ -78,8 +82,8 @@ export class TaskManagementComponent {
     this.assignee = proj ? proj.members : [];
   }
 
-  handleFilterByMe() { 
-    this.filterByMe.set(!this.filterByMe()); 
+  handleFilterByMe() {
+    this.filterByMe.set(!this.filterByMe());
   }
 
   loadTasks(): void {
@@ -231,7 +235,6 @@ export class TaskManagementComponent {
     const pid = this.selectedProjectId();
     if (pid) tasks = tasks.filter((t) => t.projectId === pid);
     if (this.filterByMe()) {
-      debugger;
       tasks = tasks.filter((t) => t.assignee.id === this.currentUserId);
     } else {
       const mid = this.selectedMemberId();
@@ -301,14 +304,59 @@ export class TaskManagementComponent {
   }
 
   viewTicket(task: Task): void {
+    this.selectedTicket = { ...task, assignee: { ...task.assignee }, reporter: { ...task.reporter } };
     this.showTicketModal = true;
-    this.selectedTicket = task;
     const proj = this.allProjects.find((p) => p.id === task.projectId);
     this.assignee = proj ? proj.members : [];
   }
+
+  updateTicketFromView(ticket: Task): void {
+    const previousTicket = this.allTasks().find((t) => t.taskId === ticket.taskId);
+    if (!previousTicket) return;
+
+    const updatedTicket = {
+      ...previousTicket,
+      ...ticket,
+      assignee: { ...ticket.assignee },
+      reporter: { ...ticket.reporter },
+    };
+
+    const payload: UpdateTaskRequest = {
+      title: updatedTicket.title,
+      description: updatedTicket.description,
+      priority: updatedTicket.priority,
+      type: updatedTicket.type,
+      status: updatedTicket.status,
+      assignToId: updatedTicket.assignee.id ?? '',
+    };
+
+    this.loader.show('Updating ticket...', 'md');
+    this.taskService.updateTask(updatedTicket.taskId, payload)
+      .pipe(finalize(() => this.loader.hide()))
+      .subscribe({
+        next: (res) => {
+          if (!res.success) {
+            this.toast.error('Failed to update ticket.');
+            return;
+          }
+
+          this.allTasks.update((list) =>
+            list.map((task) => (task.taskId === updatedTicket.taskId ? updatedTicket : task))
+          );
+          this.selectedTicket = updatedTicket;
+          this.toast.success('Ticket updated successfully.');
+        },
+        error: (err) => {
+          console.error('Failed to update ticket', err);
+          this.selectedTicket = { ...previousTicket, assignee: { ...previousTicket.assignee }, reporter: { ...previousTicket.reporter } };
+          this.toast.error(err?.error?.message ?? 'Failed to update ticket.');
+        },
+      });
+  }
+
   closeModal(): void {
     this.showTicketModal = false;
-
+    this.selectedTicket = null;
   }
 
   closeCreateModal(e: MouseEvent): void {

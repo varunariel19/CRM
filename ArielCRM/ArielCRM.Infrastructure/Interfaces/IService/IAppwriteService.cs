@@ -8,6 +8,7 @@ namespace ArielCRM.Infrastructure.Interfaces.IService
     {
         Task<UploadedFileResult> UploadFileAsync(IFormFile file);
         Task DeleteFileAsync(string fileId);
+        Task DeleteFileByUrlAsync(string? fileUrl);
     }
 
 }

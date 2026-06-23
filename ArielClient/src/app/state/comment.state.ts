@@ -55,17 +55,25 @@ export class CommentState {
 
 
     async loadCommentsByTicketId(ticketId: string): Promise<void> {
+        this._comments.set([]);
         this._setStatus('loading');
 
         return new Promise(resolve => {
             this.commentService.getCommentsByTicketId(ticketId).subscribe({
                 next: (comments) => {
+                    if (this._activeTicketId() !== ticketId) {
+                        resolve();
+                        return;
+                    }
+
                     this._comments.set(comments);
                     this._setStatus('idle');
                     resolve();
                 },
                 error: (err) => {
-                    this._setError(err?.error?.message ?? 'Failed to load comments.');
+                    if (this._activeTicketId() === ticketId) {
+                        this._setError(err?.error?.message ?? 'Failed to load comments.');
+                    }
                     resolve();
                 },
             });

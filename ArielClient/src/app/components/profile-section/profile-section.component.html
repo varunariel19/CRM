@@ -16,16 +16,23 @@
             <!-- Sidebar -->
             <div class="sidebar">
                 <div class="avatar-wrap">
-                    @if (selectedImage()) {
-                    <img [src]="selectedImage()!" class="avatar-img" alt="profile" />
+                    @if (displayImage()) {
+                    <img [src]="displayImage()!" class="avatar-img" alt="profile" />
                     } @else {
                     <div class="avatar-initials" [style.background]="getProfileColor(this.authState.fullName())">{{
                         getInitials() }}</div>
-                    }   
+                    }
                     <label class="avatar-edit" title="Change photo">
                         <i class="fa-solid fa-camera"></i>
                         <input type="file" accept="image/*" hidden (change)="onImageSelect($event)" />
                     </label>
+                    @if (displayImage()) {
+                    <button class="avatar-remove" type="button" title="Remove photo" (click)="removeProfileImage()"
+                        [disabled]="isRemovingProfileImage() || isSavingProfile()">
+                        <i class="fa-solid" [class.fa-trash]="!isRemovingProfileImage()"
+                            [class.fa-spinner]="isRemovingProfileImage()"></i>
+                    </button>
+                    }
                 </div>
 
                 <div class="sidebar-name">{{ authState.fullName() }}</div>
@@ -71,6 +78,13 @@
                             placeholder="Enter your name" />
                     </div>
 
+                    @if (profileError()) {
+                    <div class="alert error">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        {{ profileError() }}
+                    </div>
+                    }
+
                     <div class="field">
                         <label>Profile Photo</label>
                         <label class="upload-box">
@@ -82,11 +96,26 @@
                         <div class="preview-row">
                             <img [src]="selectedImage()!" class="preview-img" alt="preview" />
                             <span class="preview-label">New photo selected</span>
+                            <button class="remove-image-btn" type="button" (click)="clearSelectedImage()">
+                                <i class="fa-solid fa-xmark"></i>
+                                Clear
+                            </button>
+                        </div>
+                        } @else if (authState.user()?.profileImage) {
+                        <div class="preview-row">
+                            <img [src]="authState.user()?.profileImage" class="preview-img" alt="current profile" />
+                            <span class="preview-label muted">Current photo</span>
+                            <button class="remove-image-btn danger" type="button" (click)="removeProfileImage()"
+                                [disabled]="isRemovingProfileImage() || isSavingProfile()">
+                                <i class="fa-solid" [class.fa-trash]="!isRemovingProfileImage()"
+                                    [class.fa-spinner]="isRemovingProfileImage()"></i>
+                                {{ isRemovingProfileImage() ? 'Removing...' : 'Remove' }}
+                            </button>
                         </div>
                         }
                     </div>
 
-                    <button class="save-btn" type="button" (click)="saveProfile()" [disabled]="isSavingProfile()">
+                    <button class="save-btn" type="button" (click)="saveProfile()" [disabled]="isSavingProfile() || isRemovingProfileImage()">
                         <i class="fa-solid" [class.fa-floppy-disk]="!isSavingProfile()"
                             [class.fa-spinner]="isSavingProfile()"></i>
                         {{ isSavingProfile() ? 'Saving...' : 'Save Changes' }}

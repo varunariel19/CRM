@@ -28,6 +28,20 @@ namespace ArielCRM.API.Controllers
             }
         }
 
+        [HttpDelete("profile-image")]
+        public async Task<IActionResult> RemoveProfileImage()
+        {
+            try
+            {
+                var result = await userService.RemoveProfileImageAsync(UserId);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while removing your profile image.", details = ex.Message });
+            }
+        }
+
         [HttpPut("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
         {

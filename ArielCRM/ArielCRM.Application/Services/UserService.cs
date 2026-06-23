@@ -1,13 +1,15 @@
 using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
+using ArielCRM.Infrastructure.Interfaces.IService;
 
 namespace ArielCRM.Application.Services
 {
 
-    public class UserService(IUserRepository userRepo) : IUserService
+    public class UserService(IUserRepository userRepo, IAppwriteStorageService storageService) : IUserService
     {
         private readonly IUserRepository _userRepo = userRepo;
+        private readonly IAppwriteStorageService _storageService = storageService;
 
         public async Task<ApiResponse> UpdateProfileAsync(string userId, UpdateProfileDto dto)
         {
@@ -15,24 +17,60 @@ namespace ArielCRM.Application.Services
             if (user is null)
                 return ApiResponse.Fail("User not found.");
 
-            user.Name = dto.Name;
+            var previousProfileImage = user.ProfileImage;
 
-            // if (dto.ProfileImage is not null && dto.ProfileImage.Length > 0)
-            // {
-            //     var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "profiles");
-            //     Directory.CreateDirectory(uploadsFolder);
+            user.Name = dto.Name.Trim();
 
-            //     var fileName = $"{userId}_{Guid.NewGuid()}{Path.GetExtension(dto.ProfileImage.FileName)}";
-            //     var filePath = Path.Combine(uploadsFolder, fileName);
+            if (dto.ProfileImage is not null && dto.ProfileImage.Length > 0)
+            {
+                if (!dto.ProfileImage.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                    return ApiResponse.Fail("Only image files are allowed.");
 
-            //     using var stream = new FileStream(filePath, FileMode.Create);
-            //     await dto.ProfileImage.CopyToAsync(stream);
-
-            //     user.ProfileImage = $"/uploads/profiles/{fileName}";
-            // }
+                var upload = await _storageService.UploadFileAsync(dto.ProfileImage);
+                user.ProfileImage = upload.FileUrl;
+            }
 
             await _userRepo.UpdateAsync(user);
-            return ApiResponse.Ok("Profile updated successfully.");
+
+            if (!string.IsNullOrWhiteSpace(previousProfileImage) && previousProfileImage != user.ProfileImage)
+                await DeleteProfileImageIfExistsAsync(previousProfileImage);
+
+            return new UpdateProfileResponse
+            {
+                Success = true,
+                Message = "Profile updated successfully.",
+                Name = user.Name,
+                ProfileImage = user.ProfileImage
+            };
+        }
+
+        public async Task<ApiResponse> RemoveProfileImageAsync(string userId)
+        {
+            var user = await _userRepo.GetByIdAsync(userId);
+            if (user is null)
+                return ApiResponse.Fail("User not found.");
+
+            var previousProfileImage = user.ProfileImage;
+            if (string.IsNullOrWhiteSpace(previousProfileImage))
+                return new UpdateProfileResponse
+                {
+                    Success = true,
+                    Message = "Profile image removed successfully.",
+                    Name = user.Name,
+                    ProfileImage = null
+                };
+
+            user.ProfileImage = null;
+            await _userRepo.UpdateAsync(user);
+            await DeleteProfileImageIfExistsAsync(previousProfileImage);
+
+            return new UpdateProfileResponse
+            {
+                Success = true,
+                Message = "Profile image removed successfully.",
+                Name = user.Name,
+                ProfileImage = null
+            };
         }
 
         public async Task<ApiResponse> ChangePasswordAsync(string userId, ChangePasswordDto dto)
@@ -51,6 +89,18 @@ namespace ArielCRM.Application.Services
 
             await _userRepo.UpdateAsync(user);
             return ApiResponse.Ok("Password changed successfully.");
+        }
+
+        private async Task DeleteProfileImageIfExistsAsync(string profileImageUrl)
+        {
+            try
+            {
+                await _storageService.DeleteFileByUrlAsync(profileImageUrl);
+            }
+            catch
+            {
+                // Keep profile updates successful even if deleting the old storage object fails.
+            }
         }
     }
 

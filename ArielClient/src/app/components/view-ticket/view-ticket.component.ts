@@ -1,14 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
+  ChangeDetectorRef,
   Component,
   EventEmitter,
   HostListener,
   inject,
   Input,
+  OnChanges,
   OnDestroy,
   OnInit,
   Output,
+  SimpleChanges,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { EditorModule } from 'primeng/editor';
@@ -16,6 +19,7 @@ import { Task, TaskPriority, TaskStatus, TaskType } from '../../services/task-ma
 import { ProjectMember } from '../../features/dashboard/projects/projects.component';
 import { CommentState, TicketComment } from '../../state/comment.state';
 import { AuthState } from '../../state/auth.state';
+import { AiService } from '../../core/services/ai-modal.service';
 
 @Component({
   selector: 'app-view-ticket',
@@ -25,12 +29,13 @@ import { AuthState } from '../../state/auth.state';
 })
 
 
-export class ViewTicketComponent implements OnInit, OnDestroy {
+export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
 
   @Input() isOpen = false;
   @Input({ required: true }) ticket!: Task;
   @Input({ required: true }) projectMembers!: ProjectMember[];
   @Output() closeModal = new EventEmitter<void>();
+  @Output() ticketUpdated = new EventEmitter<Task>();
 
   readonly priorities: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
   readonly types: TaskType[] = ['FEATURE', 'BUG', 'TASK', 'CHORE'];
@@ -40,18 +45,11 @@ export class ViewTicketComponent implements OnInit, OnDestroy {
   isEditingDescription = false;
   isGeneratingSummary = false;
   isAiGlowing = false;
-
-
-
-
-  summaryPoints = [
-    'The admin dashboard functionality is not displaying complete or accurate data.',
-    'The root cause may be related to software updates.',
-    'The issue may be related to configuration changes.',
-    'The issue may be related to database connectivity problems.',
-    'The goal is to restore the dashboard to its normal operational state.',
-    'Administrators need access to accurate information.'
-  ];
+  summaryError = '';
+  summaryPoints: string[] = [];
+  isGeneratingDescription = false;
+  isDescriptionGlowing = false;
+  descriptionError = '';
 
 
   newComment = '';
@@ -61,6 +59,9 @@ export class ViewTicketComponent implements OnInit, OnDestroy {
 
   private readonly commentState = inject(CommentState);
   private authState = inject(AuthState);
+  private readonly aiService = inject(AiService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private activeTicketId: string | null = null;
 
   comments = this.commentState.sortedComments;
   isLoading = this.commentState.isLoading;
@@ -71,10 +72,14 @@ export class ViewTicketComponent implements OnInit, OnDestroy {
   constructor(private sanitizer: DomSanitizer) { }
 
   ngOnInit(): void {
-    this.commentState.setActiveTicket(this.ticket.taskId);
-    this.commentState.loadCommentsByTicketId(this.ticket.taskId);
+    this.loadTicketContext();
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['ticket'] && this.ticket) {
+      this.loadTicketContext();
+    }
+  }
 
   ngOnDestroy(): void {
     this.commentState.clear();
@@ -93,35 +98,109 @@ export class ViewTicketComponent implements OnInit, OnDestroy {
 
   startEditing() {
     this.htmlContent = this.ticket?.description ?? "";
+    this.descriptionError = '';
     this.isEditingDescription = true;
   }
 
   saveDescription() {
-    this.ticket.description = this.htmlContent;
+    const updatedTicket = {
+      ...this.ticket,
+      description: this.htmlContent,
+    };
+
+    this.ticket = updatedTicket;
+    this.descriptionError = '';
     this.isEditingDescription = false;
+    this.ticketUpdated.emit(updatedTicket);
   }
 
   cancelEditing() {
+    this.descriptionError = '';
     this.isEditingDescription = false;
   }
 
+  async generateDescription(): Promise<void> {
+    if (this.isGeneratingDescription) return;
 
-  generateSummary() {
+    const referenceDescription = this.stripHtml(this.htmlContent).trim();
+    if (!referenceDescription) {
+      this.descriptionError = 'Add a short draft description first so AI has a reference.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.isGeneratingDescription = true;
+    this.isDescriptionGlowing = true;
+    this.descriptionError = '';
+    this.cdr.detectChanges();
+
+    try {
+      const response = await this.aiService.AiGeneratedResponse(
+        'TICKET_DESCRIPTION',
+        this.buildDescriptionPayload(referenceDescription),
+      );
+
+      if (this.isAiErrorResponse(response)) {
+        this.descriptionError = response;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      await this.typeDescriptionEffect(response.trim(), 4);
+    } catch {
+      this.descriptionError = 'Service is currently unavailable. Please try again later.';
+      this.cdr.detectChanges();
+    } finally {
+      this.isGeneratingDescription = false;
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.isDescriptionGlowing = false;
+        this.cdr.detectChanges();
+      }, 1800);
+    }
+  }
+
+
+  async generateSummary(): Promise<void> {
     if (this.isGeneratingSummary) return;
+
     this.isGeneratingSummary = true;
     this.isAiGlowing = true;
-    setTimeout(() => {
-      this.summaryPoints = [
-        'Admin dashboard is failing to show complete or accurate data.',
-        'Root cause investigation is required across software, config, and DB layers.',
-        'Configuration changes may have introduced the regression.',
-        'Database connectivity issues are a likely contributing factor.',
-        'Restoration of dashboard to normal operational state is the primary goal.',
-        'Accurate data access for administrators must be ensured post-fix.'
-      ];
+    this.summaryError = '';
+
+    try {
+      const response = await this.aiService.AiGeneratedResponse(
+        'CHAT_SUMMARY',
+        this.buildSummaryPayload(),
+      );
+      if (this.isAiErrorResponse(response)) {
+        this.summaryError = response;
+        this.cdr.detectChanges();
+        return;
+      }
+
+      const points = this.parseSummaryToPoints(response);
+
+      if (!points.length) {
+        this.summaryError = 'No summary could be generated for this ticket.';
+        this.cdr.detectChanges();
+        return;
+      }
+
+      await this.typePointsEffect(points, 10);
+      this.ticket.aiSummary = [...points];
+      this.cdr.detectChanges();
+    } catch {
+      this.summaryError = 'Service is currently unavailable. Please try again later.';
+      this.cdr.detectChanges();
+    } finally {
       this.isGeneratingSummary = false;
-      setTimeout(() => { this.isAiGlowing = false; }, 3000);
-    }, 1800);
+      this.cdr.detectChanges();
+      setTimeout(() => {
+        this.isAiGlowing = false;
+        this.cdr.detectChanges();
+      }, 3000);
+    }
   }
 
 
@@ -168,11 +247,201 @@ export class ViewTicketComponent implements OnInit, OnDestroy {
 
 
   close() {
+    this.resetCommentDraft();
     this.closeModal.emit();
+  }
+
+  onAssigneeChange(assigneeId: string): void {
+    const member = this.projectMembers.find((m) => m.id === assigneeId);
+
+    this.emitTicketUpdate({
+      ...this.ticket,
+      assignee: {
+        ...this.ticket.assignee,
+        id: assigneeId,
+        name: member?.name ?? this.ticket.assignee?.name ?? '',
+      },
+    });
+  }
+
+  onStatusChange(status: TaskStatus): void {
+    this.emitTicketUpdate({ ...this.ticket, status });
+  }
+
+  onPriorityChange(priority: TaskPriority): void {
+    this.emitTicketUpdate({ ...this.ticket, priority });
+  }
+
+  onTypeChange(type: TaskType): void {
+    this.emitTicketUpdate({ ...this.ticket, type });
   }
 
   @HostListener('document:keydown.escape')
   onEscape() {
     this.close();
   }
+
+
+  private loadTicketContext(): void {
+    this.setSummaryFromTicket();
+
+    if (!this.ticket?.taskId || this.activeTicketId === this.ticket.taskId) return;
+
+    this.resetCommentDraft();
+    this.commentState.clear();
+    this.activeTicketId = this.ticket.taskId;
+    this.commentState.setActiveTicket(this.ticket.taskId);
+    this.commentState.loadCommentsByTicketId(this.ticket.taskId);
+  }
+
+  private emitTicketUpdate(updatedTicket: Task): void {
+    this.ticket = updatedTicket;
+    this.ticketUpdated.emit(updatedTicket);
+  }
+
+  private resetCommentDraft(): void {
+    this.newComment = '';
+    this.cancelCommentEdit();
+  }
+
+  private setSummaryFromTicket(): void {
+    if (this.isGeneratingSummary) return;
+
+    this.summaryPoints = [...(this.ticket?.aiSummary ?? [])];
+    this.summaryError = '';
+    this.cdr.detectChanges();
+  }
+
+
+  private buildDescriptionPayload(referenceDescription: string): string {
+    return `
+Title: ${this.ticket?.title ?? ''}
+Current Description Draft: ${referenceDescription}
+Status: ${this.ticket?.status ?? ''}
+Priority: ${this.ticket?.priority ?? ''}
+Type: ${this.ticket?.type ?? ''}
+Assignee: ${this.ticket?.assignee?.name ?? ''}
+Reporter: ${this.ticket?.reporter?.name ?? ''}
+
+Rewrite the current description into a polished, clear, actionable ticket description.
+Keep the same intent and do not add unsupported facts.
+    `.trim();
+  }
+
+  private stripHtml(value: string): string {
+    return value
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private typeDescriptionEffect(text: string, speed = 4): Promise<void> {
+    return new Promise((resolve) => {
+      if (!text) {
+        resolve();
+        return;
+      }
+
+      let index = 0;
+      this.htmlContent = '';
+      this.cdr.detectChanges();
+
+      const interval = setInterval(() => {
+        index++;
+        this.htmlContent = text.slice(0, index);
+        this.cdr.detectChanges();
+
+        if (index >= text.length) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, speed);
+    });
+  }
+
+  private buildSummaryPayload(): string {
+    const comments = this.comments()
+      .map((comment) => {
+        const author = comment.author?.name ?? 'Unknown';
+        const createdAt = comment.createdAt
+          ? new Date(comment.createdAt).toLocaleString()
+          : 'Unknown time';
+        return `${author} (${createdAt}): ${comment.content}`;
+      })
+      .join('\n');
+
+    return `
+Title: ${this.ticket?.title ?? ''}
+Description: ${this.ticket?.description ?? ''}
+Status: ${this.ticket?.status ?? ''}
+Priority: ${this.ticket?.priority ?? ''}
+Type: ${this.ticket?.type ?? ''}
+Assignee: ${this.ticket?.assignee?.name ?? ''}
+Reporter: ${this.ticket?.reporter?.name ?? ''}
+
+Comments:
+${comments || 'No comments available.'}
+    `.trim();
+  }
+
+
+  private isAiErrorResponse(response: string): boolean {
+    const normalized = response.trim().toLowerCase();
+    return normalized.startsWith('service is currently unavailable')
+      || normalized.startsWith('something went wrong');
+  }
+
+  private parseSummaryToPoints(text: string): string[] {
+    if (!text) return [];
+
+    return text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) =>
+        line
+          .replace(/^[-*•]\s*/, '')
+          .replace(/^\d+\.\s*/, '')
+          .trim(),
+      )
+      .filter(Boolean);
+  }
+
+  private async typePointsEffect(points: string[], speed = 12): Promise<void> {
+    this.summaryPoints = [];
+    this.cdr.detectChanges();
+
+    for (const point of points) {
+      this.summaryPoints = [...this.summaryPoints, ''];
+      this.cdr.detectChanges();
+      await this.typeSingleLine(point, speed);
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+  }
+
+  private typeSingleLine(text: string, speed = 12): Promise<void> {
+    return new Promise((resolve) => {
+      let index = 0;
+
+      const interval = setInterval(() => {
+        const next = [...this.summaryPoints];
+        const lastIndex = next.length - 1;
+
+        next[lastIndex] = (next[lastIndex] || '') + text.charAt(index);
+        this.summaryPoints = next;
+        this.cdr.detectChanges();
+        index++;
+
+        if (index >= text.length) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, speed);
+    });
+  }
+
 }

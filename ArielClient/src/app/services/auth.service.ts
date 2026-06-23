@@ -6,6 +6,11 @@ import { AuthState } from '../state/auth.state';
 import { endpoints, Routes } from '../core/constants/endpoints';
 import { LoginPayload, UserPayload } from '../core/types/auth.type';
 
+interface LoginResponse {
+    message: string;
+    user: UserPayload;
+}
+
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -16,8 +21,10 @@ export class AuthService {
         private authState: AuthState,
     ) { }
 
-    login(payload: LoginPayload) {
-        return this.http.post<UserPayload>(endpoints.login, payload, { withCredentials: true });
+    login(payload: LoginPayload): Observable<UserPayload> {
+        return this.http
+            .post<LoginResponse>(endpoints.login, payload, { withCredentials: true })
+            .pipe(map((response) => response.user));
     }
 
     logout(): void {

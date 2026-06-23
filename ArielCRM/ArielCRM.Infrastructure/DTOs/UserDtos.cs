@@ -16,6 +16,12 @@ namespace ArielCRM.Infrastructure.DTOs
     }
 
 
+    public class UpdateProfileResponse : ApiResponse
+    {
+        public string Name { get; set; } = string.Empty;
+        public string? ProfileImage { get; set; }
+    }
+
     public class UserSummaryDto
     {
         public string Id { get; set; } = string.Empty;

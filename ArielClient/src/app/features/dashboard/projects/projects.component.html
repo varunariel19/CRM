@@ -110,7 +110,8 @@
             <div class="members-stack">
               <div class="member-avatar" *ngFor="let m of project.members.slice(0, 4); let i = index"
                 [style.z-index]="10 - i" [title]="m.name">
-                {{ getInitials(m.name) }}
+                <img *ngIf="m.profileImage; else memberInitials" [src]="m.profileImage" [alt]="m.name" />
+                <ng-template #memberInitials>{{ getInitials(m.name) }}</ng-template>
               </div>
               <div class="member-avatar extra" *ngIf="project.members.length > 4">
                 +{{ project.members.length - 4 }}
@@ -380,7 +381,11 @@
         <div class="overview-description" *ngIf="proj.projectLead">
           <h4 class="section-label">Project Lead</h4>
           <div class="member-row">
-            <div class="member-avatar-lg">{{ getInitials(proj.projectLead.name) }}</div>
+            <div class="member-avatar-lg">
+              <img *ngIf="proj.projectLead.profileImage; else projectLeadInitials" [src]="proj.projectLead.profileImage"
+                [alt]="proj.projectLead.name" />
+              <ng-template #projectLeadInitials>{{ getInitials(proj.projectLead.name) }}</ng-template>
+            </div>
             <div class="member-info">
               <span class="member-name">{{ proj.projectLead.name }}</span>
             </div>
@@ -435,7 +440,10 @@
           <ng-container *ngIf="selectedProject()!.members.length > 0">
             <div class="members-list">
               <div class="member-row" *ngFor="let member of selectedProject()!.members">
-                <div class="member-avatar-lg">{{ getInitials(member.name) }}</div>
+                <div class="member-avatar-lg">
+                  <img *ngIf="member.profileImage; else memberListInitials" [src]="member.profileImage" [alt]="member.name" />
+                  <ng-template #memberListInitials>{{ getInitials(member.name) }}</ng-template>
+                </div>
                 <div class="member-info">
                   <span class="member-name">{{ member.name }}</span>
                 </div>
@@ -499,7 +507,10 @@
             <span class="tray-label">Selected</span>
             <div class="tray-chips">
               <div class="tray-chip" *ngFor="let m of pendingMembers()">
-                <div class="tray-chip-avatar">{{ getInitials(m.name) }}</div>
+                <div class="tray-chip-avatar">
+                  <img *ngIf="m.profileImage; else trayInitials" [src]="m.profileImage" [alt]="m.name" />
+                  <ng-template #trayInitials>{{ getInitials(m.name) }}</ng-template>
+                </div>
                 <span class="tray-chip-name">{{ m.name }}</span>
                 <button class="tray-chip-remove" (click)="togglePendingMember(m)" title="Deselect">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
@@ -515,7 +526,10 @@
           <div class="picker-list-wrap">
             <div class="picker-list" *ngIf="availableToAdd().length > 0; else pickerEmpty">
               <button class="picker-item" *ngFor="let m of availableToAdd()" (click)="togglePendingMember(m)">
-                <div class="picker-item-avatar">{{ getInitials(m.name) }}</div>
+                <div class="picker-item-avatar">
+                  <img *ngIf="m.profileImage; else pickerInitials" [src]="m.profileImage" [alt]="m.name" />
+                  <ng-template #pickerInitials>{{ getInitials(m.name) }}</ng-template>
+                </div>
                 <span class="picker-item-name">{{ m.name }}</span>
                 <div class="picker-item-check">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"

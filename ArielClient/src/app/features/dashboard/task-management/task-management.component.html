@@ -283,8 +283,10 @@
 
 </div>
 
-<app-view-ticket *ngIf="selectedTicket" 
-[projectMembers]="assignee"
-[isOpen]="showTicketModal" [ticket]="selectedTicket"
+<app-view-ticket *ngIf="selectedTicket"
+  [projectMembers]="assignee"
+  [isOpen]="showTicketModal"
+  [ticket]="selectedTicket"
+  (ticketUpdated)="updateTicketFromView($event)"
   (closeModal)="closeModal()">
 </app-view-ticket>

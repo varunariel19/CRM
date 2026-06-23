@@ -29,6 +29,7 @@ namespace ArielCRM.Application.Services
         {
             var task = new TicketTask
             {
+                TaskId = await GenerateUniqueTaskIdAsync(),
                 Title = dto.Title,
                 Description = dto.Description,
                 Priority = dto.Priority.ToString(),
@@ -43,6 +44,20 @@ namespace ArielCRM.Application.Services
             await _repository.CreateAsync(task);
 
             return task.TaskId;
+        }
+
+        private async Task<string> GenerateUniqueTaskIdAsync()
+        {
+            const int maxAttempts = 20;
+
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                var taskId = TicketTask.GenerateFiveDigitTaskId();
+                if (await _repository.GetByIdAsync(taskId) is null)
+                    return taskId;
+            }
+
+            throw new InvalidOperationException("Unable to generate a unique task ID.");
         }
 
         public async Task<bool> UpdateAsync(string taskId, UpdateTaskDto dto)
@@ -103,11 +118,13 @@ namespace ArielCRM.Application.Services
                 {
                     Id = task.AssignToId!,
                     Name = task.AssignedUser?.Name ?? "",
+                    ProfileImage = task.AssignedUser?.ProfileImage,
                 },
                 Reporter = new UserSummaryDto
                 {
                     Id  = task.ReportedById,
                     Name = task.ReportedUser?.Name ?? "",
+                    ProfileImage = task.ReportedUser?.ProfileImage,
                 },
                 ProjectId = task.ProjectId,
                 CreatedAt = task.CreatedAt,

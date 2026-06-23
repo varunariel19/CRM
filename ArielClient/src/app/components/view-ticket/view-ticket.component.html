@@ -40,14 +40,22 @@
         <div *ngIf="!isEditingDescription" class="description-view" [innerHTML]="safeDescription">
         </div>
 
-        <div *ngIf="isEditingDescription" class="editor-wrapper">
+        <div *ngIf="isEditingDescription" class="editor-wrapper" [class.ai-editor-glow]="isDescriptionGlowing">
 
           <p-editor [(ngModel)]="htmlContent" [style]="{ height: '300px' }">
           </p-editor>
 
+          <p *ngIf="descriptionError" class="description-error">{{ descriptionError }}</p>
+
           <div class="editor-actions">
-            <button class="btn-cancel" (click)="cancelEditing()">Cancel</button>
-            <button class="btn-save" (click)="saveDescription()">Save Changes</button>
+            <button class="btn-cancel" (click)="cancelEditing()" [disabled]="isGeneratingDescription">Cancel</button>
+            <button class="btn-ai" (click)="generateDescription()" [disabled]="isGeneratingDescription">
+              <span *ngIf="!isGeneratingDescription">AI Start</span>
+              <span *ngIf="isGeneratingDescription" class="generating-text">
+                <span class="dot-1">.</span><span class="dot-2">.</span><span class="dot-3">.</span>
+              </span>
+            </button>
+            <button class="btn-save" (click)="saveDescription()" [disabled]="isGeneratingDescription">Save Changes</button>
           </div>
 
         </div>
@@ -62,7 +70,7 @@
       <div class="summary-card" [class.ai-glow]="isAiGlowing">
 
         <div class="summary-header">
-          <h4>✨ AI Summary</h4>
+          <h4>AI Summary</h4>
 
           <button (click)="generateSummary()" [disabled]="isGeneratingSummary">
             <span *ngIf="!isGeneratingSummary">Generate</span>
@@ -72,7 +80,19 @@
           </button>
         </div>
 
-        <ul>
+        <p *ngIf="isGeneratingSummary && !summaryPoints.length" class="summary-empty">
+          Generating summary...
+        </p>
+
+        <p *ngIf="!isGeneratingSummary && summaryError" class="summary-error">
+          {{ summaryError }}
+        </p>
+
+        <p *ngIf="!isGeneratingSummary && !summaryError && !summaryPoints.length" class="summary-empty">
+          Click generate to create an AI summary of this ticket.
+        </p>
+
+        <ul *ngIf="summaryPoints.length">
           <li *ngFor="let item of summaryPoints">{{ item }}</li>
         </ul>
 
@@ -174,7 +194,7 @@
 
       <div class="detail-card">
         <label>Assigned To</label>
-        <select [(ngModel)]="ticket.assignee.id">
+        <select [ngModel]="ticket.assignee.id" (ngModelChange)="onAssigneeChange($event)">
           <option *ngFor="let m of projectMembers" [value]="m.id">{{ m.name }}</option>
         </select>
       </div>
@@ -189,21 +209,21 @@
 
       <div class="detail-card">
         <label>Status</label>
-        <select [(ngModel)]="ticket.status">
+        <select [ngModel]="ticket.status" (ngModelChange)="onStatusChange($event)">
           <option *ngFor="let p of statuses" [value]="p">{{ p }}</option>
         </select>
       </div>
 
       <div class="detail-card">
         <label>Priority</label>
-        <select [(ngModel)]="ticket.priority">
+        <select [ngModel]="ticket.priority" (ngModelChange)="onPriorityChange($event)">
           <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
         </select>
       </div>
 
       <div class="detail-card">
         <label>Type</label>
-        <select [(ngModel)]="ticket.type">
+        <select [ngModel]="ticket.type" (ngModelChange)="onTypeChange($event)">
           <option *ngFor="let p of types" [value]="p">{{ p }}</option>
         </select>
       </div>

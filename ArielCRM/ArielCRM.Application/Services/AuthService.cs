@@ -53,6 +53,7 @@ namespace ArielCRM.Application.Services
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
+                ProfileImage = user.ProfileImage,
                 DepartmentId = user.Department.Id,
                 DesignationId = user.Designation.Id,
                 AccessLevel = new AccessLevelDto
@@ -94,6 +95,7 @@ namespace ArielCRM.Application.Services
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email,
+                ProfileImage = user.ProfileImage,
                 DepartmentId = user.Department.Id,
                 DesignationId = user.Designation.Id,
                 AccessLevel = new AccessLevelDto

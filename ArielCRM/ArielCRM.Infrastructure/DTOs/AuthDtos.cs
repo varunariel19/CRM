@@ -32,6 +32,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Id { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public string? ProfileImage { get; set; }
         public string DepartmentId { get; set; } = string.Empty;
         public string DesignationId { get; set; } = string.Empty;
         public AccessLevelDto AccessLevel { get; set; } = new();

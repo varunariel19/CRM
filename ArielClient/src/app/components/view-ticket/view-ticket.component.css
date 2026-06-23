@@ -171,107 +171,56 @@
 .description-view u  { text-decoration: underline; }
 .description-view a  { color: var(--link-text); }
 
-/* ── ANGULAR EDITOR WRAPPER ──────────────────────────────────── */
+/* -- PRIME EDITOR ------------------------------------------------ */
 
-.angular-editor-wrapper {
+.editor-wrapper {
   margin-top: 8px;
-  border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--border-color);
+  border-radius: 14px;
   background: var(--surface-bg);
-  animation: editorSlideIn .2s ease;
+  transition: border-color .25s ease, box-shadow .25s ease;
 }
 
-@keyframes editorSlideIn {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+.editor-wrapper.ai-editor-glow {
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px rgba(139, 92, 246, 0.72),
+    0 0 18px rgba(139, 92, 246, 0.3);
 }
 
-/* Root editor shell */
-.angular-editor-wrapper ::ng-deep .angular-editor {
-  display: flex !important;
-  flex-direction: column !important;
-  border: none !important;
-}
-
-/* Toolbar */
-.angular-editor-wrapper ::ng-deep .angular-editor-toolbar {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  min-height: 44px !important;
-  background: var(--surface-muted) !important;
-  border: none !important;
-  border-bottom: 1px solid var(--border-color) !important;
-  border-radius: 0 !important;
-  padding: 6px 10px !important;
-}
-
-.angular-editor-wrapper ::ng-deep .angular-editor-toolbar-set {
-  display: inline-flex !important;
-  align-items: center !important;
-  margin: 2px !important;
-}
-
-.angular-editor-wrapper ::ng-deep .angular-editor-toolbar-set button,
-.angular-editor-wrapper ::ng-deep .angular-editor-button {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-width: 28px !important;
-  height: 28px !important;
-  background: transparent !important;
-  border: none !important;
-  border-radius: 6px !important;
-  color: var(--text-dark) !important;
-  font-size: 13px !important;
-  padding: 4px 7px !important;
-  cursor: pointer !important;
-  transition: background .15s !important;
-}
-
-.angular-editor-wrapper ::ng-deep .angular-editor-toolbar-set button:hover,
-.angular-editor-wrapper ::ng-deep .angular-editor-button:hover {
-  background: var(--surface-hover) !important;
-  color: var(--button-color) !important;
-}
-
-/* The inner wrapper that wraps textarea + resize handle */
-.angular-editor-wrapper ::ng-deep .angular-editor-inner {
-  display: block !important;
-  position: relative !important;
-}
-
-/* The contenteditable area */
-.angular-editor-wrapper ::ng-deep .angular-editor-textarea {
-  display: block !important;
-  min-height: 160px !important;
-  max-height: 320px !important;
-  overflow-y: auto !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
+.editor-wrapper ::ng-deep .p-editor-container,
+.editor-wrapper ::ng-deep .p-editor-toolbar,
+.editor-wrapper ::ng-deep .p-editor-content,
+.editor-wrapper ::ng-deep .ql-editor {
+  border: 0 !important;
   background: var(--surface-bg) !important;
   color: var(--text-dark) !important;
-  border: none !important;
-  outline: none !important;
-  padding: 14px 16px !important;
-  line-height: 1.8 !important;
-  font-size: 15px !important;
   font-family: inherit !important;
-  caret-color: var(--button-color) !important;
 }
 
-/* Hide source/image/video buttons */
-.angular-editor-wrapper ::ng-deep [title="Insert Image"],
-.angular-editor-wrapper ::ng-deep [title="Insert Video"],
-.angular-editor-wrapper ::ng-deep [title="HTML Code"] {
-  display: none !important;
+.editor-wrapper ::ng-deep .p-editor-toolbar {
+  border-bottom: 1px solid var(--border-color) !important;
+  background: var(--surface-muted) !important;
+}
+
+.editor-wrapper ::ng-deep .ql-editor {
+  min-height: 260px;
+  line-height: 1.8;
+  font-size: 15px;
+}
+
+.description-error {
+  margin: 10px 16px 0;
+  color: var(--danger-text);
+  font-size: 13px;
 }
 
 /* Editor action buttons row */
 .editor-actions {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 10px;
   padding: 12px 16px;
   border-top: 1px solid var(--border-color);
@@ -304,6 +253,32 @@
 }
 
 .btn-save:hover { background: var(--button-hover-color); }
+
+.btn-ai {
+  border: 1px solid rgba(139, 92, 246, .5);
+  background: var(--surface-bg);
+  color: var(--button-color);
+  min-width: 92px;
+  padding: 9px 16px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, .08);
+  transition: .2s;
+}
+
+.btn-ai:hover:not(:disabled) {
+  background: var(--surface-hover);
+  box-shadow: 0 0 16px rgba(139, 92, 246, .28);
+}
+
+.btn-ai:disabled,
+.btn-save:disabled,
+.btn-cancel:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+}
 
 /* ── AI SUMMARY ──────────────────────────────────────────────── */
 
@@ -399,6 +374,21 @@
   color: var(--text-dark);
   margin-bottom: 12px;
 }
+
+
+.summary-empty,
+.summary-error {
+  margin: 18px 0 0;
+  color: var(--text-light);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.summary-error {
+  color: var(--danger-text);
+  font-style: normal;
+}
+
 
 /* ── ACTIVITY ────────────────────────────────────────────────── */
 

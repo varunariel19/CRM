@@ -1,6 +1,7 @@
 ﻿using ArielCRM.DataLayer.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Security.Cryptography;
 
 namespace ArielCRM.DataLayer.Entities
 {
@@ -10,7 +11,7 @@ namespace ArielCRM.DataLayer.Entities
         [Key]
         [Column("task_id")]
         [MaxLength(50)]
-        public string TaskId { get; set; } = Guid.NewGuid().ToString();
+        public string TaskId { get; set; } = GenerateFiveDigitTaskId();
 
         [Column("ticket_id")]
         public int? TicketId { get; set; }
@@ -71,5 +72,10 @@ namespace ArielCRM.DataLayer.Entities
 
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
         public ICollection<ActivityLog> ActivityLogs { get; set; } = new List<ActivityLog>();
+
+        public static string GenerateFiveDigitTaskId()
+        {
+            return RandomNumberGenerator.GetInt32(10000, 100000).ToString();
+        }
     }
 }

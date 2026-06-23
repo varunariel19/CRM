@@ -478,6 +478,19 @@
   border: 2px solid var(--card-bg);
   margin-left: -7px;
   transition: transform 0.15s ease;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.member-avatar img,
+.member-avatar-lg img,
+.tray-chip-avatar img,
+.picker-item-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
 }
 
 .member-avatar:first-child {
@@ -979,6 +992,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .member-info {
@@ -1990,6 +2004,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .tray-chip-name {
@@ -2069,6 +2084,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .picker-item-name {

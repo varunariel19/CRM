@@ -1,10 +1,11 @@
-import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
+import { Component, EventEmitter, Output, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthState } from '../../state/auth.state';
 import { getAvatarColor } from '../../utils';
 import { GlobalState } from '../../state/global.state';
 import { UserService } from '../../core/services/user.service';
+import { ToastService } from '../../core/services/toast.service';
 @Component({
     selector: 'app-profile-section',
     imports: [CommonModule, FormsModule],
@@ -15,6 +16,7 @@ export class ProfileSectionComponent {
     @Output() close = new EventEmitter<void>();
 
     private userService = inject(UserService);
+    private toast = inject(ToastService);
     private selectedFile = signal<File | null>(null);
 
 
@@ -27,7 +29,10 @@ export class ProfileSectionComponent {
     // Profile
     editName = signal('');
     selectedImage = signal<string | null>(null);
+    displayImage = computed(() => this.selectedImage() || this.authState.user()?.profileImage || null);
     isSavingProfile = signal(false);
+    isRemovingProfileImage = signal(false);
+    profileError = signal('');
 
     // Password
     currentPassword = signal('');
@@ -51,26 +56,83 @@ export class ProfileSectionComponent {
     }
 
     onImageSelect(event: Event): void {
-        const file = (event.target as HTMLInputElement).files?.[0];
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        input.value = '';
         if (!file) return;
+
+        this.profileError.set('');
+
+        if (!file.type.startsWith('image/')) {
+            this.profileError.set('Only image files are allowed.');
+            this.toast.error('Only image files are allowed.');
+            return;
+        }
+
         this.selectedFile.set(file);
         const reader = new FileReader();
         reader.onload = () => this.selectedImage.set(reader.result as string);
         reader.readAsDataURL(file);
     }
 
+    clearSelectedImage(): void {
+        this.selectedFile.set(null);
+        this.selectedImage.set(null);
+        this.profileError.set('');
+    }
+
+    removeProfileImage(): void {
+        if (this.selectedFile() || this.selectedImage()) {
+            this.clearSelectedImage();
+            return;
+        }
+
+        if (!this.authState.user()?.profileImage || this.isRemovingProfileImage()) return;
+
+        this.isRemovingProfileImage.set(true);
+        this.profileError.set('');
+
+        this.userService.removeProfileImage().subscribe({
+            next: (res) => {
+                const user = this.authState.user();
+                if (user) this.authState.setUser({ ...user, profileImage: res.profileImage ?? undefined });
+                this.isRemovingProfileImage.set(false);
+                this.toast.success(res.message || 'Profile image removed successfully.');
+            },
+            error: (err) => {
+                const message = err?.error?.message || 'Failed to remove profile image.';
+                this.profileError.set(message);
+                this.isRemovingProfileImage.set(false);
+                this.toast.error(message);
+            }
+        });
+    }
+
     saveProfile(): void {
         const name = this.editName().trim();
         if (!name) return;
         this.isSavingProfile.set(true);
+        this.profileError.set('');
 
         this.userService.updateProfile(name, this.selectedFile() ?? undefined).subscribe({
             next: (res) => {
-                this.authState.setUser({ ...this.authState.user()!, name });
+                const user = this.authState.user();
+                if (user) {
+                    this.authState.setUser({
+                        ...user,
+                        name: res.name || name,
+                        profileImage: res.profileImage ?? undefined,
+                    });
+                }
+                this.clearSelectedImage();
                 this.isSavingProfile.set(false);
+                this.toast.success(res.message || 'Profile updated successfully.');
             },
             error: (err) => {
+                const message = err?.error?.message || 'Failed to update profile.';
+                this.profileError.set(message);
                 this.isSavingProfile.set(false);
+                this.toast.error(message);
             }
         });
     }

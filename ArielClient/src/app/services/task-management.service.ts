@@ -13,16 +13,19 @@ export interface Task {
     ticketId?: number;
     title: string;
     description: string;
+    aiSummary?: string[];
     priority: TaskPriority;
     type: TaskType;
     status: TaskStatus;
     assignee: {
         id: string;
         name: string;
+        profileImage?: string;
     },
     reporter: {
         id: string;
         name: string;
+        profileImage?: string;
     },
     projectId: string;
     createdAt: string;

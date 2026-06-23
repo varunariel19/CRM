@@ -60,6 +60,27 @@ namespace ArielCRM.Infrastructure.Services
             );
         }
 
+        public async Task DeleteFileByUrlAsync(string? fileUrl)
+        {
+            var fileId = GetFileIdFromUrl(fileUrl);
+            if (string.IsNullOrWhiteSpace(fileId)) return;
+
+            await DeleteFileAsync(fileId);
+        }
+
+        private static string? GetFileIdFromUrl(string? fileUrl)
+        {
+            if (string.IsNullOrWhiteSpace(fileUrl)) return null;
+
+            if (!Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri)) return null;
+
+            var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var filesIndex = Array.IndexOf(segments, "files");
+            if (filesIndex < 0 || filesIndex + 1 >= segments.Length) return null;
+
+            return Uri.UnescapeDataString(segments[filesIndex + 1]);
+        }
+
         private string GetFileViewUrlAsync(string fileId)
         {
             var url = $"{_settings.Endpoint}/storage/buckets/{_settings.BucketId}/files/{fileId}/view?project={_settings.ProjectId}";
