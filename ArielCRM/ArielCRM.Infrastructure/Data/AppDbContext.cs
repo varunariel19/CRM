@@ -26,6 +26,7 @@ namespace ArielCRM.Infrastructure.Data
         public DbSet<Department> Departments { get; set; } = null!;
         public DbSet<Designation> Designations { get; set; } = null!;
         public DbSet<Documents> Documents { get; set; } = null!;
+        public DbSet<Comment> Comments { get; set; } = null!;
 
         // Audit
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;

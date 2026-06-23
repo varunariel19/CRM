@@ -16,7 +16,7 @@
 
           <div>
             <h2>{{ ticket.title }}</h2>
-            <span>#{{ ticket.id }}</span>
+            <span>#{{ ticket.taskId }}</span>
 
             <div class="ticket-tags">
               <span class="tag todo">{{ ticket.status }}</span>
@@ -116,7 +116,7 @@
         <!-- COMMENTS -->
         <div class="comment-list">
 
-          <div class="comment-item" *ngFor="let comment of comments; let i = index">
+          <div class="comment-item" *ngFor="let comment of comments(); let i = index">
 
             <div class="comment-avatar">
               <img src="https://i.pravatar.cc/100?img=11" alt="">
@@ -124,33 +124,32 @@
 
             <div class="comment-body">
 
-              <!-- VIEW MODE -->
-              <ng-container *ngIf="editingCommentIndex !== i">
+              <ng-container *ngIf="editingCommentId !== comment.id">
                 <div class="comment-top">
-                  <strong>{{ comment.user }}</strong>
-                  <div class="comment-actions">
-                    <a (click)="startEditingComment(i)">Edit</a>
+                  <strong>{{ comment.author?.name }}</strong>
+                  <div *ngIf="comment.author?.id == currentUserId" class="comment-actions">
+                    <a (click)="startEditingComment(comment)">Edit</a>
                   </div>
                 </div>
-                <small>{{ comment.date }}<span *ngIf="comment.editedAt" class="edited-badge"> · edited</span></small>
-                <p>{{ comment.message }}</p>
+                <small>{{ comment.updatedAt | date:'MMM d, y, h:mm a' }}<span *ngIf="comment.edited"
+                    class="edited-badge"> · edited</span></small>
+                <p>{{ comment.content }}</p>
               </ng-container>
 
-              <!-- EDIT MODE -->
-              <ng-container *ngIf="editingCommentIndex === i">
+              <ng-container *ngIf="editingCommentId === comment.id">
                 <div class="comment-top">
-                  <strong>{{ comment.user }}</strong>
+                  <strong>{{ "Name"}}</strong>
                 </div>
-                <small>{{ comment.date }}</small>
+                <small>{{ comment.updatedAt | date:'MMM d, y, h:mm a' }}</small>
 
                 <div class="comment-edit-box">
-                  <textarea rows="3" [(ngModel)]="editingCommentText" (keydown)="onCommentKeydown($event, i)">
+                  <textarea rows="3" [(ngModel)]="editingCommentText" (keydown)="onCommentKeydown($event, comment.id)">
                   </textarea>
                   <div class="comment-edit-footer">
                     <small>Shift+Enter for new line · Esc to cancel</small>
                     <div class="comment-edit-btns">
                       <button class="btn-cancel" (click)="cancelCommentEdit()">Cancel</button>
-                      <button class="btn-save" (click)="saveCommentEdit(i)">Save</button>
+                      <button class="btn-save" (click)="saveCommentEdit(comment.id)">Save</button>
                     </div>
                   </div>
                 </div>
@@ -175,9 +174,8 @@
 
       <div class="detail-card">
         <label>Assigned To</label>
-        <select [(ngModel)]="ticket.assignedTo">
-          <option>User</option>
-          <option>Admin</option>
+        <select [(ngModel)]="ticket.assignee.id">
+          <option *ngFor="let m of projectMembers" [value]="m.id">{{ m.name }}</option>
         </select>
       </div>
 
@@ -185,44 +183,39 @@
         <label>Reported By</label>
         <div class="user-row">
           <img src="https://i.pravatar.cc/100?img=22">
-          <span>{{ ticket.reportedBy }}</span>
+          <span>{{ ticket.reporter.name }}</span>
         </div>
       </div>
 
       <div class="detail-card">
         <label>Status</label>
         <select [(ngModel)]="ticket.status">
-          <option>TODO</option>
-          <option>IN PROGRESS</option>
-          <option>DONE</option>
+          <option *ngFor="let p of statuses" [value]="p">{{ p }}</option>
         </select>
       </div>
 
       <div class="detail-card">
         <label>Priority</label>
         <select [(ngModel)]="ticket.priority">
-          <option>High</option>
-          <option>Medium</option>
-          <option>Low</option>
+          <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
         </select>
       </div>
 
       <div class="detail-card">
         <label>Type</label>
         <select [(ngModel)]="ticket.type">
-          <option>FEATURE</option>
-          <option>BUG</option>
+          <option *ngFor="let p of types" [value]="p">{{ p }}</option>
         </select>
       </div>
 
       <div class="dates">
         <div>
           <span>Created</span>
-          <p>{{ ticket.createdAt }}</p>
+          <p>{{ ticket.createdAt | date:'MMM d, y, h:mm a'}}</p>
         </div>
         <div>
           <span>Updated</span>
-          <p>{{ ticket.updatedAt }}</p>
+          <p>{{ ticket.updatedAt| date:'MMM d, y, h:mm a'}}</p>
         </div>
       </div>
 

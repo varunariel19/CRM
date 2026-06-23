@@ -15,6 +15,7 @@ import {
   UpdateTaskRequest,
 } from '../../../services/task-management.service';
 import { finalize } from 'rxjs';
+import { AuthState } from '../../../state/auth.state';
 
 @Component({
   selector: 'app-task-management',
@@ -27,16 +28,17 @@ export class TaskManagementComponent {
 
   taskState = inject(TaskManagementState);
   projectState = inject(ProjectState);
+  authState = inject(AuthState);
   taskService = inject(TaskManageService);
 
-  readonly currentUserId = 'm1';
+  readonly currentUserId = this.authState.userId();
 
   allTasks = signal<Task[]>([]);
   allMembers: ProjectMember[] = [];
 
   isLoading = signal(false);
   isSubmitting = signal(false);
-  isDeleting = signal<string | null>(null);   
+  isDeleting = signal<string | null>(null);
 
   readonly columns: TaskColumn[] = this.taskState.columns();
   readonly priorities: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
@@ -50,9 +52,11 @@ export class TaskManagementComponent {
   assignee: ProjectMember[] = [];
 
 
+
   showCreateModal = false;
   showEditModal = false;
   showTicketModal = false;
+  selectedTicket: Task | null = null;
   newTask: CreateTaskRequest = this.resetForm();
   editTask: (Task & { assignToId: string }) | null = null;
 
@@ -72,6 +76,10 @@ export class TaskManagementComponent {
 
     const proj = this.allProjects.find((p) => p.id === projectId);
     this.assignee = proj ? proj.members : [];
+  }
+
+  handleFilterByMe() { 
+    this.filterByMe.set(!this.filterByMe()); 
   }
 
   loadTasks(): void {
@@ -96,7 +104,7 @@ export class TaskManagementComponent {
       .subscribe({
         next: (res) => {
           if (res.success) {
-            this.loadTasks();               
+            this.loadTasks();
             this.showCreateModal = false;
             this.newTask = this.resetForm();
           }
@@ -192,7 +200,7 @@ export class TaskManagementComponent {
       priority: task.priority,
       type: task.type,
       status,
-      assignToId: task.assignToId ?? '',
+      assignToId: task.assignee.id ?? '',
     };
 
     this.taskService.updateTask(task.taskId, payload).subscribe({
@@ -223,10 +231,11 @@ export class TaskManagementComponent {
     const pid = this.selectedProjectId();
     if (pid) tasks = tasks.filter((t) => t.projectId === pid);
     if (this.filterByMe()) {
-      tasks = tasks.filter((t) => t.assignToId === this.currentUserId);
+      debugger;
+      tasks = tasks.filter((t) => t.assignee.id === this.currentUserId);
     } else {
       const mid = this.selectedMemberId();
-      if (mid) tasks = tasks.filter((t) => t.assignToId === mid);
+      if (mid) tasks = tasks.filter((t) => t.assignee.id === mid);
     }
     const prio = this.selectedPriority();
     if (prio) tasks = tasks.filter((t) => t.priority === prio);
@@ -282,13 +291,25 @@ export class TaskManagementComponent {
   }
 
 
-  openEditModal(task: Task): void {
-    this.editTask = { ...task, assignToId: task.assignToId ?? '' };
+  openEditModal(event: Event, task: Task): void {
+    event.stopPropagation();
+    event.preventDefault();
+    this.editTask = { ...task, assignToId: task.assignee.id ?? '' };
+    const proj = this.allProjects.find((p) => p.id === task.projectId);
+    this.assignee = proj ? proj.members : [];
     this.showEditModal = true;
   }
 
-  viewTicket(): void { this.showTicketModal = true; }
-  closeModal(): void { this.showTicketModal = false; }
+  viewTicket(task: Task): void {
+    this.showTicketModal = true;
+    this.selectedTicket = task;
+    const proj = this.allProjects.find((p) => p.id === task.projectId);
+    this.assignee = proj ? proj.members : [];
+  }
+  closeModal(): void {
+    this.showTicketModal = false;
+
+  }
 
   closeCreateModal(e: MouseEvent): void {
     if ((e.target as HTMLElement).classList.contains('modal-overlay'))
@@ -312,7 +333,7 @@ export class TaskManagementComponent {
       t.status,
       t.priority,
       t.type,
-      t.assignedToName,
+      t.assignee.name,
       this.projectName(t.projectId),
       t.createdAt,
     ]);

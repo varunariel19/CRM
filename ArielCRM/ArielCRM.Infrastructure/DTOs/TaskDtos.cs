@@ -55,17 +55,22 @@ namespace ArielCRM.Infrastructure.DTOs
 
         public string Status { get; set; } = string.Empty;
 
-        public string? AssignToId { get; set; }
-
-        public string AssignedToName { get; set; } = string.Empty;
-
-        public string ReportedById { get; set; } = string.Empty;
+         public UserSummaryDto Assignee {get ;set;}  = null!;
+         public UserSummaryDto Reporter {get ;set;}  = null!;
 
         public string ProjectId { get; set; } = string.Empty;
 
         public DateTime CreatedAt { get; set; }
 
         public DateTime UpdatedAt { get; set; }
+    }
+
+
+    public  class UserDetail
+    {
+    public string Id {get; set;} = string.Empty;
+    public string Name {get; set;} = string.Empty;
+    
     }
 
 

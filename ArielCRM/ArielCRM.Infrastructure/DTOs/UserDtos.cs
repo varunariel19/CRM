@@ -14,4 +14,12 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Name { get; set; } = string.Empty;
         public IFormFile? ProfileImage { get; set; }
     }
+
+
+    public class UserSummaryDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string? ProfileImage { get; set; }
+    }
 }

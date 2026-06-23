@@ -99,9 +99,16 @@ namespace ArielCRM.Application.Services
                 Priority = task.Priority,
                 Type = task.Type,
                 Status = task.Status,
-                AssignToId = task.AssignToId,
-                AssignedToName = task.AssignedUser?.Name ?? "",
-                ReportedById = task.ReportedById,
+                Assignee =  new UserSummaryDto
+                {
+                    Id = task.AssignToId!,
+                    Name = task.AssignedUser?.Name ?? "",
+                },
+                Reporter = new UserSummaryDto
+                {
+                    Id  = task.ReportedById,
+                    Name = task.ReportedUser?.Name ?? "",
+                },
                 ProjectId = task.ProjectId,
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt

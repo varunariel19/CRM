@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { Observable, catchError, finalize, map, of, retry, tap } from 'rxjs';
+import { Observable, catchError, finalize, map, of, tap } from 'rxjs';
 import { AuthState } from '../state/auth.state';
 import { endpoints, Routes } from '../core/constants/endpoints';
 import { LoginPayload, UserPayload } from '../core/types/auth.type';

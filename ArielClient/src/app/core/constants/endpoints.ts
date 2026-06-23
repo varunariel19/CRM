@@ -68,6 +68,10 @@ export const endpoints = {
     taskM : `${BASE_URL}/api/tasks`,
 
 
+    // commments : 
+    comments : `${BASE_URL}/api/comments`,
+
+
 
     AIUrl: 'https://api.groq.com/openai/v1/chat/completions',
     groqApiKey: ``,

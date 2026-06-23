@@ -32,6 +32,12 @@ export interface TeamMember {
   createdAt: string;
 }
 
+export interface UserDetails {
+    id: string;
+    name: string;
+    profileImage?: string;
+}
+
 export interface CreateTeamMemberDto {
   name: string;
   email: string;

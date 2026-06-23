@@ -16,9 +16,14 @@ export interface Task {
     priority: TaskPriority;
     type: TaskType;
     status: TaskStatus;
-    assignToId?: string;
-    assignedToName: string;
-    reportedById: string;
+    assignee: {
+        id: string;
+        name: string;
+    },
+    reporter: {
+        id: string;
+        name: string;
+    },
     projectId: string;
     createdAt: string;
     updatedAt: string;

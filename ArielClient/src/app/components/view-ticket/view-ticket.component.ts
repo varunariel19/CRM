@@ -4,11 +4,18 @@ import {
   Component,
   EventEmitter,
   HostListener,
+  inject,
   Input,
+  OnDestroy,
+  OnInit,
   Output,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { EditorModule } from 'primeng/editor';
+import { Task, TaskPriority, TaskStatus, TaskType } from '../../services/task-management.service';
+import { ProjectMember } from '../../features/dashboard/projects/projects.component';
+import { CommentState, TicketComment } from '../../state/comment.state';
+import { AuthState } from '../../state/auth.state';
 
 @Component({
   selector: 'app-view-ticket',
@@ -16,36 +23,26 @@ import { EditorModule } from 'primeng/editor';
   templateUrl: './view-ticket.component.html',
   styleUrls: ['./view-ticket.component.css']
 })
-export class ViewTicketComponent {
+
+
+export class ViewTicketComponent implements OnInit, OnDestroy {
 
   @Input() isOpen = false;
+  @Input({ required: true }) ticket!: Task;
+  @Input({ required: true }) projectMembers!: ProjectMember[];
   @Output() closeModal = new EventEmitter<void>();
+
+  readonly priorities: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+  readonly types: TaskType[] = ['FEATURE', 'BUG', 'TASK', 'CHORE'];
+  readonly statuses: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
 
   activeTab: 'all' | 'comments' | 'history' = 'all';
   isEditingDescription = false;
   isGeneratingSummary = false;
   isAiGlowing = false;
-  newComment = '';
 
-  // Holds the HTML content for PrimeNG editor
-  htmlContent = '';
 
-  // Comment editing state
-  editingCommentIndex: number | null = null;
-  editingCommentText = '';
 
-  ticket = {
-    id: '3591',
-    title: 'Remove Admin Access for User Account',
-    status: 'TODO',
-    priority: 'High',
-    type: 'FEATURE',
-    assignedTo: 'User',
-    reportedBy: 'Admin User',
-    createdAt: 'March 31, 2026 at 8:00 PM',
-    updatedAt: 'June 5, 2026 at 12:59 PM',
-    description: `<p>The task involves investigating and resolving the issue with the admin dashboard functionality, which is not displaying complete or accurate data.</p><p>To resolve this, we need to identify the root cause, which may be related to software updates, configuration changes, or database connectivity problems.</p><p>The goal is to restore the dashboard to its normal operational state, ensuring administrators have access to accurate information.</p>`
-  };
 
   summaryPoints = [
     'The admin dashboard functionality is not displaying complete or accurate data.',
@@ -56,27 +53,46 @@ export class ViewTicketComponent {
     'Administrators need access to accurate information.'
   ];
 
-  comments: {
-    user: string;
-    date: string;
-    message: string;
-    editedAt?: string;
-  }[] = [
-    { user: 'Admin User', date: 'March 31, 2026 at 8:00 PM', message: 'Hi' },
-    { user: 'Admin User', date: 'March 31, 2026 at 8:01 PM', message: "Let's investigate the admin dashboard functionality to determine the root cause and restore normal operations." }
-  ];
 
-  constructor(private sanitizer: DomSanitizer) {}
+  newComment = '';
+  htmlContent = '';
+  editingCommentId: string | null = null;
+  editingCommentText = '';
 
-  // ── Safe HTML for view mode ───────────────────────────────────────────
-  get safeDescription(): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(this.ticket.description);
+  private readonly commentState = inject(CommentState);
+  private authState = inject(AuthState);
+
+  comments = this.commentState.sortedComments;
+  isLoading = this.commentState.isLoading;
+  commentError = this.commentState.error;
+  isSubmitting = (id: string) => this.commentState.isCommentSubmitting(id);
+
+
+  constructor(private sanitizer: DomSanitizer) { }
+
+  ngOnInit(): void {
+    this.commentState.setActiveTicket(this.ticket.taskId);
+    this.commentState.loadCommentsByTicketId(this.ticket.taskId);
   }
 
-  // ── Rich Text Editor (PrimeNG) ───────────────────────────────────────
+
+  ngOnDestroy(): void {
+    this.commentState.clear();
+  }
+
+
+  get currentUserId() {
+    return this.authState.userId();
+  }
+
+  get safeDescription(): SafeHtml {
+
+    return this.sanitizer.bypassSecurityTrustHtml(this.ticket?.description ?? "");
+  }
+
 
   startEditing() {
-    this.htmlContent = this.ticket.description;
+    this.htmlContent = this.ticket?.description ?? "";
     this.isEditingDescription = true;
   }
 
@@ -89,7 +105,6 @@ export class ViewTicketComponent {
     this.isEditingDescription = false;
   }
 
-  // ── AI Summary ────────────────────────────────────────────────────────
 
   generateSummary() {
     if (this.isGeneratingSummary) return;
@@ -109,50 +124,41 @@ export class ViewTicketComponent {
     }, 1800);
   }
 
-  // ── Comments ──────────────────────────────────────────────────────────
 
-  submitComment() {
+  async submitComment(): Promise<void> {
     const msg = this.newComment.trim();
     if (!msg) return;
-    this.comments.push({
-      user: 'Admin User',
-      date: new Date().toLocaleString('en-US', {
-        month: 'long', day: 'numeric', year: 'numeric',
-        hour: 'numeric', minute: '2-digit', hour12: true
-      }),
-      message: msg
+    const result = await this.commentState.addComment({
+      content: msg,
+      ticketId: this.ticket.taskId,
     });
-    this.newComment = '';
+    if (result) this.newComment = '';
   }
 
-  startEditingComment(index: number) {
-    this.editingCommentIndex = index;
-    this.editingCommentText = this.comments[index].message;
+  startEditingComment(comment: TicketComment): void {
+    this.editingCommentId = comment.id;
+    this.editingCommentText = comment.content;
   }
 
-  onCommentKeydown(event: KeyboardEvent, index: number) {
+  onCommentKeydown(event: KeyboardEvent, commentId: string): void {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      this.saveCommentEdit(index);
+      this.saveCommentEdit(commentId);
     }
     if (event.key === 'Escape') {
       this.cancelCommentEdit();
     }
   }
 
-  saveCommentEdit(index: number) {
+  async saveCommentEdit(commentId: string): Promise<void> {
     const msg = this.editingCommentText.trim();
     if (!msg) return;
-    this.comments[index].message = msg;
-    this.comments[index].editedAt = new Date().toLocaleString('en-US', {
-      month: 'long', day: 'numeric', year: 'numeric',
-      hour: 'numeric', minute: '2-digit', hour12: true
-    });
-    this.cancelCommentEdit();
+    const result = await this.commentState.editComment(commentId, { content: msg });
+    if (result) this.cancelCommentEdit();
   }
 
-  cancelCommentEdit() {
-    this.editingCommentIndex = null;
+  cancelCommentEdit(): void {
+    this.editingCommentId = null;
     this.editingCommentText = '';
   }
 
@@ -160,7 +166,6 @@ export class ViewTicketComponent {
     this.newComment = text;
   }
 
-  // ── Misc ──────────────────────────────────────────────────────────────
 
   close() {
     this.closeModal.emit();

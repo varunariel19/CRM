@@ -62,7 +62,7 @@
     </div>
   </div>
 
-  <!-- ═══════════════════ EDIT MODAL ═══════════════════ -->
+  <!--  EDIT MODAL  -->
   <div class="modal-overlay" *ngIf="showEditModal && editTask" (click)="closeEditModal($event)">
     <div class="modal-box">
       <div class="modal-header">
@@ -104,7 +104,7 @@
           <div class="form-group">
             <label>Assignee</label>
             <select [(ngModel)]="editTask.assignToId">
-              <option *ngFor="let m of allMembers" [value]="m.id">{{ m.name }}</option>
+              <option *ngFor="let m of assignee" [value]="m.id">{{ m.name }}</option>
             </select>
           </div>
         </div>
@@ -124,7 +124,7 @@
     </div>
   </div>
 
-  <!-- ═══════════════════ HEADER ═══════════════════ -->
+  <!--  HEADER  -->
   <div class="pipeline-header">
     <div class="header-left">
       <h2>
@@ -145,7 +145,7 @@
     </div>
   </div>
 
-  <!-- ═══════════════════ FILTER BAR ═══════════════════ -->
+  <!--  FILTER BAR  -->
   <div class="filter-bar">
 
     <!-- Project selector -->
@@ -177,7 +177,7 @@
 
     <!-- By Me toggle -->
     <button class="btn-by-me" [class.active]="filterByMe()"
-      (click)="filterByMe.set(!filterByMe()); selectedMemberId.set('')">
+      (click)="handleFilterByMe()">
       <i class="fas fa-user-check"></i>
       Assigned to Me
     </button>
@@ -204,7 +204,7 @@
 
   </div>
 
-  <!-- ═══════════════════ BOARD ═══════════════════ -->
+  <!--  BOARD\ -->
   <div class="pipeline-board">
 
     <div class="pipeline-column" *ngFor="let col of columns">
@@ -223,7 +223,7 @@
           No tasks here.
         </div>
 
-        <div class="deal-card" *ngFor="let task of getColumnTasks(col.key)" draggable="true" (click)="viewTicket()"
+        <div class="deal-card" *ngFor="let task of getColumnTasks(col.key)" draggable="true" (click)="viewTicket(task)"
           (dragstart)="dragTask($event, task, col.key)">
           <!-- Top row: ID + Priority badge -->
           <div class="task-top">
@@ -265,11 +265,11 @@
           <!-- Footer: assignee + actions -->
           <div class="deal-footer">
             <div class="owner">
-              <div class="avatar">{{ initials(task?.assignedToName ? task.assignedToName : '?') }}</div>
-              {{ task?.assignedToName ? task.assignedToName : '-' }}
+              <div class="avatar">{{ initials(task?.assignee?.name ? task.assignee.name : '?') }}</div>
+              {{ task?.assignee?.name ? task.assignee.name : '-' }}
             </div>
             <div class="deal-actions">
-              <i class="fas fa-pen" title="Edit" (click)="openEditModal(task)"></i>
+              <i class="fas fa-pen" title="Edit" (click)="openEditModal($event , task)"></i>
               <i class="fas fa-chevron-left" title="Move Left" (click)="moveLeft(col.key, task)"></i>
               <i class="fas fa-chevron-right" title="Move Right" (click)="moveRight(col.key, task)"></i>
             </div>
@@ -283,4 +283,8 @@
 
 </div>
 
-<app-view-ticket [isOpen]="showTicketModal" (closeModal)="closeModal()"></app-view-ticket>
+<app-view-ticket *ngIf="selectedTicket" 
+[projectMembers]="assignee"
+[isOpen]="showTicketModal" [ticket]="selectedTicket"
+  (closeModal)="closeModal()">
+</app-view-ticket>
