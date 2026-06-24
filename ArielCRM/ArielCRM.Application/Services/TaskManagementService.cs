@@ -7,9 +7,11 @@ using ArielCRM.Infrastructure.Interfaces.IRepository;
 namespace ArielCRM.Application.Services
 {
 
-    public class TaskManagementService(ITaskManagementRepository repository) : ITaskManagementService
+    public class TaskManagementService(ITaskManagementRepository repository, ITicketHistoryRepository ticketHistory) : ITaskManagementService
     {
         private readonly ITaskManagementRepository _repository = repository;
+        private readonly ITicketHistoryRepository _ticketHRepo = ticketHistory;
+
 
         public async Task<IEnumerable<TaskDetailDto>> GetAllAsync()
         {
@@ -67,30 +69,106 @@ namespace ArielCRM.Application.Services
             if (task == null)
                 return false;
 
-            if (dto.Title is not null)
+            var changes = new List<(string Field, string OldValue, string NewValue)>();
+
+            if (dto.Title is not null && dto.Title != task.Title)
+            {
+                changes.Add(("Title", task.Title, dto.Title));
                 task.Title = dto.Title;
+            }
 
-            if (dto.Description is not null)
+            if (dto.Description is not null && dto.Description != task.Description)
+            {
+                changes.Add(("Description", task.Description, dto.Description));
                 task.Description = dto.Description;
+            }
 
-            if (dto.Priority.HasValue)
+            if (dto.Priority.HasValue && dto.Priority.Value.ToString() != task.Priority)
+            {
+                changes.Add(("Priority", task.Priority, dto.Priority.Value.ToString()));
                 task.Priority = dto.Priority.Value.ToString();
+            }
 
-            if (dto.Type.HasValue)
+            if (dto.Type.HasValue && dto.Type.Value.ToString() != task.Type)
+            {
+                changes.Add(("Type", task.Type, dto.Type.Value.ToString()));
                 task.Type = dto.Type.Value.ToString();
+            }
 
-            if (dto.Status.HasValue)
+            if (dto.Status.HasValue && dto.Status.Value.ToString() != task.Status)
+            {
+                changes.Add(("Status", task.Status, dto.Status.Value.ToString()));
                 task.Status = dto.Status.Value.ToString();
+            }
 
-            if (dto.AssignToId is not null)
+            if (dto.AssignToId is not null && dto.AssignToId != task.AssignToId)
+            {
+                // Resolve display name — pass assignee name via dto or fetch from repo
+                var oldName = task.AssignedUser?.Name ?? task.AssignToId ?? "Unassigned";
+                changes.Add(("Assignee", oldName, dto.AssignToId)); // NewValue = ID, resolved on frontend
                 task.AssignToId = dto.AssignToId;
+            }
 
             task.UpdatedAt = DateTime.UtcNow;
 
-            await _repository.UpdateAsync(task);
+            if (changes.Count == 1)
+            {
+                var (field, oldVal, newVal) = changes.First();
 
+                await _ticketHRepo.CreateAsync(new TicketHistory
+                {
+                    TicketId = task.TaskId,
+                    Title = GetHistoryTitle(field),   // e.g. "Status changed"
+                    Content = BuildPillHtml(field, oldVal, newVal),
+                    CreatedAt = DateTime.UtcNow
+                    // CommitedBy is set by the caller — see note below
+                });
+            }
+            else if (changes.Count > 1)
+            {
+                var rows = changes
+                    .Select(c => $"<li>{BuildPillHtml(c.Field, c.OldValue, c.NewValue)}</li>")
+                    .Aggregate((a, b) => a + b);
+
+                await _ticketHRepo.CreateAsync(new TicketHistory
+                {
+                    TicketId = task.TaskId,
+                    Title = "Bulk update",
+                    Content = $"<ul class=\"history-change-list\">{rows}</ul>",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _repository.UpdateAsync(task);
             return true;
         }
+
+
+        private static string GetHistoryTitle(string field) => field switch
+        {
+            "Status" => "Status changed",
+            "Priority" => "Priority changed",
+            "Type" => "Type changed",
+            "Assignee" => "Assignee changed",
+            "Title" => "Title updated",
+            "Description" => "Description updated",
+            _ => $"{field} changed"
+        };
+
+        private static string BuildPillHtml(string field, string oldVal, string newVal)
+        {
+            if (field == "Description" || field == "Title")
+                return $"<span class=\"history-text-change\">{oldVal} → {newVal}</span>";
+
+            // Pill-style for Status / Priority / Type / Assignee
+            var category = field.ToLower(); // used as CSS modifier: pill-status, pill-priority, etc.
+            return
+                $"<span class=\"from-pill old\">{oldVal}</span>" +
+                $"<span class=\"arrow\">→</span>" +
+                $"<span class=\"from-pill new {category}\">{newVal}</span>";
+        }
+
+
         public async Task<bool> DeleteAsync(string taskId)
         {
             var task = await _repository.GetByIdAsync(taskId);
@@ -114,7 +192,7 @@ namespace ArielCRM.Application.Services
                 Priority = task.Priority,
                 Type = task.Type,
                 Status = task.Status,
-                Assignee =  new UserSummaryDto
+                Assignee = new UserSummaryDto
                 {
                     Id = task.AssignToId!,
                     Name = task.AssignedUser?.Name ?? "",
@@ -122,7 +200,7 @@ namespace ArielCRM.Application.Services
                 },
                 Reporter = new UserSummaryDto
                 {
-                    Id  = task.ReportedById,
+                    Id = task.ReportedById,
                     Name = task.ReportedUser?.Name ?? "",
                     ProfileImage = task.ReportedUser?.ProfileImage,
                 },

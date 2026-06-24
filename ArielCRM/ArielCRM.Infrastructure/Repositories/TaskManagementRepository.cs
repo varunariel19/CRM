@@ -27,7 +27,24 @@ namespace ArielCRM.Infrastructure.Repositories
 
         public async Task CreateAsync(TicketTask task)
         {
+            var history = new TicketHistory
+            {
+                Id = Guid.NewGuid(),
+                TicketId = task.TaskId,
+                Title = $"{task.ReportedUser.Name} Created the Work Item.",
+                CommitedBy = new UserSummaryDto1
+                {
+                    Id = task.ReportedById,
+                    Name = task.ReportedUser.Name,
+                    ProfileImage = task.ReportedUser.ProfileImage ?? null
+                },
+
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _context.TicketHistories.AddAsync(history);
             await _context.TicketTasks.AddAsync(task);
+
             await _context.SaveChangesAsync();
         }
 

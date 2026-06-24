@@ -21,11 +21,32 @@ import { CommentState, TicketComment } from '../../state/comment.state';
 import { AuthState } from '../../state/auth.state';
 import { AiService } from '../../core/services/ai-modal.service';
 
+
+export interface TicketHistory {
+  id: string;
+  ticketId: string;
+  ticket: Task | null;
+
+  title: string;
+  content: string | null;
+
+  commitedBy: UserSummary;
+
+  createdAt: Date;
+}
+
+export interface UserSummary {
+  id: string;
+  name: string;
+  profileImage: string;
+}
+
+
 @Component({
   selector: 'app-view-ticket',
   imports: [CommonModule, FormsModule, EditorModule],
   templateUrl: './view-ticket.component.html',
-  styleUrls: ['./view-ticket.component.css']
+  styleUrls: ['./view-ticket.component.scss']
 })
 
 
@@ -442,6 +463,95 @@ ${comments || 'No comments available.'}
         }
       }, speed);
     });
+  }
+
+
+  // Dummy history data (replace with API call by taskId)
+  ticketHistory: TicketHistory[] = [
+    {
+      id: crypto.randomUUID(),
+      ticketId:  "",
+      ticket: null!,
+      title: 'Status changed',
+      content: `<span class="from-pill old">TODO</span><span class="arrow">→</span><span class="from-pill new status">IN_PROGRESS</span>`,
+      commitedBy: { id: 'u1', name: 'Sarah Chen', profileImage: 'https://i.pravatar.cc/100?img=12' },
+      createdAt: new Date('2026-06-24T10:42:00Z')
+    },
+    {
+      id: crypto.randomUUID(),
+      ticketId:  "",
+
+      ticket: null!,
+      title: 'Assignee changed',
+      content: `<span class="from-pill old">Alex Rivera</span><span class="arrow">→</span><span class="from-pill new assignee">James Okafor</span>`,
+      commitedBy: { id: 'u1', name: 'Sarah Chen', profileImage: 'https://i.pravatar.cc/100?img=12' },
+      createdAt: new Date('2026-06-23T16:10:00Z')
+    },
+    {
+      id: crypto.randomUUID(),
+      ticketId:  "",
+
+      ticket: null!,
+      title: 'Priority changed',
+      content: `<span class="from-pill old">MEDIUM</span><span class="arrow">→</span><span class="from-pill new priority">HIGH</span>`,
+      commitedBy: { id: 'u2', name: 'Priya Nair', profileImage: 'https://i.pravatar.cc/100?img=22' },
+      createdAt: new Date('2026-06-23T14:30:00Z')
+    },
+    {
+      id: crypto.randomUUID(),
+      ticketId:  "",
+
+      ticket: null!,
+      title: 'Description updated',
+      content: `<span class="history-text-change">Added OAuth2 token refresh details → Expanded with secure storage requirements</span>`,
+      commitedBy: { id: 'u3', name: 'Alex Rivera', profileImage: 'https://i.pravatar.cc/100?img=33' },
+      createdAt: new Date('2026-06-22T11:15:00Z')
+    },
+    {
+      id: crypto.randomUUID(),
+      ticketId:  "",
+
+      ticket: null!,
+      title: 'Bulk update',
+      content: `<ul class="history-change-list">
+      <li><span class="from-pill old">MEDIUM</span><span class="arrow">→</span><span class="from-pill new priority">HIGH</span></li>
+      <li><span class="from-pill old">TODO</span><span class="arrow">→</span><span class="from-pill new status">IN_PROGRESS</span></li>
+    </ul>`,
+      commitedBy: { id: 'u1', name: 'Sarah Chen', profileImage: 'https://i.pravatar.cc/100?img=12' },
+      createdAt: new Date('2026-06-21T09:00:00Z')
+    }
+  ];
+
+  getHistoryDotClass(title: string): string {
+    const t = title.toLowerCase();
+    if (t.includes('status')) return 'dot-status';
+    if (t.includes('priority')) return 'dot-priority';
+    if (t.includes('assignee')) return 'dot-assign';
+    if (t.includes('type')) return 'dot-type';
+    if (t.includes('description') || t.includes('title')) return 'dot-desc';
+    if (t.includes('bulk')) return 'dot-default';
+    return 'dot-default';
+  }
+
+  getSafeHistoryContent(content: string | null): SafeHtml {
+    return content ? this.sanitizer.bypassSecurityTrustHtml(content) : '';
+  }
+
+  get mergedFeed(): { type: 'comment' | 'history'; data: any; date: Date }[] {
+    const commentEntries = this.comments().map(c => ({
+      type: 'comment' as const,
+      data: c,
+      date: new Date(c.updatedAt)
+    }));
+
+    const historyEntries = this.ticketHistory.map(h => ({
+      type: 'history' as const,
+      data: h,
+      date: new Date(h.createdAt)
+    }));
+
+    return [...commentEntries, ...historyEntries]
+      .sort((a, b) => b.date.getTime() - a.date.getTime()); // newest first
   }
 
 }

@@ -174,3 +174,34 @@ Updated deal 'Data Warehouse Modernization Project'
 "Contact":null,
 "Tasks":[]
 }
+
+## Ticket History : 
+1. ticket creation initally created.
+2. if updated like status 
+    TODO -> INPROGRESS  then it should changed 
+3. if any other thing like title and descritpion , 
+   summary 
+
+
+4. commitedBy : {
+     id : string;
+     name : string;
+     profileImage : string;
+}
+
+creation
+Fields  : 
+1. Status, Priority , Type , Description, Title, Summary.
+
+TITLE : Html text 
+content : html text 
+
+for 
+
+
+# Added Ai automatic geneation of content for message suggestion based 
+  on ticket review.
+# User can auto generate the little desc into explained on and also 
+  generate the whole summary of ticket 
+
+# Created Ticket History section which keep the track of each ticket through it's completion.
