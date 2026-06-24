@@ -59,6 +59,12 @@ export const menuItems: MenuItem[] = [
     permission: PermissionKey.TeamMembersView,
   },
   {
+    icon: 'fas fa-comments',
+    label: 'Teams',
+    route: 'teams',
+    permission: PermissionKey.TeamMembersView,
+  },
+  {
     icon: 'fas fa-tasks',
     label: 'Task Management',
     route: 'task-management',

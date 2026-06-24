@@ -1,3 +1,4 @@
+using ArielCRM.API.Hubs;
 using ArielCRM.Application.Interfaces;
 using ArielCRM.Application.Services;
 using ArielCRM.Infrastructure.Data;
@@ -122,6 +123,6 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-//app.MapHub<NotificationHub>("/notificationHub");
+app.MapHub<TeamsHub>("/teamsHub");
 
 app.Run();

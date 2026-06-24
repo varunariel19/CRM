@@ -8,7 +8,7 @@
   <div class="dashboard-body">
 
     <div class="workspace-wrapper">
-      <div class="action-bar">
+      <!-- <div class="action-bar">
         <button class="back-btn" (click)="goToPreviousMenu()">
           <span class="back-icon">
             <i class="fas fa-arrow-left"></i>
@@ -22,7 +22,7 @@
           </span>
           <span class="back-text">Reload</span>
         </button>
-      </div>
+      </div> -->
       <ng-container [ngSwitch]="selectedMenu().route">
 
         <div *ngSwitchCase="'analytics'">
@@ -55,6 +55,10 @@
 
         <div *ngSwitchCase="'team-members'">
           <app-team-members />
+        </div>
+
+        <div *ngSwitchCase="'teams'">
+          <app-teams />
         </div>
 
         <div *ngSwitchCase="'audit-history'">

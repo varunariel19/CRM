@@ -1,5 +1,6 @@
 export const BASE_URL = 'https://localhost:7111';
 export const SignalRUrl = `${BASE_URL}/notificationHub`;
+export const TeamsHubUrl = `${BASE_URL}/teamsHub`;
 
 
 
@@ -70,6 +71,17 @@ export const endpoints = {
 
     // commments : 
     comments : `${BASE_URL}/api/comments`,
+
+    // teams messaging
+    teams: {
+        users: `${BASE_URL}/api/teams/users`,
+        conversations: `${BASE_URL}/api/teams/conversations`,
+        direct: `${BASE_URL}/api/teams/conversations/direct`,
+        groups: `${BASE_URL}/api/teams/conversations/groups`,
+        messages: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages`,
+        sendMessage: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages`,
+        markRead: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/read`,
+    },
 
 
 

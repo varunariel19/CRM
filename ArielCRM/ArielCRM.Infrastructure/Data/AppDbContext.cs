@@ -1,4 +1,4 @@
-﻿using ArielCRM.DataLayer.Entities;
+using ArielCRM.DataLayer.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ArielCRM.Infrastructure.Data
@@ -27,6 +27,10 @@ namespace ArielCRM.Infrastructure.Data
         public DbSet<Designation> Designations { get; set; } = null!;
         public DbSet<Documents> Documents { get; set; } = null!;
         public DbSet<Comment> Comments { get; set; } = null!;
+        public DbSet<TeamConversation> TeamConversations { get; set; } = null!;
+        public DbSet<TeamConversationMember> TeamConversationMembers { get; set; } = null!;
+        public DbSet<TeamMessage> TeamMessages { get; set; } = null!;
+        public DbSet<TeamMessageAttachment> TeamMessageAttachments { get; set; } = null!;
 
         public DbSet<TicketHistory> TicketHistories { get; set; } = null!;
 
@@ -34,6 +38,7 @@ namespace ArielCRM.Infrastructure.Data
         // Audit
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         public DbSet<AuditRevertHistory> AuditRevertHistories { get; set; } = null!;
+
 
         // ─────────────────────────────────────────────
         // Model Configuration
@@ -52,6 +57,8 @@ namespace ArielCRM.Infrastructure.Data
             // ── Keys ──────────────────────────────────
             modelBuilder.Entity<CrmTask>().HasKey(t => t.Id);
             modelBuilder.Entity<TicketTask>().HasKey(t => t.TaskId);
+            modelBuilder.Entity<TeamConversationMember>()
+                .HasKey(m => new { m.ConversationId, m.UserId });
 
             // ── Enum conversions ──────────────────────
             modelBuilder.Entity<Lead>()
@@ -173,6 +180,33 @@ namespace ArielCRM.Infrastructure.Data
                 .HasOne(x => x.Permission).WithMany(x => x.AccessLevels)
                 .HasForeignKey(x => x.PermissionId);
 
+            modelBuilder.Entity<TeamConversation>()
+                .HasOne(c => c.CreatedBy).WithMany()
+                .HasForeignKey(c => c.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<TeamConversationMember>()
+                .HasOne(m => m.Conversation).WithMany(c => c.Members)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TeamConversationMember>()
+                .HasOne(m => m.User).WithMany()
+                .HasForeignKey(m => m.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TeamMessage>()
+                .HasOne(m => m.Conversation).WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<TeamMessage>()
+                .HasOne(m => m.Sender).WithMany()
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<TeamMessageAttachment>()
+                .HasOne(a => a.Message).WithMany(m => m.Attachments)
+                .HasForeignKey(a => a.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             // ── AuditLog relationships ─────────────────
 
             modelBuilder.Entity<AuditLog>()
@@ -259,6 +293,20 @@ namespace ArielCRM.Infrastructure.Data
                 .HasIndex(t => t.AssignToId).HasDatabaseName("idx_tickettasks_assigned");
             modelBuilder.Entity<TicketTask>()
                 .HasIndex(t => t.ReportedById).HasDatabaseName("idx_tickettasks_reported");
+
+            modelBuilder.Entity<TeamConversation>()
+                .HasIndex(c => c.LastMessageAt)
+                .IsDescending()
+                .HasDatabaseName("idx_team_conversations_last_message");
+            modelBuilder.Entity<TeamConversationMember>()
+                .HasIndex(m => m.UserId)
+                .HasDatabaseName("idx_team_conversation_members_user");
+            modelBuilder.Entity<TeamMessage>()
+                .HasIndex(m => new { m.ConversationId, m.SentAt })
+                .HasDatabaseName("idx_team_messages_lookup");
+            modelBuilder.Entity<TeamMessageAttachment>()
+                .HasIndex(a => a.MessageId)
+                .HasDatabaseName("idx_team_message_attachments_message");
 
             // ── AuditLog indexes ──────────────────────
 

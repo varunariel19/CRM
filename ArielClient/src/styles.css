@@ -220,6 +220,10 @@
     color-scheme: dark;
   }
 
+  .inner-content.no-scroll {
+  overflow: hidden;
+}
+
 * {
   margin: 0;
   padding: 0;

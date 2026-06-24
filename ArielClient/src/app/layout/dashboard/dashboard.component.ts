@@ -39,6 +39,7 @@ import { LookUpService } from '../../core/services/lookup.service';
 import { TeamState } from '../../state/team.state';
 import { menuItems } from '../../core/constants/menuItems';
 import { LoaderService } from '../../core/services/loader.service';
+import { TeamsComponent } from '../../features/dashboard/teams/teams.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -56,6 +57,7 @@ import { LoaderService } from '../../core/services/loader.service';
     AuditHistoryComponent,
     TaskManagementComponent,
     ProjectsComponent,
+    TeamsComponent,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',

@@ -226,3 +226,22 @@ WHERE table_schema = 'public';
 
 
 
+
+
+-- update this 
+
+
+CREATE TABLE team_message_attachments (
+    id VARCHAR(50) PRIMARY KEY,
+    message_id VARCHAR(50) NOT NULL REFERENCES team_messages(id) ON DELETE CASCADE,
+    file_name VARCHAR(255) NOT NULL,
+    file_url TEXT NOT NULL,
+    upload_id VARCHAR(100) NOT NULL,
+    content_type VARCHAR(120) NOT NULL,
+    attachment_type VARCHAR(30) NOT NULL DEFAULT 'file',
+    size_bytes BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_team_message_attachments_message ON team_message_attachments(message_id);
+
