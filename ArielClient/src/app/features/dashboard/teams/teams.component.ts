@@ -25,7 +25,7 @@ interface MessageSegment {
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './teams.component.html',
-  styleUrl: './teams.component.css',
+  styleUrl: './teams.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
@@ -118,6 +118,38 @@ ngOnDestroy(): void {
   }
 
 
+// ── Add to your component signals ─────────────────────────────────────────
+isInfoPanelOpen = signal(false);
+
+// ── Add these helpers ──────────────────────────────────────────────────────
+getMemberName(userId: string): string {
+  const user = this.availableUsers().find(u => u.id === userId);
+  return user?.name ?? userId;
+}
+
+isFirstInRun(index: number): boolean {
+  const msgs = this.messages();
+
+  if (index <= 0) return true;
+
+  const current = msgs[index];
+  const previous = msgs[index - 1];
+
+  return !!current && !!previous && current.senderId !== previous.senderId;
+}
+
+isLastInRun(index: number): boolean {
+  const msgs = this.messages();
+
+  if (index >= msgs.length - 1) return true;
+
+  const current = msgs[index];
+  const next = msgs[index + 1];
+
+  return !!current && !!next && current.senderId !== next.senderId;
+}
+
+
 
   selectConversation(conversation: TeamConversation): void {
     if (conversation.id === this.selectedConversationId() && this.messages().length) return;
@@ -154,6 +186,7 @@ ngOnDestroy(): void {
       this.selectConversation(conversation);
     });
   }
+
 
   toggleMember(userId: string): void {
     this.selectedMemberIds.update(current => {

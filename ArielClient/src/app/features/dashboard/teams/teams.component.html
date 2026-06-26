@@ -1,367 +1,397 @@
 <section class="teams-shell" [class.sidebar-collapsed]="isSidebarCollapsed()">
 
-  <!-- ── Sidebar toggle FAB (visible when collapsed) ───────────────────── -->
-  <button class="sidebar-toggle-fab" type="button" *ngIf="isSidebarCollapsed()"
-    title="Open sidebar" (click)="isSidebarCollapsed.set(false)">
-    <i class="fas fa-bars"></i>
-  </button>
+    <!-- ── Sidebar toggle FAB (visible when collapsed) ───────────────────── -->
+    <button class="sidebar-toggle-fab" type="button" *ngIf="isSidebarCollapsed()" title="Open sidebar"
+        (click)="isSidebarCollapsed.set(false)">
+        <i class="fas fa-bars"></i>
+    </button>
 
-  <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
-  <aside class="teams-sidebar">
+    <!-- ── Sidebar ────────────────────────────────────────────────────────── -->
+    <aside class="teams-sidebar">
 
-    <div class="sidebar-top">
-      <div class="teams-sidebar__header">
-        <div class="sidebar-title-row">
-          <h2>Chat</h2>
-        </div>
-        <div class="sidebar-header-actions">
-          <button class="icon-btn" type="button" title="New conversation" (click)="isCreatingGroup.set(!isCreatingGroup())">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="icon-btn sidebar-close-btn" type="button" title="Close sidebar"
-            (click)="isSidebarCollapsed.set(true)">
-            <i class="fas fa-chevron-left"></i>
-          </button>
-        </div>
-      </div>
+        <div class="sidebar-top">
+            <div class="teams-sidebar__header">
+                <div class="sidebar-title-row">
+                    <h2>Chat</h2>
+                </div>
+                <div class="sidebar-header-actions">
+                    <button class="icon-btn" type="button" title="New conversation"
+                        (click)="isCreatingGroup.set(!isCreatingGroup())">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="icon-btn sidebar-close-btn" type="button" title="Close sidebar"
+                        (click)="isSidebarCollapsed.set(true)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+            </div>
 
-      <label class="search-box">
-        <i class="fas fa-magnifying-glass"></i>
-        <input type="search" placeholder="Search"
-          [ngModel]="search()" (ngModelChange)="search.set($event)">
-      </label>
+            <label class="search-box">
+                <i class="fas fa-magnifying-glass"></i>
+                <input type="search" placeholder="Search" [ngModel]="search()" (ngModelChange)="search.set($event)">
+            </label>
 
-      <!-- Group creation card -->
-      <div class="group-card" *ngIf="isCreatingGroup()">
-        <input class="field" placeholder="Group name"
-          [ngModel]="groupName()" (ngModelChange)="groupName.set($event)">
-        <div class="member-picker">
-          <button type="button"
-            *ngFor="let user of availableUsers(); trackBy: trackByUser"
-            [class.selected]="selectedMemberIds().has(user.id)"
-            (click)="toggleMember(user.id)">
-            <span class="avatar avatar--small">{{ getInitials(user.name) }}</span>
-            <span>{{ user.name }}</span>
-          </button>
-        </div>
-        <button class="primary-btn" type="button" (click)="createGroup()"
-          [disabled]="!groupName().trim() || selectedMemberIds().size < 2">
-          Create group
-        </button>
-      </div>
-    </div>
-
-    <!-- ── Chats section (collapsible) ──────────────────────────────────── -->
-    <div class="sidebar-section" [class.section-collapsed]="isChatsCollapsed()">
-      <button class="section-label--toggle" type="button"
-        (click)="isChatsCollapsed.set(!isChatsCollapsed())">
-        <i class="fas" [class.fa-chevron-down]="!isChatsCollapsed()" [class.fa-chevron-right]="isChatsCollapsed()"></i>
-        <span>Chats</span>
-      </button>
-
-      <div class="conversation-list" *ngIf="!isChatsCollapsed()">
-        <button type="button" class="conversation"
-          *ngFor="let conversation of filteredConversations(); trackBy: trackByConversation"
-          [class.active]="conversation.id === selectedConversationId()"
-          [class.has-unread]="hasUnread(conversation)"
-          (click)="selectConversation(conversation)">
-
-          <!-- Avatar with online/offline dot (direct chats only) -->
-          <span class="presence-wrap">
-            <span class="avatar avatar--small">{{ getConversationAvatar(conversation) }}</span>
-            <span class="presence"
-              [class.online]="isUserOnline(conversation)"
-              [class.offline]="!isUserOnline(conversation)"
-              *ngIf="!conversation.isGroup"></span>
-          </span>
-
-          <!-- Name -->
-          <span class="conversation__content">
-            <span class="conversation__title">{{ getConversationTitle(conversation) }}</span>
-          </span>
-
-          <!-- Unread dot -->
-          <span class="unread-dot" *ngIf="hasUnread(conversation)"></span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ── People section (collapsible) ─────────────────────────────────── -->
-    <div class="sidebar-section sidebar-section--people" [class.section-collapsed]="isPeopleCollapsed()">
-      <button class="section-label--toggle" type="button"
-        (click)="isPeopleCollapsed.set(!isPeopleCollapsed())">
-        <i class="fas" [class.fa-chevron-down]="!isPeopleCollapsed()" [class.fa-chevron-right]="isPeopleCollapsed()"></i>
-        <span>People</span>
-      </button>
-
-      <div class="people-list" *ngIf="!isPeopleCollapsed()">
-        <button type="button" class="person"
-          *ngFor="let user of availableUsers(); trackBy: trackByUser"
-          (click)="startDirect(user)">
-          <span class="presence-wrap">
-            <span class="avatar avatar--small">{{ getInitials(user.name) }}</span>
-            <!-- Online = green, offline = red -->
-            <span class="presence"
-              [class.online]="onlineUserIds().has(user.id)"
-              [class.offline]="!onlineUserIds().has(user.id)"></span>
-          </span>
-          <span class="person__name">{{ user.name }}</span>
-        </button>
-      </div>
-    </div>
-
-  </aside>
-
-  <!-- ── Chat panel ──────────────────────────────────────────────────────── -->
-  <main class="chat-panel" *ngIf="selectedConversation() as conversation; else emptyState">
-
-    <!-- Header -->
-    <header class="chat-header">
-      <div class="chat-title">
-        <button class="icon-btn sidebar-open-btn" type="button" title="Open sidebar"
-          *ngIf="isSidebarCollapsed()" (click)="isSidebarCollapsed.set(false)">
-          <i class="fas fa-bars"></i>
-        </button>
-
-        <span class="presence-wrap">
-          <span class="avatar">{{ getConversationAvatar(conversation) }}</span>
-          <!-- Online/offline dot in header for direct chats -->
-          <span class="presence header-presence"
-            [class.online]="isUserOnline(conversation)"
-            [class.offline]="!isUserOnline(conversation)"
-            *ngIf="!conversation.isGroup"></span>
-        </span>
-
-        <div>
-          <h3>{{ getConversationTitle(conversation) }}</h3>
-          <p *ngIf="!conversation.isGroup" [class.status-online]="isUserOnline(conversation)" [class.status-offline]="!isUserOnline(conversation)">
-            {{ isUserOnline(conversation) ? 'Online' : 'Offline' }}
-          </p>
-          <p *ngIf="conversation.isGroup">{{ conversation.members.length }} members</p>
-        </div>
-      </div>
-
-      <div class="chat-actions">
-        <button class="icon-btn" type="button" title="Voice call" (click)="startCall('voice')">
-          <i class="fas fa-phone"></i>
-        </button>
-        <button class="icon-btn" type="button" title="Video call" (click)="startCall('video')">
-          <i class="fas fa-video"></i>
-        </button>
-        <button class="icon-btn" type="button" title="Info">
-          <i class="fas fa-circle-info"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- Call strip -->
-    <div class="call-strip" *ngIf="activeCall() as call">
-      <div>
-        <strong>{{ call.status }}</strong>
-        <span>{{ call.callType === 'video' ? 'Video' : 'Voice' }} call</span>
-      </div>
-      <div class="call-actions">
-        <button class="success-btn" type="button" (click)="answerCall(true)" *ngIf="call.status.startsWith('Incoming')">
-          <i class="fas fa-phone"></i>
-        </button>
-        <button class="danger-btn" type="button" (click)="answerCall(false)" *ngIf="call.status.startsWith('Incoming')">
-          <i class="fas fa-phone-slash"></i>
-        </button>
-        <button class="danger-btn" type="button" (click)="endCall()" *ngIf="!call.status.startsWith('Incoming')">
-          <i class="fas fa-phone-slash"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Messages / skeleton -->
-    <ng-container *ngIf="isLoadingMessages(); else messagesTpl">
-      <div class="skeletons">
-        <div class="message-skeleton" *ngFor="let s of [1,2,3,4,5,6]" [class.right]="s % 3 === 0">
-          <div class="skeleton-avatar"></div>
-          <div class="skeleton-body">
-            <div class="skeleton-name"></div>
-            <div class="skeleton-bubble" [style.width.px]="s % 2 === 0 ? 240 : 320"></div>
-          </div>
-        </div>
-      </div>
-    </ng-container>
-
-    <ng-template #messagesTpl>
-      <div class="messages" #messagesScroller>
-
-        <!-- Empty state when conversation has no messages yet -->
-        <div class="messages-empty" *ngIf="!messages().length">
-          <div class="messages-empty__icon">
-            <i class="fas fa-comment-dots"></i>
-          </div>
-          <h4>No messages yet</h4>
-          <p>Say hello to {{ getConversationTitle(conversation) }} 👋</p>
+            <!-- Group creation card -->
+            <div class="group-card" *ngIf="isCreatingGroup()">
+                <input class="field" placeholder="Group name" [ngModel]="groupName()"
+                    (ngModelChange)="groupName.set($event)">
+                <div class="member-picker">
+                    <button type="button" *ngFor="let user of availableUsers(); trackBy: trackByUser"
+                        [class.selected]="selectedMemberIds().has(user.id)" (click)="toggleMember(user.id)">
+                        <span class="avatar avatar--small" *ngIf="message.senderId !== currentUserId()"
+                            [class.avatar--hidden]="!isFirstInRun(i)">
+                            {{ getInitials(message.senderName) }}
+                        </span>
+                        <span>{{ user.name }}</span>
+                    </button>
+                </div>
+                <button class="primary-btn" type="button" (click)="createGroup()"
+                    [disabled]="!groupName().trim() || selectedMemberIds().size < 2">
+                    Create group
+                </button>
+            </div>
         </div>
 
-        <ng-container *ngIf="messages().length">
-          <ng-container *ngFor="let message of messages(); trackBy: trackByMessage; let last = last">
-            <article class="message"
-              [class.mine]="message.senderId === currentUserId()"
-              [class.pending]="message.pending"
-              [class.failed]="message.failed">
+        <!-- ── Chats section ──────────────────────────────────────────────── -->
+        <div class="sidebar-section">
+            <div class="section-label">
+                <span>Chats</span>
+            </div>
 
-              <div class="msg-row">
-                <span class="avatar avatar--small" *ngIf="message.senderId !== currentUserId()">
-                  {{ getInitials(message.senderName) }}
+            <div class="conversation-list">
+                <button type="button" class="conversation"
+                    *ngFor="let conversation of filteredConversations(); trackBy: trackByConversation"
+                    [class.active]="conversation.id === selectedConversationId()"
+                    [class.has-unread]="hasUnread(conversation)" (click)="selectConversation(conversation)">
+
+                    <span class="presence-wrap">
+                        <span class="avatar avatar--small">{{ getConversationAvatar(conversation) }}</span>
+                        <span class="presence" [class.online]="isUserOnline(conversation)"
+                            [class.offline]="!isUserOnline(conversation)" *ngIf="!conversation.isGroup"></span>
+                    </span>
+
+                    <span class="conversation__content">
+                        <span class="conversation__title">{{ getConversationTitle(conversation) }}</span>
+                    </span>
+
+                    <span class="unread-dot" *ngIf="hasUnread(conversation)"></span>
+                </button>
+            </div>
+        </div>
+
+    </aside>
+
+    <!-- ── Chat panel ──────────────────────────────────────────────────────── -->
+    <main class="chat-panel" *ngIf="selectedConversation() as conversation; else emptyState">
+
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="chat-title">
+                <button class="icon-btn sidebar-open-btn" type="button" title="Open sidebar"
+                    *ngIf="isSidebarCollapsed()" (click)="isSidebarCollapsed.set(false)">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <span class="presence-wrap">
+                    <span class="avatar">{{ getConversationAvatar(conversation) }}</span>
+                    <span class="presence header-presence" [class.online]="isUserOnline(conversation)"
+                        [class.offline]="!isUserOnline(conversation)" *ngIf="!conversation.isGroup"></span>
                 </span>
 
-                <div class="bubble">
-                  <div class="message__meta">
-                    <strong>{{ message.senderId === currentUserId() ? 'You' : message.senderName }}</strong>
-                    <time>{{ message.sentAt | date:'shortTime' }}</time>
-                    <span class="status-tag" *ngIf="message.pending">· Sending…</span>
-                    <span class="status-tag status-tag--failed" *ngIf="message.failed">· Failed</span>
-                  </div>
-
-                  <div class="message__body" *ngIf="message.body">
-                    <ng-container *ngFor="let segment of getMessageSegments(message.body); trackBy: trackBySegment">
-                      <p *ngIf="segment.type === 'text'">{{ segment.content }}</p>
-                      <pre *ngIf="segment.type === 'code'"><code>{{ segment.content }}</code></pre>
-                    </ng-container>
-                  </div>
-
-                  <div class="attachment-grid" *ngIf="message.attachments?.length">
-                    <a class="attachment"
-                      *ngFor="let att of message.attachments; trackBy: trackByAttachment"
-                      [href]="att.fileUrl || null" target="_blank" rel="noopener">
-                      <img *ngIf="att.attachmentType === 'image' && att.fileUrl"
-                        [src]="att.fileUrl" [alt]="att.fileName" loading="lazy">
-                      <video *ngIf="att.attachmentType === 'video' && att.fileUrl"
-                        [src]="att.fileUrl" controls preload="metadata"></video>
-                      <audio *ngIf="att.attachmentType === 'audio' && att.fileUrl"
-                        [src]="att.fileUrl" controls preload="metadata"></audio>
-                      <div class="file-chip"
-                        *ngIf="att.attachmentType !== 'image' && att.attachmentType !== 'video' && att.attachmentType !== 'audio'">
-                        <i class="fas"
-                          [class.fa-file-lines]="att.attachmentType === 'document'"
-                          [class.fa-file]="att.attachmentType !== 'document'"></i>
-                        <div class="file-chip-info">
-                          <strong>{{ att.fileName }}</strong>
-                          <small>{{ formatBytes(att.sizeBytes) }}</small>
-                        </div>
-                      </div>
-                    </a>
-                  </div>
-
-                  <!-- ── Seen / Sent tick (only on MY last sent message) ── -->
-                  <div class="read-receipt"
-                    *ngIf="message.senderId === currentUserId() && !message.pending && !message.failed && message === getLastMyMessage()">
-                    <ng-container *ngIf="isMessageSeen(message); else sentTick">
-                      <!-- Double tick = Seen -->
-                      <span class="tick tick--seen" title="Seen">
-                        <i class="fas fa-check-double"></i>
-                      </span>
-                    </ng-container>
-                    <ng-template #sentTick>
-                      <!-- Single tick = Sent, not yet seen -->
-                      <span class="tick tick--sent" title="Sent">
-                        <i class="fas fa-check"></i>
-                      </span>
-                    </ng-template>
-                  </div>
-
+                <div>
+                    <h3>{{ getConversationTitle(conversation) }}</h3>
+                    <p *ngIf="!conversation.isGroup" [class.status-online]="isUserOnline(conversation)"
+                        [class.status-offline]="!isUserOnline(conversation)">
+                        {{ isUserOnline(conversation) ? 'Online' : 'Offline' }}
+                    </p>
+                    <p *ngIf="conversation.isGroup" class="group-member-count">
+                        <i class="fas fa-users"></i> {{ conversation.members.length }} members
+                    </p>
                 </div>
-              </div>
-
-            </article>
-          </ng-container>
-        </ng-container>
-
-      </div>
-    </ng-template>
-
-    <!-- Typing indicator -->
-    <div class="typing-line">{{ typingLabel() }}</div>
-
-    <!-- ── Composer ────────────────────────────────────────────────────── -->
-    <div class="composer-wrap">
-      <input #fileInput class="file-input" type="file" multiple
-        accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
-        (change)="onFilesSelected($event)">
-
-      <div class="composer">
-
-        <!-- Pending attachments -->
-        <div class="selected-attachments" *ngIf="selectedAttachments().length">
-          <div class="selected-attachment"
-            *ngFor="let att of selectedAttachments(); trackBy: trackByAttachment">
-            <img *ngIf="att.type === 'image' && att.previewUrl" [src]="att.previewUrl" [alt]="att.name">
-            <i class="fas" *ngIf="att.type !== 'image'"
-              [class.fa-file-audio]="att.type === 'audio'"
-              [class.fa-file-video]="att.type === 'video'"
-              [class.fa-file-lines]="att.type === 'document'"
-              [class.fa-file]="att.type === 'file'"></i>
-            <div class="selected-attachment-info">
-              <strong>{{ att.name }}</strong>
-              <small>{{ formatBytes(att.size) }}</small>
             </div>
-            <button type="button" title="Remove" (click)="removeAttachment(att.id)">
-              <i class="fas fa-xmark"></i>
-            </button>
-          </div>
+
+            <div class="chat-actions">
+                <button class="icon-btn" type="button" title="Voice call" (click)="startCall('voice')">
+                    <i class="fas fa-phone"></i>
+                </button>
+                <button class="icon-btn" type="button" title="Video call" (click)="startCall('video')">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="icon-btn" type="button" title="Group info" [class.active]="isInfoPanelOpen()"
+                    (click)="isInfoPanelOpen.set(!isInfoPanelOpen())">
+                    <i class="fas fa-circle-info"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Call strip -->
+        <div class="call-strip" *ngIf="activeCall() as call">
+            <div>
+                <strong>{{ call.status }}</strong>
+                <span>{{ call.callType === 'video' ? 'Video' : 'Voice' }} call</span>
+            </div>
+            <div class="call-actions">
+                <button class="success-btn" type="button" (click)="answerCall(true)"
+                    *ngIf="call.status.startsWith('Incoming')">
+                    <i class="fas fa-phone"></i>
+                </button>
+                <button class="danger-btn" type="button" (click)="answerCall(false)"
+                    *ngIf="call.status.startsWith('Incoming')">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+                <button class="danger-btn" type="button" (click)="endCall()"
+                    *ngIf="!call.status.startsWith('Incoming')">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
+            </div>
         </div>
 
-        <!-- Text input -->
-        <div class="composer-input-row">
-          <textarea #messageInput rows="1"
-            placeholder="Type a message"
-            [ngModel]="messageBody()" name="message"
-            (ngModelChange)="messageBody.set($event); setTyping()"
-            (keydown.enter)="onEnterSend($event)">
-          </textarea>
-        </div>
+        <!-- ── Body row: messages + optional info panel ───────────────────── -->
+        <div class="chat-body">
 
-        <!-- Bottom toolbar -->
-        <div class="composer-toolbar">
-          <div class="toolbar-left">
-            <button class="toolbar-btn" type="button" title="Bold" (click)="applyFormat('bold')">
-              <i class="fas fa-bold"></i>
-            </button>
-            <button class="toolbar-btn" type="button" title="Italic" (click)="applyFormat('italic')">
-              <i class="fas fa-italic"></i>
-            </button>
-            <button class="toolbar-btn" type="button" title="Emoji">
-              <i class="far fa-face-smile"></i>
-            </button>
-            <button class="toolbar-btn" type="button" title="Attach file" (click)="fileInput.click()">
-              <i class="fas fa-paperclip"></i>
-            </button>
-            <button class="toolbar-btn" type="button" title="Code block" (click)="applyFormat('codeBlock')">
-              <i class="fas fa-code"></i>
-            </button>
-            <button class="toolbar-btn" type="button" title="Quote" (click)="applyFormat('quote')">
-              <i class="fas fa-quote-left"></i>
-            </button>
-          </div>
-          <div class="toolbar-divider"></div>
-          <button class="send-btn" type="button" title="Send"
-            [disabled]="!canSend()" (click)="sendMessage()">
-            <i class="fas"
-              [class.fa-paper-plane]="!isSending()"
-              [class.fa-spinner]="isSending()"
-              [class.fa-spin]="isSending()"></i>
-          </button>
-        </div>
+            <!-- Messages / skeleton -->
+            <div class="messages-wrap">
+                <ng-container *ngIf="isLoadingMessages(); else messagesTpl">
+                    <div class="skeletons">
+                        <div class="message-skeleton" *ngFor="let s of [1,2,3,4,5,6]" [class.right]="s % 3 === 0">
+                            <div class="skeleton-avatar"></div>
+                            <div class="skeleton-body">
+                                <div class="skeleton-name"></div>
+                                <div class="skeleton-bubble" [style.width.px]="s % 2 === 0 ? 240 : 320"></div>
+                            </div>
+                        </div>
+                    </div>
+                </ng-container>
 
-      </div>
-    </div>
+                <ng-template #messagesTpl>
+                    <div class="messages" #messagesScroller>
 
-  </main>
+                        <div class="messages-empty" *ngIf="!messages().length">
+                            <div class="messages-empty__icon">
+                                <i class="fas fa-comment-dots"></i>
+                            </div>
+                            <h4>No messages yet</h4>
+                            <p>Say hello to {{ getConversationTitle(conversation) }} 👋</p>
+                        </div>
 
-  <!-- ── Empty state ─────────────────────────────────────────────────────── -->
-  <ng-template #emptyState>
-    <main class="empty-panel">
-      <div class="empty-icon">
-        <i class="fas fa-comments"></i>
-      </div>
-      <h3>Open a conversation</h3>
-      <p>Pick a chat from the sidebar or start a direct message with a teammate.</p>
+                        <ng-container *ngIf="messages().length">
+                            <ng-container
+                                *ngFor="let message of messages(); trackBy: trackByMessage; let i = index; let last = last">
+                                <article class="message" [class.mine]="message.senderId === currentUserId()"
+                                    [class.pending]="message.pending" [class.failed]="message.failed"
+                                    [class.continuation]="!isFirstInRun(i)" [class.last-in-run]="isLastInRun(i)">
+
+                                    <div class="msg-header" *ngIf="isFirstInRun(i)"
+                                        [class.msg-header--mine]="message.senderId === currentUserId()">
+                                        <span class="msg-sender" *ngIf="message.senderId !== currentUserId()">
+                                            {{ message.senderName }}
+                                        </span>
+                                        <time class="msg-timestamp">
+                                            {{ message.sentAt | date:'M/d h:mm a' }}
+                                        </time>
+                                    </div>
+
+                                    <div class="msg-row">
+                                        <!-- Avatar: visible on LAST message of run, invisible spacer on all others -->
+                                        <span class="avatar avatar--small" *ngIf="message.senderId !== currentUserId()"
+                                            [class.avatar--hidden]="!isLastInRun(i)">
+                                            {{ getInitials(message.senderName) }}
+                                        </span>
+
+                                        <div class="bubble">
+
+                                            <div class="message__body" *ngIf="message.body">
+                                                <ng-container
+                                                    *ngFor="let segment of getMessageSegments(message.body); trackBy: trackBySegment">
+                                                    <p *ngIf="segment.type === 'text'">{{ segment.content }}</p>
+                                                    <pre
+                                                        *ngIf="segment.type === 'code'"><code>{{ segment.content }}</code></pre>
+                                                </ng-container>
+                                            </div>
+
+                                            <div class="attachment-grid" *ngIf="message.attachments.length">
+                                                <a class="attachment"
+                                                    *ngFor="let att of message.attachments; trackBy: trackByAttachment"
+                                                    [href]="att.fileUrl || null" target="_blank" rel="noopener">
+                                                    <img *ngIf="att.attachmentType === 'image' && att.fileUrl"
+                                                        [src]="att.fileUrl" [alt]="att.fileName" loading="lazy">
+                                                    <video *ngIf="att.attachmentType === 'video' && att.fileUrl"
+                                                        [src]="att.fileUrl" controls preload="metadata"></video>
+                                                    <audio *ngIf="att.attachmentType === 'audio' && att.fileUrl"
+                                                        [src]="att.fileUrl" controls preload="metadata"></audio>
+                                                    <div class="file-chip"
+                                                        *ngIf="att.attachmentType !== 'image' && att.attachmentType !== 'video' && att.attachmentType !== 'audio'">
+                                                        <i class="fas"
+                                                            [class.fa-file-lines]="att.attachmentType === 'document'"
+                                                            [class.fa-file]="att.attachmentType !== 'document'"></i>
+                                                        <div class="file-chip-info">
+                                                            <strong>{{ att.fileName }}</strong>
+                                                            <small>{{ formatBytes(att.sizeBytes) }}</small>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Read receipt below bubble (outgoing only) -->
+                                    <div class="read-receipt"
+                                        *ngIf="message.senderId === currentUserId() && message === getLastMyMessage()">
+                                        <ng-container *ngIf="message.pending">
+                                            <span class="tick tick--pending" title="Sending…">
+                                                <i class="fas fa-clock"></i>
+                                            </span>
+                                        </ng-container>
+                                        <ng-container
+                                            *ngIf="!message.pending && !message.failed && isMessageSeen(message)">
+                                            <span class="tick tick--seen" title="Seen by everyone">
+                                                <i class="fas fa-eye"></i>
+                                            </span>
+                                        </ng-container>
+                                        <ng-container
+                                            *ngIf="!message.pending && !message.failed && !isMessageSeen(message)">
+                                            <span class="tick tick--sent" title="Sent">
+                                                <i class="fas fa-check"></i>
+                                            </span>
+                                        </ng-container>
+                                    </div>
+
+                                </article>
+                            </ng-container>
+                        </ng-container>
+
+                    </div>
+                </ng-template>
+
+                <!-- Typing indicator -->
+                <div class="typing-line">{{ typingLabel() }}</div>
+
+                <!-- ── Composer ──────────────────────────────────────────── -->
+                <div class="composer-wrap">
+                    <input #fileInput class="file-input" type="file" multiple
+                        accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+                        (change)="onFilesSelected($event)">
+
+                    <!-- Pending attachments (above composer) -->
+                    <div class="selected-attachments" *ngIf="selectedAttachments().length">
+                        <div class="selected-attachment"
+                            *ngFor="let att of selectedAttachments(); trackBy: trackByAttachment">
+                            <img *ngIf="att.type === 'image' && att.previewUrl" [src]="att.previewUrl" [alt]="att.name">
+                            <i class="fas" *ngIf="att.type !== 'image'" [class.fa-file-audio]="att.type === 'audio'"
+                                [class.fa-file-video]="att.type === 'video'"
+                                [class.fa-file-lines]="att.type === 'document'"
+                                [class.fa-file]="att.type === 'file'"></i>
+                            <div class="selected-attachment-info">
+                                <strong>{{ att.name }}</strong>
+                                <small>{{ formatBytes(att.size) }}</small>
+                            </div>
+                            <button type="button" title="Remove" (click)="removeAttachment(att.id)">
+                                <i class="fas fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="composer">
+                        <!-- Left toolbar -->
+                        <div class="composer-tools-left">
+                            <button class="toolbar-btn" type="button" title="Bold" (click)="applyFormat('bold')">
+                                <i class="fas fa-bold"></i>
+                            </button>
+                            <button class="toolbar-btn" type="button" title="Italic" (click)="applyFormat('italic')">
+                                <i class="fas fa-italic"></i>
+                            </button>
+                            <button class="toolbar-btn" type="button" title="Code block"
+                                (click)="applyFormat('codeBlock')">
+                                <i class="fas fa-code"></i>
+                            </button>
+                        </div>
+
+                        <!-- Text input -->
+                        <textarea #messageInput rows="1" placeholder="Type a message" [ngModel]="messageBody()"
+                            name="message" (ngModelChange)="messageBody.set($event); setTyping()"
+                            (keydown.enter)="onEnterSend($event)">
+                        </textarea>
+
+                        <!-- Right toolbar -->
+                        <div class="composer-tools-right">
+                            <button class="toolbar-btn" type="button" title="Emoji">
+                                <i class="far fa-face-smile"></i>
+                            </button>
+                            <button class="toolbar-btn" type="button" title="Attach file" (click)="fileInput.click()">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <button class="toolbar-btn" type="button" title="Quote" (click)="applyFormat('quote')">
+                                <i class="fas fa-quote-left"></i>
+                            </button>
+                            <div class="composer-divider"></div>
+                            <button class="send-btn" type="button" title="Send" [disabled]="!canSend()"
+                                (click)="sendMessage()">
+                                <i class="fas" [class.fa-paper-plane]="!isSending()" [class.fa-spinner]="isSending()"
+                                    [class.fa-spin]="isSending()"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Info / Members panel ──────────────────────────────────── -->
+            <aside class="info-panel" *ngIf="isInfoPanelOpen()">
+                <div class="info-panel__header">
+                    <h4>{{ conversation.isGroup ? 'Group Info' : 'Profile' }}</h4>
+                    <button class="icon-btn" type="button" title="Close" (click)="isInfoPanelOpen.set(false)">
+                        <i class="fas fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Conversation identity -->
+                <div class="info-panel__identity">
+                    <span class="avatar avatar--lg">{{ getConversationAvatar(conversation) }}</span>
+                    <strong>{{ getConversationTitle(conversation) }}</strong>
+                    <span *ngIf="!conversation.isGroup" class="info-status"
+                        [class.status-online]="isUserOnline(conversation)"
+                        [class.status-offline]="!isUserOnline(conversation)">
+                        {{ isUserOnline(conversation) ? 'Online' : 'Offline' }}
+                    </span>
+                </div>
+
+                <!-- Members list (groups only) -->
+                <div class="info-panel__section" *ngIf="conversation.isGroup">
+                    <div class="info-section-label">
+                        <i class="fas fa-users"></i>
+                        Members · {{ conversation.members.length }}
+                    </div>
+                    <ul class="members-list">
+                        <li *ngFor="let memberId of conversation.members" class="member-item">
+                            <span class="presence-wrap">
+                                <span class="avatar avatar--small">{{ getInitials(getMemberName(memberId)) }}</span>
+                                <span class="presence" [class.online]="onlineUserIds().has(memberId)"
+                                    [class.offline]="!onlineUserIds().has(memberId)"></span>
+                            </span>
+                            <div class="member-item__info">
+                                <span class="member-item__name">{{ getMemberName(memberId) }}</span>
+                                <span class="member-item__status" [class.status-online]="onlineUserIds().has(memberId)" [class.status-offline]="!onlineUserIds().has(memberId)">
+                                    {{ onlineUserIds().has(memberId) ? 'Online' : 'Offline' }} 
+                              </span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+            </aside>
+
+        </div><!-- /.chat-body -->
+
     </main>
-  </ng-template>
+
+    <!-- ── Empty state ─────────────────────────────────────────────────────── -->
+    <ng-template #emptyState>
+        <main class="empty-panel">
+            <div class="empty-icon">
+                <i class="fas fa-comments"></i>
+            </div>
+            <h3>Open a conversation</h3>
+            <p>Pick a chat from the sidebar or start a direct message with a teammate.</p>
+        </main>
+    </ng-template>
 
 </section>

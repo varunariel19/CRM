@@ -68,4 +68,6 @@ var tokenRequest = new
 endpoints : 
 1. To sync all members => get all details from keka => 
 and register all member in CRM platform ! 
-2. 
+2. Fix the seen message 
+3. Tables for teams : ConverstationBox , Converstations , Users , 
+                      

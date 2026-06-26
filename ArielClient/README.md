@@ -205,3 +205,25 @@ for
   generate the whole summary of ticket 
 
 # Created Ticket History section which keep the track of each ticket through it's completion.
+
+
+# ConverstationBox Schema : 
+{
+     
+     string converstation_id,
+     string[] members,  // UserIds,
+     List<Converstations> // messages 
+}
+
+#  Conversations : 
+ {
+     string message_id,
+     string sender_id // userId,
+     string seenByIds // userId,
+     string content,
+     Attachments 
+     date createdAt,
+     date updatedAt ,
+ }
+
+ #
