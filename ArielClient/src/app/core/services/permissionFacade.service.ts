@@ -38,7 +38,7 @@ class SinglePermission {
     ) { }
 
     canView() { return this.svc.has(this.view); }
-    
+
 }
 
 class DoublePermission {
@@ -66,8 +66,10 @@ export class PermissionFacade {
     readonly tickets = new ModulePermissions(this.svc, PermissionKey.TicketsView, PermissionKey.TicketsCreate, PermissionKey.TicketsEdit, PermissionKey.TicketsDelete);
     readonly teamMembers = new ModulePermissions(this.svc, PermissionKey.TeamMembersView, PermissionKey.TeamMembersCreate, PermissionKey.TeamMembersEdit, PermissionKey.TeamMembersDelete);
     readonly appointments = new AppointmentPermissions(this.svc, PermissionKey.AppointmentsView, PermissionKey.AppointmentsCreate, PermissionKey.AppointmentsEdit);
-    readonly settings = new DoublePermission(this.svc, PermissionKey.SettingsView , PermissionKey.SettingsEdit);
+    readonly settings = new DoublePermission(this.svc, PermissionKey.SettingsView, PermissionKey.SettingsEdit);
     readonly dashboard = new SinglePermission(this.svc, PermissionKey.DashboardView);
     readonly auditHistory = new SinglePermission(this.svc, PermissionKey.AuditHistoryView);
+    readonly taskManagement = new AppointmentPermissions(this.svc, PermissionKey.TaskManagementView, PermissionKey.TaskManagementCreate, PermissionKey.TaskManagementEdit);
+
 
 }

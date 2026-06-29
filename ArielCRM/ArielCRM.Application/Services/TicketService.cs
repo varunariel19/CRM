@@ -7,16 +7,10 @@ using System.Text.Json;
 
 namespace ArielCRM.Application.Services
 {
-    public class TicketService : ITicketService
+    public class TicketService(ITicketRepository repository, IHistoryService historyService) : ITicketService
     {
-        private readonly ITicketRepository _repository;
-        private readonly IHistoryService _historyService;
-
-        public TicketService(ITicketRepository repository, IHistoryService historyService)
-        {
-            _repository = repository;
-            _historyService = historyService;
-        }
+        private readonly ITicketRepository _repository = repository;
+        private readonly IHistoryService _historyService = historyService;
 
         public async Task<List<TicketDto>> GetAllTicketsAsync()
         {

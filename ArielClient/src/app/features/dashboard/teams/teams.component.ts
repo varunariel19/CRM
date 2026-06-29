@@ -71,6 +71,9 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   viewerAttachment = signal<TeamMessageAttachment | null>(null);
   viewerAttachments = signal<TeamMessageAttachment[]>([]);
 
+  pendingDirect = signal<TeamUser | null>(null);
+
+
 
   selectedConversation = computed(() => this.conversations().find(c => c.id === this.selectedConversationId()) ?? null);
   availableUsers = computed(() => this.users().filter(u => u.id !== this.currentUserId()));
@@ -150,14 +153,14 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
 
   openViewer(attachment: TeamMessageAttachment, allAttachments: TeamMessageAttachment[]) {
-  this.viewerAttachment.set(attachment);
-  this.viewerAttachments.set(allAttachments);
-}
+    this.viewerAttachment.set(attachment);
+    this.viewerAttachments.set(allAttachments);
+  }
 
-closeViewer() {
-  this.viewerAttachment.set(null);
-  this.viewerAttachments.set([]);
-}
+  closeViewer() {
+    this.viewerAttachment.set(null);
+    this.viewerAttachments.set([]);
+  }
 
   onInput(event: Event) {
     const el = event.target as HTMLElement;
@@ -236,23 +239,16 @@ closeViewer() {
 
     const existing = this.findDirectConversation(user.id);
     if (existing) {
-      this.openingUserId.set(user.id);
+      this.pendingDirect.set(null);
       this.selectConversation(existing);
       this.search.set('');
-      this.openingUserId.set(null);
       return;
     }
 
-    this.openingUserId.set(user.id);
-    this.teamsService.createDirect(user.id).subscribe({
-      next: conversation => {
-        this.upsertConversation(conversation);
-        this.selectConversation(conversation);
-        this.search.set('');
-        this.openingUserId.set(null);
-      },
-      error: () => this.openingUserId.set(null)
-    });
+    this.selectedConversationId.set(null);
+    this.messages.set([]);
+    this.pendingDirect.set(user);
+    this.search.set('');
   }
 
   toggleMember(userId: string): void {
@@ -285,9 +281,31 @@ closeViewer() {
   }
 
   sendMessage(): void {
-    const conversationId = this.selectedConversationId();
+    debugger;
     const content = this.messageBody().trim();
     const attachments = this.selectedAttachments();
+    const pending = this.pendingDirect();
+
+    if (pending) {
+      if (this.isSending() || (!content && attachments.length === 0)) return;
+
+      this.isSending.set(true);
+      this.teamsService.createDirect(pending.id, content, attachments.map(a => a.file)).subscribe({
+        next: conversation => {
+          this.pendingDirect.set(null);
+          this.upsertConversation(conversation);
+          this.selectConversation(conversation);
+          this.messageBody.set('');
+          this.messageInputRef.nativeElement.innerHTML = '';
+          this.selectedAttachments.set([]);
+          this.isSending.set(false);
+        },
+        error: () => this.isSending.set(false)
+      });
+      return;
+    }
+
+    const conversationId = this.selectedConversationId();
     if (!conversationId || this.isSending() || (!content && attachments.length === 0)) return;
 
     const optimisticId = `pending-${crypto.randomUUID()}`;
@@ -296,12 +314,12 @@ closeViewer() {
     this.queueScroll(conversationId);
 
     this.messageBody.set('');
-    this.messageInputRef.nativeElement.innerHTML = '';  // ← add this
+    this.messageInputRef.nativeElement.innerHTML = '';
     this.selectedAttachments.set([]);
     this.isSending.set(true);
     this.teamsService.sendTyping(conversationId, false);
 
-    this.teamsService.sendMessage(conversationId, content, attachments.map(attachment => attachment.file)).subscribe({
+    this.teamsService.sendMessage(conversationId, content, attachments.map(a => a.file)).subscribe({
       next: saved => {
         attachments.forEach(attachment => this.revokePreview(attachment));
         this.isSending.set(false);
@@ -445,10 +463,29 @@ closeViewer() {
 
 
   handleSend(event: { content: string; attachments: PendingAttachment[] }) {
+    debugger;
+    const { content, attachments } = event;
+    const pending = this.pendingDirect();
+
+    if (pending) {
+      this.isSending.set(true);
+      this.teamsService.createDirect(pending.id, content, attachments.map(a => a.file)).subscribe({
+        next: conversation => {
+          attachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
+          this.pendingDirect.set(null);
+          this.upsertConversation(conversation);
+          this.selectConversation(conversation);
+          this.isSending.set(false);
+        },
+        error: () => this.isSending.set(false)
+      });
+      return;
+    }
+
+    // Normal flow — existing conversation
     const conversationId = this.selectedConversationId();
     if (!conversationId) return;
 
-    const { content, attachments } = event;
     const optimisticId = `pending-${crypto.randomUUID()}`;
     const optimisticMessage = this.buildOptimisticMessage(optimisticId, conversationId, content, attachments);
     this.messages.update(messages => [...messages, optimisticMessage]);

@@ -55,6 +55,8 @@ namespace ArielCRM.Infrastructure.DTOs
     public class CreateDirectConversationDto
     {
         public string UserId { get; set; } = string.Empty;
+        public string? FirstMessage { get; set; }
+        public List<IFormFile>? Attachments { get; set; }
     }
 
     public class CreateGroupConversationDto

@@ -11,7 +11,8 @@
         <div class="header-left">
 
           <div class="avatar">
-            <img src="https://i.pravatar.cc/100?img=12" alt="">
+            <img *ngIf="ticket.assignee.profileImage" [src]="ticket.assignee.profileImage" alt="">
+            <span *ngIf="!ticket.assignee.profileImage">{{ initials(ticket.assignee.name) }}</span>
           </div>
 
           <div>
@@ -36,13 +37,11 @@
 
         <h4>Description</h4>
 
-        <!-- VIEW MODE: render stored HTML safely -->
-        <div *ngIf="!isEditingDescription" class="description-view" [innerHTML]="safeDescription">
-        </div>
+        <div *ngIf="!isEditingDescription" class="description-view" [innerHTML]="safeDescription"></div>
 
-        <div *ngIf="isEditingDescription" class="editor-wrapper" [class.ai-editor-glow]="isDescriptionGlowing">
-
-          <p-editor [(ngModel)]="htmlContent" [style]="{ height: '300px' }">
+        <div *ngIf="isEditingDescription && perm.taskManagement.canEdit()" class="editor-wrapper"
+          [class.ai-editor-glow]="isDescriptionGlowing">
+          <p-editor [(ngModel)]="htmlContent" [style]="{ height: '300px' }" (onInit)="onEditorInit($event)">
           </p-editor>
 
           <p *ngIf="descriptionError" class="description-error">{{ descriptionError }}</p>
@@ -58,10 +57,9 @@
             <button class="btn-save" (click)="saveDescription()" [disabled]="isGeneratingDescription">Save
               Changes</button>
           </div>
-
         </div>
 
-        <div class="actions" *ngIf="!isEditingDescription">
+        <div class="actions" *ngIf="!isEditingDescription && perm.taskManagement.canEdit()">
           <button (click)="startEditing()">Edit</button>
         </div>
 
@@ -72,8 +70,7 @@
 
         <div class="summary-header">
           <h4>AI Summary</h4>
-
-          <button (click)="generateSummary()" [disabled]="isGeneratingSummary">
+          <button *ngIf="perm.taskManagement.canEdit()" (click)="generateSummary()" [disabled]="isGeneratingSummary">
             <span *ngIf="!isGeneratingSummary">Generate</span>
             <span *ngIf="isGeneratingSummary" class="generating-text">
               <span class="dot-1">.</span><span class="dot-2">.</span><span class="dot-3">.</span>
@@ -81,18 +78,11 @@
           </button>
         </div>
 
-        <p *ngIf="isGeneratingSummary && !summaryPoints.length" class="summary-empty">
-          Generating summary...
-        </p>
-
-        <p *ngIf="!isGeneratingSummary && summaryError" class="summary-error">
-          {{ summaryError }}
-        </p>
-
+        <p *ngIf="isGeneratingSummary && !summaryPoints.length" class="summary-empty">Generating summary...</p>
+        <p *ngIf="!isGeneratingSummary && summaryError" class="summary-error">{{ summaryError }}</p>
         <p *ngIf="!isGeneratingSummary && !summaryError && !summaryPoints.length" class="summary-empty">
           Click generate to create an AI summary of this ticket.
         </p>
-
         <ul *ngIf="summaryPoints.length">
           <li *ngFor="let item of summaryPoints">{{ item }}</li>
         </ul>
@@ -111,7 +101,7 @@
           </div>
         </div>
 
-        <!-- COMMENT BOX — hide on history-only tab -->
+        <!-- COMMENT BOX -->
         <div class="comment-box" *ngIf="activeTab !== 'history'">
           <textarea rows="4" placeholder="Write a comment..." [(ngModel)]="newComment"
             (keydown.enter)="$event.preventDefault(); submitComment()"></textarea>
@@ -128,12 +118,9 @@
           </div>
         </div>
 
-        <!-- ═══════════════════════════════════
-       ALL TAB — comments block, then history block
-  ════════════════════════════════════ -->
+        <!-- ALL TAB -->
         <ng-container *ngIf="activeTab === 'all'">
 
-          <!-- COMMENTS BLOCK -->
           <div class="feed-section">
             <div class="feed-section-label">
               <i class="ti ti-message-circle"></i>
@@ -144,7 +131,8 @@
             <div class="comment-list" *ngIf="comments().length; else noComments">
               <div class="comment-item" *ngFor="let comment of comments()">
                 <div class="comment-avatar">
-                  <img src="https://i.pravatar.cc/100?img=11" alt="">
+                  <img *ngIf="comment.author?.profileImage" [src]="comment.author?.profileImage" alt="">
+                  <span *ngIf="!comment.author?.profileImage">{{ initials(comment.author?.name ?? '?') }}</span>
                 </div>
                 <div class="comment-body">
                   <ng-container *ngIf="editingCommentId !== comment.id">
@@ -185,10 +173,8 @@
             </ng-template>
           </div>
 
-          <!-- DIVIDER -->
           <div class="feed-divider"></div>
 
-          <!-- HISTORY BLOCK -->
           <div class="feed-section">
             <div class="feed-section-label">
               <i class="ti ti-history"></i>
@@ -210,8 +196,7 @@
                     <span class="history-action">{{ h.title | lowercase }}</span>
                     <span class="history-time">{{ h.createdAt | date:'MMM d, y · h:mm a' }}</span>
                   </div>
-                  <div *ngIf="h.content" class="history-content" [innerHTML]="getSafeHistoryContent(h.content)">
-                  </div>
+                  <div *ngIf="h.content" class="history-content" [innerHTML]="getSafeHistoryContent(h.content)"></div>
                 </div>
               </div>
             </div>
@@ -223,13 +208,12 @@
 
         </ng-container>
 
-        <!-- ═══════════════════════════════════
-       COMMENTS ONLY TAB
-  ════════════════════════════════════ -->
+        <!-- COMMENTS ONLY TAB -->
         <div class="comment-list" *ngIf="activeTab === 'comments'">
           <div class="comment-item" *ngFor="let comment of comments()">
             <div class="comment-avatar">
-              <img src="https://i.pravatar.cc/100?img=11" alt="">
+              <img *ngIf="comment.author?.profileImage" [src]="comment.author?.profileImage" alt="">
+              <span *ngIf="!comment.author?.profileImage">{{ initials(comment.author?.name ?? '?') }}</span>
             </div>
             <div class="comment-body">
               <ng-container *ngIf="editingCommentId !== comment.id">
@@ -249,9 +233,7 @@
           <p *ngIf="!comments().length" class="feed-empty">No comments yet.</p>
         </div>
 
-        <!-- ═══════════════════════════════════
-       HISTORY ONLY TAB
-  ════════════════════════════════════ -->
+        <!-- HISTORY ONLY TAB -->
         <div class="history-list" *ngIf="activeTab === 'history'">
           <div class="history-item" *ngFor="let h of ticketHistory; let last = last">
             <div class="history-timeline">
@@ -266,8 +248,7 @@
                 <span class="history-action">{{ h.title | lowercase }}</span>
                 <span class="history-time">{{ h.createdAt | date:'MMM d, y · h:mm a' }}</span>
               </div>
-              <div *ngIf="h.content" class="history-content" [innerHTML]="getSafeHistoryContent(h.content)">
-              </div>
+              <div *ngIf="h.content" class="history-content" [innerHTML]="getSafeHistoryContent(h.content)"></div>
             </div>
           </div>
           <p *ngIf="!ticketHistory.length" class="feed-empty">No history yet.</p>
@@ -286,36 +267,59 @@
 
       <div class="detail-card">
         <label>Assigned To</label>
-        <select [ngModel]="ticket.assignee.id" (ngModelChange)="onAssigneeChange($event)">
-          <option *ngFor="let m of projectMembers" [value]="m.id">{{ m.name }}</option>
-        </select>
+        <div class="custom-select" [class.disabled]="!perm.taskManagement.canEdit()">
+          <div class="custom-select__trigger" (click)="perm.taskManagement.canEdit() && toggleAssigneeDropdown()">
+            <div class="avatar avatar--small">
+              <img *ngIf="selectedAssignee()?.profileImage" [src]="selectedAssignee()?.profileImage" alt="">
+              <span *ngIf="!selectedAssignee()?.profileImage">{{ initials(selectedAssignee()?.name ?? '?') }}</span>
+            </div>
+            <span>{{ selectedAssignee()?.name ?? 'Select Assignee' }}</span>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+
+          <div class="custom-select__dropdown" *ngIf="assigneeDropdownOpen">
+            <div class="custom-select__option" *ngFor="let m of projectMembers" (click)="selectAssignee(m)">
+              <div class="avatar avatar--small">
+                <img *ngIf="m.profileImage" [src]="m.profileImage" alt="">
+                <span *ngIf="!m.profileImage">{{ initials(m.name) }}</span>
+              </div>
+              <span>{{ m.name }}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="detail-card">
         <label>Reported By</label>
         <div class="user-row">
-          <img src="https://i.pravatar.cc/100?img=22">
+          <div class="comment-avatar">
+            <img *ngIf="ticket.reporter.profileImage" [src]="ticket.reporter.profileImage" alt="">
+            <span *ngIf="!ticket.reporter.profileImage">{{ initials(ticket.reporter.name) }}</span>
+          </div>
           <span>{{ ticket.reporter.name }}</span>
         </div>
       </div>
 
       <div class="detail-card">
         <label>Status</label>
-        <select [ngModel]="ticket.status" (ngModelChange)="onStatusChange($event)">
+        <select [ngModel]="ticket.status" (ngModelChange)="onStatusChange($event)"
+          [disabled]="!perm.taskManagement.canEdit()">
           <option *ngFor="let p of statuses" [value]="p">{{ p }}</option>
         </select>
       </div>
 
       <div class="detail-card">
         <label>Priority</label>
-        <select [ngModel]="ticket.priority" (ngModelChange)="onPriorityChange($event)">
+        <select [ngModel]="ticket.priority" (ngModelChange)="onPriorityChange($event)"
+          [disabled]="!perm.taskManagement.canEdit()">
           <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
         </select>
       </div>
 
       <div class="detail-card">
         <label>Type</label>
-        <select [ngModel]="ticket.type" (ngModelChange)="onTypeChange($event)">
+        <select [ngModel]="ticket.type" (ngModelChange)="onTypeChange($event)"
+          [disabled]="!perm.taskManagement.canEdit()">
           <option *ngFor="let p of types" [value]="p">{{ p }}</option>
         </select>
       </div>
@@ -323,11 +327,11 @@
       <div class="dates">
         <div>
           <span>Created</span>
-          <p>{{ ticket.createdAt | date:'MMM d, y, h:mm a'}}</p>
+          <p>{{ ticket.createdAt | date:'MMM d, y, h:mm a' }}</p>
         </div>
         <div>
           <span>Updated</span>
-          <p>{{ ticket.updatedAt| date:'MMM d, y, h:mm a'}}</p>
+          <p>{{ ticket.updatedAt | date:'MMM d, y, h:mm a' }}</p>
         </div>
       </div>
 

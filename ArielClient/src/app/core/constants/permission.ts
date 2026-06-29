@@ -44,6 +44,10 @@ export enum PermissionKey {
 
     SettingsView = 'SettingsView',
     SettingsEdit = 'SettingsEdit',
+
+    TaskManagementView = 'TaskManagementView',
+    TaskManagementCreate = 'TaskManagementCreate',
+    TaskManagementEdit = 'TaskManagementEdit',
 }
 
 export const PermissionCodeMap: Record<PermissionKey, string> = {
@@ -90,6 +94,11 @@ export const PermissionCodeMap: Record<PermissionKey, string> = {
 
     [PermissionKey.AuditHistoryView]: 'AuditHistory.View',
 
+
     [PermissionKey.SettingsView]: 'Settings.View',
     [PermissionKey.SettingsEdit]: 'Settings.Edit',
+
+    [PermissionKey.TaskManagementView]: 'TaskManagement.View',
+    [PermissionKey.TaskManagementCreate]: 'TaskManagement.Create',
+    [PermissionKey.TaskManagementEdit]: 'TaskManagement.Edit',
 };

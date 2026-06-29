@@ -68,7 +68,7 @@ export const menuItems: MenuItem[] = [
     icon: 'fas fa-tasks',
     label: 'Task Management',
     route: 'task-management',
-    permission: PermissionKey.ProjectsView,
+    permission: PermissionKey.TaskManagementView,
   },
   {
     icon: 'fas fa-history',

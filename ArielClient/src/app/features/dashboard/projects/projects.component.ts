@@ -89,7 +89,6 @@ export class ProjectsComponent implements OnInit {
   availableDeals = signal<{ id: string; name: string }[]>([]);
 
   ngOnInit(): void {
-    this.loadProjects();
   }
 
   private loadProjects(): void {

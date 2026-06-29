@@ -47,13 +47,6 @@
             </select>
           </div>
         </div>
-        <div class="form-row">
-          <!-- <div class="form-group">
-            <label>Due Date</label>
-            <input type="date" [(ngModel)]="newTask.dueDate" />
-          </div> -->
-        </div>
-
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
@@ -62,8 +55,8 @@
     </div>
   </div>
 
-  <!--  EDIT MODAL  -->
-  <div class="modal-overlay" *ngIf="showEditModal && editTask" (click)="closeEditModal($event)">
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" *ngIf="showEditModal && editTask && perm.taskManagement.canEdit()" (click)="closeEditModal($event)">
     <div class="modal-box">
       <div class="modal-header">
         <h2>Edit Task</h2>
@@ -108,14 +101,6 @@
             </select>
           </div>
         </div>
-        <div class="form-row">
-          <!-- <div class="form-group">
-            <label>Due Date</label>
-            <input type="date" [(ngModel)]="editTask.dueDate" />
-          </div> -->
-
-        </div>
-
       </div>
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showEditModal = false; editTask = null">Cancel</button>
@@ -124,7 +109,7 @@
     </div>
   </div>
 
-  <!--  HEADER  -->
+  <!-- HEADER -->
   <div class="pipeline-header">
     <div class="header-left">
       <h2>
@@ -138,17 +123,15 @@
         <i class="fas fa-download"></i>
         Export CSV
       </button>
-      <button class="new-deal-btn" (click)="showCreateModal = true">
+      <button *ngIf="perm.taskManagement.canCreate()" class="new-deal-btn" (click)="showCreateModal = true">
         <i class="fas fa-plus"></i>
         New Task
       </button>
     </div>
   </div>
 
-  <!--  FILTER BAR  -->
+  <!-- FILTER BAR -->
   <div class="filter-bar">
-
-    <!-- Project selector -->
     <div class="filter-group">
       <label><i class="fas fa-folder"></i> Project</label>
       <select [ngModel]="selectedProjectId()" (ngModelChange)="selectedProjectId.set($event); onProjectChange()">
@@ -157,7 +140,6 @@
       </select>
     </div>
 
-    <!-- Member filter (shows project members) -->
     <div class="filter-group" [class.disabled]="filterByMe()">
       <label><i class="fas fa-users"></i> Member</label>
       <select [ngModel]="selectedMemberId()" (ngModelChange)="selectedMemberId.set($event)" [disabled]="filterByMe()">
@@ -166,7 +148,6 @@
       </select>
     </div>
 
-    <!-- Priority filter -->
     <div class="filter-group">
       <label><i class="fas fa-flag"></i> Priority</label>
       <select [ngModel]="selectedPriority()" (ngModelChange)="selectedPriority.set($event)">
@@ -175,20 +156,16 @@
       </select>
     </div>
 
-    <!-- By Me toggle -->
-    <button class="btn-by-me" [class.active]="filterByMe()"
-      (click)="handleFilterByMe()">
+    <button class="btn-by-me" [class.active]="filterByMe()" (click)="handleFilterByMe()">
       <i class="fas fa-user-check"></i>
       Assigned to Me
     </button>
 
-    <!-- Clear -->
     <button class="btn-clear" *ngIf="hasActiveFilters" (click)="clearFilters()">
       <i class="fas fa-times"></i>
       Clear Filters
     </button>
 
-    <!-- Active filter chips -->
     <div class="filter-chips">
       <span class="chip" *ngIf="selectedProjectId()">
         <i class="fas fa-folder"></i>
@@ -201,12 +178,10 @@
         <i class="fas fa-flag"></i> {{ selectedPriority() }}
       </span>
     </div>
-
   </div>
 
-  <!--  BOARD\ -->
+  <!-- BOARD -->
   <div class="pipeline-board">
-
     <div class="pipeline-column" *ngFor="let col of columns">
 
       <div class="column-header">
@@ -217,18 +192,26 @@
         </div>
       </div>
 
-      <div class="deal-list" (dragover)="allowDrop($event)" (drop)="dropTask($event, col.key)">
+      <div class="deal-list"
+        [class.drop-enabled]="perm.taskManagement.canEdit()"
+        (dragover)="perm.taskManagement.canEdit() && allowDrop($event)"
+        (drop)="perm.taskManagement.canEdit() && dropTask($event, col.key)">
 
         <div *ngIf="getColumnTasks(col.key).length === 0" class="empty-state">
           No tasks here.
         </div>
 
-        <div class="deal-card" *ngFor="let task of getColumnTasks(col.key)" draggable="true" (click)="viewTicket(task)"
-          (dragstart)="dragTask($event, task, col.key)">
+        <div class="deal-card"
+          *ngFor="let task of getColumnTasks(col.key)"
+          [draggable]="perm.taskManagement.canEdit()"
+          (click)="viewTicket(task)"
+          (dragstart)="perm.taskManagement.canEdit() && dragTask($event, task, col.key)">
+
           <!-- Top row: ID + Priority badge -->
           <div class="task-top">
-            <span class="task-id">{{ task.taskId }}</span>
-            <span class="priority-badge" [style.color]="priorityMeta(task.priority).color"
+            <span class="task-id">#{{ task.taskId }}</span>
+            <span class="priority-badge"
+              [style.color]="priorityMeta(task.priority).color"
               [style.background]="priorityMeta(task.priority).bg">
               {{ priorityMeta(task.priority).icon }} {{ task.priority }}
             </span>
@@ -248,42 +231,51 @@
             <div>
               <span>TYPE</span>
               <p>
-                <span class="type-badge" [style.color]="typeMeta(task.type).color"
-                  [style.background]="typeMeta(task.type).bg">{{ task.type }}</span>
+                <span class="type-badge"
+                  [style.color]="typeMeta(task.type).color"
+                  [style.background]="typeMeta(task.type).bg">
+                  {{ task.type }}
+                </span>
               </p>
             </div>
-            <!-- <div>
-              <span>Due Date</span>
-              <p>
-                <i class="fas fa-calendar"></i>
-                {{ task.dueDate }}
-              </p>
-            </div> -->
           </div>
-
 
           <!-- Footer: assignee + actions -->
           <div class="deal-footer">
             <div class="owner">
-              <div class="avatar">{{ initials(task?.assignee?.name ? task.assignee.name : '?') }}</div>
-              {{ task?.assignee?.name ? task.assignee.name : '-' }}
+              <div class="avatar">
+                <img *ngIf="task.assignee?.profileImage" [src]="task.assignee.profileImage" alt="">
+                <span *ngIf="!task.assignee?.profileImage">
+                  {{ initials(task.assignee?.name ?? '?') }}
+                </span>
+              </div>
+              {{ task?.assignee?.name ?? '-' }}
             </div>
+
             <div class="deal-actions">
-              <i class="fas fa-pen" title="Edit" (click)="openEditModal($event , task)"></i>
-              <i class="fas fa-chevron-left" title="Move Left" (click)="moveLeft(col.key, task)"></i>
-              <i class="fas fa-chevron-right" title="Move Right" (click)="moveRight(col.key, task)"></i>
+              <i *ngIf="perm.taskManagement.canEdit()"
+                class="fas fa-pen"
+                title="Edit"
+                (click)="openEditModal($event, task)"></i>
+              <i *ngIf="perm.taskManagement.canEdit()"
+                class="fas fa-chevron-left"
+                title="Move Left"
+                (click)="moveLeft(col.key, task)"></i>
+              <i *ngIf="perm.taskManagement.canEdit()"
+                class="fas fa-chevron-right"
+                title="Move Right"
+                (click)="moveRight(col.key, task)"></i>
             </div>
           </div>
 
         </div>
       </div>
     </div>
-
   </div>
-
 </div>
 
-<app-view-ticket *ngIf="selectedTicket"
+<app-view-ticket
+  *ngIf="selectedTicket"
   [projectMembers]="assignee"
   [isOpen]="showTicketModal"
   [ticket]="selectedTicket"

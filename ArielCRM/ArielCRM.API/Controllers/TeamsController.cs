@@ -88,40 +88,104 @@ namespace ArielCRM.API.Controllers
 
             return Ok(messages);
         }
+
         [HttpPost("conversations/direct")]
-        public async Task<ActionResult<TeamConversationDto>> CreateDirectConversation(CreateDirectConversationDto dto)
+        [RequestSizeLimit(420_000_000)]
+        public async Task<ActionResult<TeamConversationDto>> CreateDirectConversation([FromForm] CreateDirectConversationDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.UserId) || dto.UserId == UserId)
                 return BadRequest(new { message = "Select another employee to start a direct chat." });
 
+            var content = (dto.FirstMessage ?? string.Empty).Trim();
+            var files = (dto.Attachments ?? []).Where(f => f.Length > 0).ToList();
+
+            if (content.Length == 0 && files.Count == 0)
+                return BadRequest(new { message = "A message is required to start a conversation." });
+            if (content.Length > 4000)
+                return BadRequest(new { message = "Message is too long." });
+            if (files.Count > MaxAttachmentCount)
+                return BadRequest(new { message = $"Attach up to {MaxAttachmentCount} files per message." });
+            if (files.Any(f => f.Length > MaxAttachmentBytes))
+                return BadRequest(new { message = "Each attachment must be 50 MB or smaller." });
+
             var targetExists = await db.Users.AnyAsync(u => u.Id == dto.UserId);
             if (!targetExists) return NotFound(new { message = "Employee not found." });
 
-            var existing = await BaseConversationQuery()
-                .Where(c => !c.IsGroup && c.Members.Contains(UserId) && c.Members.Contains(dto.UserId))
-                .FirstOrDefaultAsync();
+            // If conversation already exists, just send the message normally into it
+            var existing = await db.TeamConversations
+                .FirstOrDefaultAsync(c => !c.IsGroup && c.Members.Contains(UserId) && c.Members.Contains(dto.UserId));
+
+            string conversationId;
 
             if (existing is not null)
             {
-                var existingUsers = await LoadUsers(existing.Members);
-                return Ok(MapConversation(existing, existingUsers));
+                conversationId = existing.Id;
+            }
+            else
+            {
+                var conversation = new TeamConversation
+                {
+                    IsGroup = false,
+                    CreatedById = UserId,
+                    Members = [UserId, dto.UserId]
+                };
+                db.TeamConversations.Add(conversation);
+                await db.SaveChangesAsync();
+                conversationId = conversation.Id;
             }
 
-            var conversation = new TeamConversation
+            // Save the first message exactly like SendMessage does
+            var now = DateTime.UtcNow;
+            var message = new TeamMessage
             {
-                IsGroup = false,
-                CreatedById = UserId,
-                Members = [UserId, dto.UserId]
+                ConversationId = conversationId,
+                SenderId = UserId,
+                SeenByIds = [UserId],
+                Content = content,
+                CreatedAt = now
             };
 
-            db.TeamConversations.Add(conversation);
+            foreach (var file in files)
+            {
+                var uploaded = await storageService.UploadFileAsync(file);
+                message.Attachments.Add(new TeamMessageAttachment
+                {
+                    FileName = Path.GetFileName(file.FileName),
+                    FileUrl = uploaded.FileUrl,
+                    UploadId = uploaded.FileId,
+                    ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
+                    AttachmentType = GetAttachmentType(file.ContentType, file.FileName),
+                    SizeBytes = file.Length,
+                    CreatedAt = now
+                });
+            }
+
+            // Update conversation's LastMessageAt
+            var targetConversation = await db.TeamConversations.FirstAsync(c => c.Id == conversationId);
+            targetConversation.LastMessageAt = now;
+
+            db.TeamMessages.Add(message);
             await db.SaveChangesAsync();
 
-            var created = await BaseConversationQuery().FirstAsync(c => c.Id == conversation.Id);
+            // Load the saved message with sender + attachments for SignalR broadcast
+            var savedMessage = await db.TeamMessages
+                .AsNoTracking()
+                .Include(m => m.Sender)
+                .Include(m => m.Attachments)
+                .FirstAsync(m => m.Id == message.Id);
+
+            var mappedMessage = MapMessage(savedMessage);
+
+            // Load conversation for response
+            var created = await BaseConversationQuery().FirstAsync(c => c.Id == conversationId);
             var users = await LoadUsers(created.Members);
-            var mapped = MapConversation(created, users);
-            await hubContext.Clients.Users(created.Members).SendAsync("ConversationChanged", mapped);
-            return Ok(mapped);
+            var mappedConversation = MapConversation(created, users);
+
+            // Broadcast both events to all members
+            await hubContext.Clients.Users(created.Members).SendAsync("ConversationChanged", mappedConversation);
+            await hubContext.Clients.Users(created.Members).SendAsync("MessageReceived", mappedMessage);
+
+            return Ok(mappedConversation);
         }
 
         [HttpPost("conversations/groups")]

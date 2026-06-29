@@ -40,6 +40,8 @@ import { TeamState } from '../../state/team.state';
 import { menuItems } from '../../core/constants/menuItems';
 import { LoaderService } from '../../core/services/loader.service';
 import { TeamsComponent } from '../../features/dashboard/teams/teams.component';
+import { ProjectService } from '../../services/project.service';
+import { ProjectState } from '../../state/project.state';
 
 @Component({
   selector: 'app-dashboard',
@@ -77,6 +79,7 @@ export class DashboardComponent implements OnInit {
   taskState = inject(TaskState);
   historyState = inject(HistoryState);
   teamState = inject(TeamState);
+  projectState = inject(ProjectState);
 
   leadService = inject(LeadService);
   contactService = inject(ContactService);
@@ -84,7 +87,7 @@ export class DashboardComponent implements OnInit {
   ticketService = inject(TicketService);
   meetingService = inject(MeetingService);
   historyService = inject(HistoryService);
-
+  projectService = inject(ProjectService);
   selectedMenu = this.menuState.selectedMenu;
 
   teamMemberList: TeamMember[] = [];
@@ -121,6 +124,14 @@ export class DashboardComponent implements OnInit {
       error: (err) => {
         console.error('Failed to load leads', err);
       }
+    });
+
+    this.projectService.fetchAllProjects().subscribe({
+      next: (res: any) => {
+        this.projectState.setProjects(res.data ?? res);
+        this.projectState.setLoading(false);
+      },
+      error: () => this.projectState.setLoading(false)
     });
 
     this.contactService.getAllContacts().subscribe({
@@ -193,28 +204,28 @@ export class DashboardComponent implements OnInit {
     const item = menuItems[this.menuState.activeIndex() ?? 0];
     this.loader.show("reloading...", 'lg');
     setTimeout(() => {
-      
-    switch (item.route) {
-      case "leads": {
-        this.leadService.handleGetLeads().subscribe({
-          next: (leads) => {
-            this.leadState.setLeads(leads);
-          },
-          error: (err) => {
-            console.error('Failed to load leads', err);
-          }
-        });
-        break;
+
+      switch (item.route) {
+        case "leads": {
+          this.leadService.handleGetLeads().subscribe({
+            next: (leads) => {
+              this.leadState.setLeads(leads);
+            },
+            error: (err) => {
+              console.error('Failed to load leads', err);
+            }
+          });
+          break;
+        }
+
+        default: {
+          this.loader.hide();
+          return;
+        };
       }
 
-      default: {
-        this.loader.hide();
-        return;
-      };
-    }
-
-    this.loader.hide();
-     }, 500);
+      this.loader.hide();
+    }, 500);
   }
 
 

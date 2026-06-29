@@ -11,8 +11,8 @@ export const endpoints = {
     authenticate: `${BASE_URL}/api/auth/me`,
 
     // user
-     user : `${BASE_URL}/api/user`,
-       
+    user: `${BASE_URL}/api/user`,
+
 
     // leads 
     getLeads: `${BASE_URL}/api/leads`,
@@ -66,11 +66,11 @@ export const endpoints = {
 
 
     // task management ! 
-    taskM : `${BASE_URL}/api/tasks`,
+    taskM: `${BASE_URL}/api/tasks`,
 
 
     // commments : 
-    comments : `${BASE_URL}/api/comments`,
+    comments: `${BASE_URL}/api/comments`,
 
     // teams messaging
     teams: {
@@ -95,6 +95,14 @@ export const endpoints = {
     DESIGNATIONS: `${BASE_URL}/api/admin/designations`,
 
 }
+
+export const appwrite = {
+    production: false,
+    appwriteEndpoint: '',
+    appwriteProjectId: '',
+    appwriteBucketId: ''
+}
+
 
 export enum Routes {
     signIn = "/sign-in",

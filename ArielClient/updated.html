@@ -1,7 +1,36 @@
 <main class="chat-panel" *ngIf="selectedConversation() || pendingDirect(); else emptyState">
     <ng-container *ngIf="selectedConversation() as conversation; else pendingHeader">
         <header class="chat-header">
-            <!-- your existing header unchanged -->
+            <div class="chat-title">
+                <button class="icon-btn sidebar-open-btn" type="button" title="Open sidebar"
+                    *ngIf="isSidebarCollapsed()" (click)="isSidebarCollapsed.set(false)">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <span class="presence-wrap">
+                    <span class="avatar">{{ getConversationAvatar(conversation) }}</span>
+                    <span class="presence header-presence" [class.online]="isUserOnline(conversation)"
+                        [class.offline]="!isUserOnline(conversation)" *ngIf="!conversation.isGroup"></span>
+                </span>
+
+                <div>
+                    <h3>{{ getConversationTitle(conversation) }}</h3>
+                    <p *ngIf="!conversation.isGroup" [class.status-online]="isUserOnline(conversation)"
+                        [class.status-offline]="!isUserOnline(conversation)">
+                        {{ isUserOnline(conversation) ? 'Online' : 'Offline' }}
+                    </p>
+                    <p *ngIf="conversation.isGroup" class="group-member-count">
+                        <i class="fas fa-users"></i> {{ conversation.members.length }} members
+                    </p>
+                </div>
+            </div>
+
+            <div class="chat-actions">
+                <button class="icon-btn" type="button" title="Info" [class.active]="isInfoPanelOpen()"
+                    (click)="isInfoPanelOpen.set(!isInfoPanelOpen())">
+                    <i class="fas fa-circle-info"></i>
+                </button>
+            </div>
         </header>
     </ng-container>
 
@@ -45,69 +74,7 @@
 
             <!-- Existing messages block — only when real conversation exists -->
             <ng-container *ngIf="selectedConversation() as conversation">
-                <!-- your existing isLoadingMessages / messagesTpl block unchanged -->
-            </ng-container>
-
-            <!-- Composer always shown in both states -->
-            <div class="composer-wrap">
-                <input #fileInput class="file-input" type="file" multiple
-                    accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
-                    (change)="onFilesSelected($event)">
-
-                <div class="selected-attachments" *ngIf="selectedAttachments().length">
-                    <!-- your existing attachment previews unchanged -->
-                </div>
-
-                <app-composer [disabled]="isSending()" (onSend)="handleSend($event)" (onTyping)="handleTyping($event)">
-                </app-composer>
-            </div>
-        </div>
-
-        <!-- Info panel only for real conversations -->
-        <aside class="info-panel" *ngIf="isInfoPanelOpen() && selectedConversation() as conversation">
-            <!-- your existing info panel unchanged -->
-        </aside>
-    </div>
-</main>
-
-
-<main class="chat-panel" *ngIf="selectedConversation() as conversation; else emptyState">
-    <header class="chat-header">
-        <div class="chat-title">
-            <button class="icon-btn sidebar-open-btn" type="button" title="Open sidebar" *ngIf="isSidebarCollapsed()"
-                (click)="isSidebarCollapsed.set(false)">
-                <i class="fas fa-bars"></i>
-            </button>
-
-            <span class="presence-wrap">
-                <span class="avatar">{{ getConversationAvatar(conversation) }}</span>
-                <span class="presence header-presence" [class.online]="isUserOnline(conversation)"
-                    [class.offline]="!isUserOnline(conversation)" *ngIf="!conversation.isGroup"></span>
-            </span>
-
-            <div>
-                <h3>{{ getConversationTitle(conversation) }}</h3>
-                <p *ngIf="!conversation.isGroup" [class.status-online]="isUserOnline(conversation)"
-                    [class.status-offline]="!isUserOnline(conversation)">
-                    {{ isUserOnline(conversation) ? 'Online' : 'Offline' }}
-                </p>
-                <p *ngIf="conversation.isGroup" class="group-member-count">
-                    <i class="fas fa-users"></i> {{ conversation.members.length }} members
-                </p>
-            </div>
-        </div>
-
-        <div class="chat-actions">
-            <button class="icon-btn" type="button" title="Info" [class.active]="isInfoPanelOpen()"
-                (click)="isInfoPanelOpen.set(!isInfoPanelOpen())">
-                <i class="fas fa-circle-info"></i>
-            </button>
-        </div>
-    </header>
-
-    <div class="chat-body">
-        <div class="messages-wrap">
-            <ng-container *ngIf="isLoadingMessages(); else messagesTpl">
+               <ng-container *ngIf="isLoadingMessages(); else messagesTpl">
                 <div class="skeletons">
                     <div class="message-skeleton" *ngFor="let s of [1,2,3,4,5,6]" [class.right]="s % 3 === 0">
                         <div class="skeleton-avatar"></div>
@@ -119,7 +86,8 @@
                 </div>
             </ng-container>
 
-            <ng-template #messagesTpl>
+
+             <ng-template #messagesTpl>
                 <div class="messages" #messagesScroller (scroll)="onMessagesScroll($event)">
 
                     <div class="load-more-indicator" *ngIf="isLoadingMoreMessages() || hasMoreMessages()">
@@ -209,6 +177,7 @@
                     </ng-container>
                 </div>
             </ng-template>
+            </ng-container>
 
             <div class="typing-line" *ngIf="typingLabel()">
                 <div class="typing-bubble">
@@ -219,13 +188,14 @@
                 <span class="typing-name">{{ typingLabel() }}</span>
             </div>
 
+            <!-- Composer always shown in both states -->
             <div class="composer-wrap">
                 <input #fileInput class="file-input" type="file" multiple
                     accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
                     (change)="onFilesSelected($event)">
 
                 <div class="selected-attachments" *ngIf="selectedAttachments().length">
-                    <div class="selected-attachment"
+                  <div class="selected-attachment"
                         *ngFor="let att of selectedAttachments(); trackBy: trackByAttachment">
                         <img *ngIf="att.type === 'image' && att.previewUrl" [src]="att.previewUrl" [alt]="att.name">
                         <i class="fas" *ngIf="att.type !== 'image'" [class.fa-file-audio]="att.type === 'audio'"
@@ -241,14 +211,13 @@
                     </div>
                 </div>
 
-
-
                 <app-composer [disabled]="isSending()" (onSend)="handleSend($event)" (onTyping)="handleTyping($event)">
                 </app-composer>
             </div>
         </div>
 
-        <aside class="info-panel" *ngIf="isInfoPanelOpen()">
+        <!-- Info panel only for real conversations -->
+        <aside class="info-panel" *ngIf="isInfoPanelOpen() && selectedConversation() as conversation">
             <div class="info-panel__header">
                 <h4>{{ conversation.isGroup ? 'Group Info' : 'Chat Info' }}</h4>
                 <button class="icon-btn" type="button" title="Close" (click)="isInfoPanelOpen.set(false)">

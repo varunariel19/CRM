@@ -12,14 +12,18 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { EditorModule } from 'primeng/editor';
+import { Editor, EditorModule } from 'primeng/editor';
 import { Task, TaskPriority, TaskStatus, TaskType } from '../../services/task-management.service';
 import { ProjectMember } from '../../features/dashboard/projects/projects.component';
 import { CommentState, TicketComment } from '../../state/comment.state';
 import { AuthState } from '../../state/auth.state';
 import { AiService } from '../../core/services/ai-modal.service';
+import { PermissionFacade } from '../../core/services/permissionFacade.service';
+import { firstValueFrom } from 'rxjs';
+import { AppwriteService } from '../../core/services/appwrite.service';
 
 
 export interface TicketHistory {
@@ -51,12 +55,15 @@ export interface UserSummary {
 
 
 export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
-
+  @ViewChild('editor') editor!: Editor;
   @Input() isOpen = false;
   @Input({ required: true }) ticket!: Task;
   @Input({ required: true }) projectMembers!: ProjectMember[];
   @Output() closeModal = new EventEmitter<void>();
   @Output() ticketUpdated = new EventEmitter<Task>();
+
+
+  perm = inject(PermissionFacade);
 
   readonly priorities: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
   readonly types: TaskType[] = ['FEATURE', 'BUG', 'TASK', 'CHORE'];
@@ -87,10 +94,11 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
   comments = this.commentState.sortedComments;
   isLoading = this.commentState.isLoading;
   commentError = this.commentState.error;
-  isSubmitting = (id: string) => this.commentState.isCommentSubmitting(id);
+  assigneeDropdownOpen = false;
 
+  quillInstance: any;
 
-  constructor(private sanitizer: DomSanitizer) { }
+  constructor(private sanitizer: DomSanitizer, private appwrite: AppwriteService) { }
 
   ngOnInit(): void {
     this.loadTicketContext();
@@ -117,6 +125,67 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
   }
 
 
+  onEditorInit(event: any): void {
+    this.quillInstance = event.editor;
+
+    const toolbar = this.quillInstance.getModule('toolbar');
+    toolbar.addHandler('image', () => this.handleImageInsert());
+  }
+
+
+  handleImageInsert(): void {
+    debugger;
+    const input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.click();
+
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+
+      document.body.style.cursor = 'wait';
+      try {
+        const url = await this.appwrite.uploadFile(file);
+
+        const range = this.quillInstance.getSelection(true);
+        this.quillInstance.insertEmbed(range.index, 'image', url);
+        this.quillInstance.setSelection(range.index + 1);
+      } catch {
+        // show error toast
+      } finally {
+        document.body.style.cursor = 'default';
+      }
+    };
+  }
+
+
+  isSubmitting = (id: string) => this.commentState.isCommentSubmitting(id);
+
+
+
+
+  selectedAssignee() {
+    return this.projectMembers.find(m => m.id === this.ticket.assignee.id) ?? null;
+  }
+
+  toggleAssigneeDropdown() {
+    this.assigneeDropdownOpen = !this.assigneeDropdownOpen;
+  }
+
+  selectAssignee(member: ProjectMember) {
+    this.assigneeDropdownOpen = false;
+    this.onAssigneeChange(member.id);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(e: MouseEvent) {
+    if (!(e.target as HTMLElement).closest('.custom-select')) {
+      this.assigneeDropdownOpen = false;
+    }
+  }
+
+
   startEditing() {
     this.htmlContent = this.ticket?.description ?? "";
     this.descriptionError = '';
@@ -139,6 +208,11 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     this.descriptionError = '';
     this.isEditingDescription = false;
   }
+
+  initials(name: string): string {
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
 
   async generateDescription(): Promise<void> {
     if (this.isGeneratingDescription) return;
@@ -470,7 +544,7 @@ ${comments || 'No comments available.'}
   ticketHistory: TicketHistory[] = [
     {
       id: crypto.randomUUID(),
-      ticketId:  "",
+      ticketId: "",
       ticket: null!,
       title: 'Status changed',
       content: `<span class="from-pill old">TODO</span><span class="arrow">→</span><span class="from-pill new status">IN_PROGRESS</span>`,
@@ -479,7 +553,7 @@ ${comments || 'No comments available.'}
     },
     {
       id: crypto.randomUUID(),
-      ticketId:  "",
+      ticketId: "",
 
       ticket: null!,
       title: 'Assignee changed',
@@ -489,7 +563,7 @@ ${comments || 'No comments available.'}
     },
     {
       id: crypto.randomUUID(),
-      ticketId:  "",
+      ticketId: "",
 
       ticket: null!,
       title: 'Priority changed',
@@ -499,7 +573,7 @@ ${comments || 'No comments available.'}
     },
     {
       id: crypto.randomUUID(),
-      ticketId:  "",
+      ticketId: "",
 
       ticket: null!,
       title: 'Description updated',
@@ -509,7 +583,7 @@ ${comments || 'No comments available.'}
     },
     {
       id: crypto.randomUUID(),
-      ticketId:  "",
+      ticketId: "",
 
       ticket: null!,
       title: 'Bulk update',

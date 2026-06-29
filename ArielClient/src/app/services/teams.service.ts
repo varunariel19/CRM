@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import * as signalR from '@microsoft/signalr';
 import { endpoints, TeamsHubUrl } from '../core/constants/endpoints';
 import { TeamConversation, TeamMessage, TeamUser } from '../core/types/teams.type';
+import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class TeamsService {
@@ -34,8 +35,13 @@ export class TeamsService {
       withCredentials: true
     });
   }
-  createDirect(userId: string) {
-    return this.http.post<TeamConversation>(endpoints.teams.direct, { userId }, { withCredentials: true });
+
+  createDirect(userId: string, content: string, files: File[] = []): Observable<TeamConversation> {
+    const formData = new FormData();
+    formData.append('userId', userId);
+    formData.append('firstMessage', content);
+    files.forEach(file => formData.append('attachments', file));
+    return this.http.post<TeamConversation>(endpoints.teams.direct, formData, { withCredentials: true });
   }
 
   createGroup(name: string, memberIds: string[]) {

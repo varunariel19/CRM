@@ -11,7 +11,7 @@ INSERT INTO access_levels (id, name, access_level) VALUES
 -- ============================================================
 -- PERMISSIONS
 -- ============================================================
-INSERT INTO permissions (id, code, description) VALUES
+    INSERT INTO permissions (id, code, description) VALUES
 ('564A1FD1-12A9-4282-A152-1D0B2D20669E', 'Dashboard.View', 'Access and view analytics dashboard with charts and performance metrics'),
 ('8D8AACA7-5422-4881-B8EE-DEAAF660A72F', 'Leads.View', 'View lead list, details, and associated contact information'),
 ('1662A0B5-F75B-45D1-823E-8576E8515573', 'Leads.Create', 'Add new leads with contact details and source information'),
@@ -46,7 +46,11 @@ INSERT INTO permissions (id, code, description) VALUES
 ('569E8B1B-B4D1-4201-A93C-83F2C48A5CA5', 'TeamMembers.Delete', 'Permanently remove team member accounts from the system'),
 ('CA2405D6-2162-4127-87FF-04576E62AF71', 'AuditHistory.View', 'View detailed audit logs of user actions, changes, and system events'),
 ('A1B2C3D4-E5F6-7890-ABCD-EF1234567891', 'Settings.View', 'View system settings and configuration'),
-('B2C3D4E5-F6A7-8901-BCDE-F12345678912', 'Settings.Edit', 'Modify system settings and configuration');
+('B2C3D4E5-F6A7-8901-BCDE-F12345678912', 'Settings.Edit', 'Modify system settings and configuration')
+('E5F6A7B8-C9D0-1234-EF01-345678912345', 'TaskManagement.View', 'View tasks and task details'),
+('F6A7B8C9-D0E1-2345-F012-456789123456', 'TaskManagement.Create', 'Create new tasks'),
+('C9D0E1F2-A3B4-5678-2345-789123456789', 'TaskManagement.Edit', 'Edit and update existing tasks');
+
 
 -- ============================================================
 -- ACCESS LEVEL PERMISSIONS
@@ -89,6 +93,9 @@ INSERT INTO access_level_permissions (id, access_level_id, permission_id) VALUES
 ('15314100-5120-4021-B3E2-AE5941A9432C', '664430DB-9D17-4199-BEFE-4D6BE134FCB3', 'CA2405D6-2162-4127-87FF-04576E62AF71'), -- AuditHistory.View
 ('C3D4E5F6-A7B8-9012-CDEF-123456789123', '664430DB-9D17-4199-BEFE-4D6BE134FCB3', 'A1B2C3D4-E5F6-7890-ABCD-EF1234567891'), -- Settings.View
 ('D4E5F6A7-B8C9-0123-DEF0-234567891234', '664430DB-9D17-4199-BEFE-4D6BE134FCB3', 'B2C3D4E5-F6A7-8901-BCDE-F12345678912'), -- Settings.Edit
+('A7B8C9D0-E1F2-3456-0123-567891234567', '664430DB-9D17-4199-BEFE-4D6BE134FCB3', 'E5F6A7B8-C9D0-1234-EF01-345678912345'), -- TaskManagement.View
+('B8C9D0E1-F2A3-4567-1234-678912345678', '664430DB-9D17-4199-BEFE-4D6BE134FCB3', 'F6A7B8C9-D0E1-2345-F012-456789123456'), -- TaskManagement.Create
+('D0E1F2A3-B4C5-6789-3456-891234567890', '664430DB-9D17-4199-BEFE-4D6BE134FCB3', 'C9D0E1F2-A3B4-5678-2345-789123456789'); -- TaskManagement.Edit
 
 -- Manager
 ('4BDCDBF0-2F01-4FB2-A40E-7A769B20C79F', '514A8C16-84FF-4714-81B3-51A528A8D6AC', '564A1FD1-12A9-4282-A152-1D0B2D20669E'), -- Dashboard.View

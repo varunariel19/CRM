@@ -18,6 +18,7 @@ import { finalize } from 'rxjs';
 import { AuthState } from '../../../state/auth.state';
 import { LoaderService } from '../../../core/services/loader.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 
 @Component({
   selector: 'app-task-management',
@@ -34,6 +35,7 @@ export class TaskManagementComponent {
   taskService = inject(TaskManageService);
   loader = inject(LoaderService);
   toast = inject(ToastService);
+  perm = inject(PermissionFacade);
 
   readonly currentUserId = this.authState.userId();
 

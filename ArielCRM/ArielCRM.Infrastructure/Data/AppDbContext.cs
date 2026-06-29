@@ -230,6 +230,16 @@ namespace ArielCRM.Infrastructure.Data
                 .HasForeignKey(r => r.RevertedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
+
+
+            modelBuilder.Entity<TicketHistory>()
+                .OwnsOne(h => h.CommitedBy, cb =>
+                {
+                    cb.Property(x => x.Id).HasColumnName("CommitedById");
+                    cb.Property(x => x.Name).HasColumnName("CommitedByName");
+                    cb.Property(x => x.ProfileImage).HasColumnName("CommitedByProfileImage");
+                });
+
             // ── Indexes ───────────────────────────────
 
             modelBuilder.Entity<User>()
