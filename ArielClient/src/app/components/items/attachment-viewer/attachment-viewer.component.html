@@ -1,0 +1,152 @@
+<div class="viewer-backdrop" (click)="onBackdropClick($event)">
+  <div class="viewer-shell">
+
+    <!-- Header -->
+    <div class="viewer-header">
+      <div class="viewer-meta">
+        <i class="fas fa-file viewer-meta__icon" aria-hidden="true"></i>
+        <span class="viewer-meta__name">{{ currentFileName() }}</span>
+        <span class="viewer-meta__size" *ngIf="currentSize()">
+          {{ formatBytes(currentSize()) }}
+        </span>
+        <span class="viewer-meta__badge" *ngIf="allAttachments().length > 1">
+          {{ currentIndex() + 1 }} / {{ allAttachments().length }}
+        </span>
+      </div>
+      <div class="viewer-header__actions">
+        <button class="vh-btn" type="button" title="Download" (click)="download()">
+          <i class="fas fa-download"></i>
+        </button>
+        <a class="vh-btn" [href]="currentUrl()" target="_blank" rel="noopener" title="Open in new tab">
+          <i class="fas fa-arrow-up-right-from-square"></i>
+        </a>
+        <button class="vh-btn vh-btn--close" type="button" title="Close (Esc)" (click)="close()">
+          <i class="fas fa-xmark"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="viewer-body">
+
+      <!-- Prev nav -->
+      <button class="viewer-nav viewer-nav--prev" type="button"
+        *ngIf="hasPrev()" (click)="prev()" title="Previous (←)">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+
+      <!-- Loading spinner -->
+      <div class="viewer-spinner"
+        *ngIf="state() === 'loading' || state() === 'fetching-text'">
+        <i class="fas fa-circle-notch fa-spin"></i>
+        <span>{{ state() === 'fetching-text' ? 'Loading file…' : 'Loading…' }}</span>
+      </div>
+
+      <!-- Error -->
+      <div class="viewer-error" *ngIf="state() === 'error'">
+        <i class="fas fa-triangle-exclamation"></i>
+        <p>Could not load this file.</p>
+        <button type="button" class="viewer-dl-btn" (click)="download()">
+          <i class="fas fa-download"></i> Download instead
+        </button>
+      </div>
+
+      <!-- IMAGE -->
+      <div class="viewer-content viewer-content--image"
+        *ngIf="type() === 'image' && state() !== 'error' && state() !== 'loading'">
+        <img
+          [src]="currentUrl()"
+          [alt]="currentFileName()"
+          (load)="onImageLoad()"
+          (error)="onImageError()"
+          draggable="false" />
+      </div>
+
+      <!-- VIDEO -->
+      <div class="viewer-content viewer-content--video"
+        *ngIf="type() === 'video' && state() === 'ready'">
+        <video
+          [src]="currentUrl()"
+          controls
+          autoplay
+          preload="metadata"
+          (error)="onImageError()">
+        </video>
+      </div>
+
+      <!-- PDF -->
+      <div class="viewer-content viewer-content--pdf"
+        *ngIf="type() === 'pdf' && state() === 'ready'">
+        <iframe
+          [src]="safeUrl()"
+          title="PDF viewer">
+        </iframe>
+      </div>
+
+      <!-- TEXT / CODE -->
+      <div class="viewer-content viewer-content--text"
+        *ngIf="type() === 'text' && state() === 'ready'">
+        <div class="text-toolbar">
+          <span class="text-toolbar__label">
+            <i class="fas fa-file-lines" aria-hidden="true"></i>
+            {{ currentFileName() }}
+          </span>
+          <button type="button" class="text-toolbar__copy" (click)="copyText()">
+            <i class="fas fa-copy"></i> {{ copyLabel() }}
+          </button>
+        </div>
+        <pre class="text-body"><code>{{ textContent() }}</code></pre>
+      </div>
+
+      <!-- OTHER / UNKNOWN -->
+      <div class="viewer-content viewer-content--other"
+        *ngIf="type() === 'other' && state() === 'ready'">
+        <div class="file-card">
+          <div class="file-card__icon">
+            <i [class]="fileIcon()" aria-hidden="true"></i>
+          </div>
+          <p class="file-card__name">{{ currentFileName() }}</p>
+          <p class="file-card__size" *ngIf="currentSize()">
+            {{ formatBytes(currentSize()) }}
+          </p>
+          <p class="file-card__note">This file type can't be previewed.</p>
+          <div class="file-card__actions">
+            <button type="button" class="viewer-dl-btn viewer-dl-btn--primary" (click)="download()">
+              <i class="fas fa-download"></i> Download
+            </button>
+            <a class="viewer-dl-btn" [href]="currentUrl()" target="_blank" rel="noopener">
+              <i class="fas fa-arrow-up-right-from-square"></i> Open in new tab
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next nav -->
+      <button class="viewer-nav viewer-nav--next" type="button"
+        *ngIf="hasNext()" (click)="next()" title="Next (→)">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+
+    </div>
+
+    <!-- Thumbnail strip -->
+    <div class="viewer-strip" *ngIf="allAttachments().length > 1">
+      <button
+        type="button"
+        class="strip-thumb"
+        *ngFor="let att of allAttachments(); let i = index"
+        [class.active]="i === currentIndex()"
+        (click)="goTo(i)"
+        [title]="att.fileName">
+        <img *ngIf="att.attachmentType === 'image'" [src]="att.fileUrl" [alt]="att.fileName" />
+        <i *ngIf="att.attachmentType !== 'image'" class="fas"
+          [class.fa-film]="att.attachmentType === 'video'"
+          [class.fa-music]="att.attachmentType === 'audio'"
+          [class.fa-file-lines]="att.attachmentType === 'document'"
+          [class.fa-file]="att.attachmentType === 'file'">
+        </i>
+      </button>
+    </div>
+
+  </div>
+</div>

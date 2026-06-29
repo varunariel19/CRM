@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, catchError, finalize, map, of, tap } from 'rxjs';
 import { AuthState } from '../state/auth.state';
 import { endpoints, Routes } from '../core/constants/endpoints';
+import { TeamsService } from './teams.service';
 import { LoginPayload, UserPayload } from '../core/types/auth.type';
 
 interface LoginResponse {
@@ -19,6 +20,7 @@ export class AuthService {
         private http: HttpClient,
         private router: Router,
         private authState: AuthState,
+        private teamsService: TeamsService,
     ) { }
 
     login(payload: LoginPayload): Observable<UserPayload> {
@@ -32,8 +34,10 @@ export class AuthService {
             withCredentials: true
         }).subscribe({
             next: () => {
-                this.authState.clear();
-                this.router.navigate([Routes.signIn]);
+                this.teamsService.disconnect().finally(() => {
+                    this.authState.clear();
+                    this.router.navigate([Routes.signIn]);
+                });
             }
         });
     }

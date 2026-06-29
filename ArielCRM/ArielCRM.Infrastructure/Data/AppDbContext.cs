@@ -28,7 +28,6 @@ namespace ArielCRM.Infrastructure.Data
         public DbSet<Documents> Documents { get; set; } = null!;
         public DbSet<Comment> Comments { get; set; } = null!;
         public DbSet<TeamConversation> TeamConversations { get; set; } = null!;
-        public DbSet<TeamConversationMember> TeamConversationMembers { get; set; } = null!;
         public DbSet<TeamMessage> TeamMessages { get; set; } = null!;
         public DbSet<TeamMessageAttachment> TeamMessageAttachments { get; set; } = null!;
 
@@ -57,8 +56,6 @@ namespace ArielCRM.Infrastructure.Data
             // ── Keys ──────────────────────────────────
             modelBuilder.Entity<CrmTask>().HasKey(t => t.Id);
             modelBuilder.Entity<TicketTask>().HasKey(t => t.TaskId);
-            modelBuilder.Entity<TeamConversationMember>()
-                .HasKey(m => new { m.ConversationId, m.UserId });
 
             // ── Enum conversions ──────────────────────
             modelBuilder.Entity<Lead>()
@@ -185,15 +182,6 @@ namespace ArielCRM.Infrastructure.Data
                 .HasForeignKey(c => c.CreatedById)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<TeamConversationMember>()
-                .HasOne(m => m.Conversation).WithMany(c => c.Members)
-                .HasForeignKey(m => m.ConversationId)
-                .OnDelete(DeleteBehavior.Cascade);
-            modelBuilder.Entity<TeamConversationMember>()
-                .HasOne(m => m.User).WithMany()
-                .HasForeignKey(m => m.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
             modelBuilder.Entity<TeamMessage>()
                 .HasOne(m => m.Conversation).WithMany(c => c.Messages)
                 .HasForeignKey(m => m.ConversationId)
@@ -298,11 +286,8 @@ namespace ArielCRM.Infrastructure.Data
                 .HasIndex(c => c.LastMessageAt)
                 .IsDescending()
                 .HasDatabaseName("idx_team_conversations_last_message");
-            modelBuilder.Entity<TeamConversationMember>()
-                .HasIndex(m => m.UserId)
-                .HasDatabaseName("idx_team_conversation_members_user");
             modelBuilder.Entity<TeamMessage>()
-                .HasIndex(m => new { m.ConversationId, m.SentAt })
+                .HasIndex(m => new { m.ConversationId, m.CreatedAt })
                 .HasDatabaseName("idx_team_messages_lookup");
             modelBuilder.Entity<TeamMessageAttachment>()
                 .HasIndex(a => a.MessageId)

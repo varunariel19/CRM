@@ -1,9 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
+import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthState } from '../../../state/auth.state';
 import { TeamsService } from '../../../services/teams.service';
-import { TeamAttachmentType, TeamCallSignal, TeamConversation, TeamConversationMember, TeamMessage, TeamMessageAttachment, TeamUser } from '../../../core/types/teams.type';
+import { TeamAttachmentType, TeamConversation, TeamConversationMember, TeamMessage, TeamMessageAttachment, TeamUser } from '../../../core/types/teams.type';
+import { ComposerComponent } from "../../../components/items/message-composer/message-composer.component";
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { AttachmentViewerComponent } from "../../../components/items/attachment-viewer/attachment-viewer.component";
+
 
 interface PendingAttachment {
   id: string;
@@ -15,15 +19,10 @@ interface PendingAttachment {
   previewUrl?: string;
 }
 
-interface MessageSegment {
-  type: 'text' | 'code';
-  content: string;
-}
-
 @Component({
   selector: 'app-teams',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ComposerComponent, AttachmentViewerComponent],
   templateUrl: './teams.component.html',
   styleUrl: './teams.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,17 +30,22 @@ interface MessageSegment {
 export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   private teamsService = inject(TeamsService);
   private authState = inject(AuthState);
-  private shouldScrollToBottom = false;
+  private sanitizer = inject(DomSanitizer);
+
+  private lastScrolledMessageCount = -1;
+  private pendingScrollConversationId: string | null = null;
+
   private typingTimer?: ReturnType<typeof setTimeout>;
 
-  @ViewChild('messageInput') messageInput?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild('messageInput') messageInputRef!: ElementRef<HTMLElement>;
   @ViewChild('messagesScroller') messagesScroller?: ElementRef<HTMLDivElement>;
+
+
 
   conversations = this.teamsService.conversations;
   users = this.teamsService.users;
   onlineUserIds = this.teamsService.onlineUserIds;
   typing = this.teamsService.typing;
-  incomingCall = this.teamsService.incomingCall;
 
   currentUserId = computed(() => this.authState.userId());
   currentUserName = computed(() => this.authState.fullName() || 'You');
@@ -51,24 +55,44 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   messageBody = signal('');
   groupName = signal('');
   selectedMemberIds = signal<Set<string>>(new Set());
+  selectedAddMemberIds = signal<Set<string>>(new Set());
   selectedAttachments = signal<PendingAttachment[]>([]);
   isCreatingGroup = signal(false);
   isLoadingMessages = signal(false);
   isSending = signal(false);
-  activeCall = signal<{ callId: string; callType: 'voice' | 'video'; conversationId: string; status: string } | null>(null);
-
-  // Sidebar & section collapse state
+  openingUserId = signal<string | null>(null);
+  isInfoPanelOpen = signal(false);
   isSidebarCollapsed = signal(false);
-  isChatsCollapsed = signal(false);
-  isPeopleCollapsed = signal(false);
+
+  hasMoreMessages = signal(false);
+  isLoadingMoreMessages = signal(false);
+  private readonly PAGE_SIZE = 40;
+
+  viewerAttachment = signal<TeamMessageAttachment | null>(null);
+  viewerAttachments = signal<TeamMessageAttachment[]>([]);
+
 
   selectedConversation = computed(() => this.conversations().find(c => c.id === this.selectedConversationId()) ?? null);
+  availableUsers = computed(() => this.users().filter(u => u.id !== this.currentUserId()));
   filteredConversations = computed(() => {
     const term = this.search().trim().toLowerCase();
-    if (!term) return this.conversations();
-    return this.conversations().filter(c => this.getConversationTitle(c).toLowerCase().includes(term));
+    const conversations = [...this.conversations()].sort((a, b) => this.sortByRecent(a, b));
+    if (!term) return conversations;
+    return conversations.filter(c => this.getConversationTitle(c).toLowerCase().includes(term));
   });
-  availableUsers = computed(() => this.users().filter(u => u.id !== this.currentUserId()));
+  searchedUsers = computed(() => {
+    const term = this.search().trim().toLowerCase();
+    if (!term || this.isCreatingGroup()) return [];
+    return this.availableUsers()
+      .filter(user => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term))
+      .slice(0, 8);
+  });
+  addableGroupMembers = computed(() => {
+    const conversation = this.selectedConversation();
+    if (!conversation?.isGroup) return [];
+    const existing = new Set(conversation.members.map(member => member.id));
+    return this.availableUsers().filter(user => !existing.has(user.id));
+  });
   canSend = computed(() => !!this.selectedConversationId() && !this.isSending() && (this.messageBody().trim().length > 0 || this.selectedAttachments().length > 0));
   typingLabel = computed(() => {
     const id = this.selectedConversationId();
@@ -77,123 +101,166 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     return names.length ? `${names.join(', ')} typing...` : '';
   });
 
-  constructor() {
-    effect(() => {
-      const call = this.incomingCall();
-      if (!call) return;
-      if (call.signalType === 'incoming') {
-        this.activeCall.set({ callId: call.callId, callType: call.callType, conversationId: call.conversationId, status: `Incoming ${call.callType} call from ${call.fromName}` });
-      }
-      if (call.signalType === 'accepted') this.activeCall.update(active => active ? { ...active, status: `${call.fromName} joined the call` } : active);
-      if (call.signalType === 'declined' || call.signalType === 'ended') this.activeCall.set(null);
+  ngOnInit(): void {
+    document.querySelector('.inner-content')?.classList.add('no-scroll');
+
+    this.teamsService.loadUsers().subscribe(users => this.teamsService.users.set(users));
+
+    // No conversation is auto-selected on load — user must choose one explicitly
+    this.teamsService.loadConversations().subscribe(conversations => {
+      this.teamsService.conversations.set(conversations);
     });
+
+    this.teamsService.connect(
+      message => this.receiveMessage(message),
+      conversation => this.upsertConversation(conversation),
+      (conversationId, messageIds, seenById) => this.applyMessagesSeen(conversationId, messageIds, seenById)
+    ).catch(err => console.error('Teams realtime connection failed', err));
   }
 
-ngOnInit(): void {
-  document.querySelector('.inner-content')?.classList.add('no-scroll');
+  ngOnDestroy(): void {
+    document.querySelector('.inner-content')?.classList.remove('no-scroll');
+    if (this.typingTimer) clearTimeout(this.typingTimer);
+    this.selectedAttachments().forEach(attachment => this.revokePreview(attachment));
 
-  this.teamsService.loadUsers().subscribe(users => this.teamsService.users.set(users));
-  this.teamsService.loadConversations().subscribe(conversations => {
-    this.teamsService.conversations.set(conversations);
-    if (!this.selectedConversationId() && conversations.length) this.selectConversation(conversations[0]);
-  });
-
-  this.teamsService.connect(
-    message => this.receiveMessage(message),
-    conversation => this.upsertConversation(conversation)
-  ).catch(err => console.error('Teams realtime connection failed', err));
-}
-
-ngOnDestroy(): void {
-  document.querySelector('.inner-content')?.classList.remove('no-scroll');
-
-  if (this.typingTimer) clearTimeout(this.typingTimer);
-  this.selectedAttachments().forEach(attachment => this.revokePreview(attachment));
-}
+    this.selectedConversationId.set(null);
+    this.messages.set([]);
+  }
 
   ngAfterViewChecked(): void {
-    if (!this.shouldScrollToBottom) return;
-    this.shouldScrollToBottom = false;
-    this.scrollToBottom();
+    const msgs = this.messages();
+    const convId = this.selectedConversationId();
+
+    if (
+      this.pendingScrollConversationId !== null &&
+      this.pendingScrollConversationId === convId &&
+      msgs.length !== this.lastScrolledMessageCount
+    ) {
+      this.lastScrolledMessageCount = msgs.length;
+      this.pendingScrollConversationId = null;
+      const scroller = this.messagesScroller?.nativeElement;
+      if (scroller) {
+        const isNearBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 200;
+        if (isNearBottom || this.isLoadingMessages()) {
+          this.scrollToBottom();
+        }
+      }
+    }
   }
 
 
-// ── Add to your component signals ─────────────────────────────────────────
-isInfoPanelOpen = signal(false);
-
-// ── Add these helpers ──────────────────────────────────────────────────────
-getMemberName(userId: string): string {
-  const user = this.availableUsers().find(u => u.id === userId);
-  return user?.name ?? userId;
+  openViewer(attachment: TeamMessageAttachment, allAttachments: TeamMessageAttachment[]) {
+  this.viewerAttachment.set(attachment);
+  this.viewerAttachments.set(allAttachments);
 }
 
-isFirstInRun(index: number): boolean {
-  const msgs = this.messages();
-
-  if (index <= 0) return true;
-
-  const current = msgs[index];
-  const previous = msgs[index - 1];
-
-  return !!current && !!previous && current.senderId !== previous.senderId;
+closeViewer() {
+  this.viewerAttachment.set(null);
+  this.viewerAttachments.set([]);
 }
 
-isLastInRun(index: number): boolean {
-  const msgs = this.messages();
-
-  if (index >= msgs.length - 1) return true;
-
-  const current = msgs[index];
-  const next = msgs[index + 1];
-
-  return !!current && !!next && current.senderId !== next.senderId;
-}
+  onInput(event: Event) {
+    const el = event.target as HTMLElement;
+    this.messageBody.set(el.innerHTML);
+    this.setTyping();
+  }
 
 
+  sanitize(html: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(html);
+  }
 
   selectConversation(conversation: TeamConversation): void {
     if (conversation.id === this.selectedConversationId() && this.messages().length) return;
     this.selectedConversationId.set(conversation.id);
     this.messages.set([]);
+    this.lastScrolledMessageCount = -1;
+    this.hasMoreMessages.set(false);
+    this.selectedAddMemberIds.set(new Set());
     this.isLoadingMessages.set(true);
     this.teamsService.joinConversation(conversation.id);
-    this.teamsService.loadMessages(conversation.id).subscribe({
+    this.teamsService.loadMessages(conversation.id, undefined, this.PAGE_SIZE).subscribe({
       next: messages => {
         this.messages.set(messages);
+        this.hasMoreMessages.set(messages.length === this.PAGE_SIZE);
         this.isLoadingMessages.set(false);
-        this.queueScroll();
-        // Mark read → update the current user's lastReadAt locally so unread dot clears immediately
-        this.teamsService.markRead(conversation.id).subscribe(() => {
-          const now = new Date().toISOString();
-          this.teamsService.conversations.update(convs => convs.map(c => {
-            if (c.id !== conversation.id) return c;
-            return {
-              ...c,
-              members: c.members.map(m =>
-                m.id === this.currentUserId() ? { ...m, lastReadAt: now } : m
-              )
-            };
-          }));
-        });
+        // Double-fire: once after signal update, once after paint
+        this.scrollToBottom();
+        setTimeout(() => this.scrollToBottom(), 150);
+        this.markConversationRead(conversation.id);
       },
       error: () => this.isLoadingMessages.set(false)
     });
   }
 
-  startDirect(user: TeamUser): void {
-    this.teamsService.createDirect(user.id).subscribe(conversation => {
-      this.upsertConversation(conversation);
-      this.selectConversation(conversation);
+
+  loadMoreMessages(): void {
+    const conversationId = this.selectedConversationId();
+    const msgs = this.messages();
+    if (!conversationId || this.isLoadingMoreMessages() || !this.hasMoreMessages() || msgs.length === 0) return;
+
+    const oldestMessageId = msgs[0].id;
+    const scroller = this.messagesScroller?.nativeElement;
+    // Capture scroll height before new messages are prepended
+    const scrollHeightBefore = scroller?.scrollHeight ?? 0;
+
+    this.isLoadingMoreMessages.set(true);
+    this.teamsService.loadMessages(conversationId, oldestMessageId, this.PAGE_SIZE).subscribe({
+      next: older => {
+        this.messages.update(current => [...older, ...current]);
+        this.hasMoreMessages.set(older.length === this.PAGE_SIZE);
+        this.isLoadingMoreMessages.set(false);
+
+        // Restore scroll position so user stays at the same message
+        if (scroller) {
+          requestAnimationFrame(() => {
+            const added = scroller.scrollHeight - scrollHeightBefore;
+            scroller.scrollTop = added;
+          });
+        }
+      },
+      error: () => this.isLoadingMoreMessages.set(false)
     });
   }
 
+  onMessagesScroll(event: Event): void {
+    const el = event.target as HTMLDivElement;
+    // Trigger load when user is within 80px of the top
+    if (el.scrollTop <= 80 && this.hasMoreMessages() && !this.isLoadingMoreMessages()) {
+      this.loadMoreMessages();
+    }
+  }
+
+  startDirect(user: TeamUser): void {
+    if (this.openingUserId()) return;
+
+    const existing = this.findDirectConversation(user.id);
+    if (existing) {
+      this.openingUserId.set(user.id);
+      this.selectConversation(existing);
+      this.search.set('');
+      this.openingUserId.set(null);
+      return;
+    }
+
+    this.openingUserId.set(user.id);
+    this.teamsService.createDirect(user.id).subscribe({
+      next: conversation => {
+        this.upsertConversation(conversation);
+        this.selectConversation(conversation);
+        this.search.set('');
+        this.openingUserId.set(null);
+      },
+      error: () => this.openingUserId.set(null)
+    });
+  }
 
   toggleMember(userId: string): void {
-    this.selectedMemberIds.update(current => {
-      const next = new Set(current);
-      next.has(userId) ? next.delete(userId) : next.add(userId);
-      return next;
-    });
+    this.selectedMemberIds.update(current => this.toggleSet(current, userId));
+  }
+
+  toggleAddMember(userId: string): void {
+    this.selectedAddMemberIds.update(current => this.toggleSet(current, userId));
   }
 
   createGroup(): void {
@@ -206,23 +273,35 @@ isLastInRun(index: number): boolean {
     });
   }
 
+  addMembersToGroup(): void {
+    const conversation = this.selectedConversation();
+    const memberIds = [...this.selectedAddMemberIds()];
+    if (!conversation?.isGroup || memberIds.length === 0) return;
+
+    this.teamsService.addGroupMembers(conversation.id, memberIds).subscribe(updated => {
+      this.selectedAddMemberIds.set(new Set());
+      this.upsertConversation(updated);
+    });
+  }
+
   sendMessage(): void {
     const conversationId = this.selectedConversationId();
-    const body = this.messageBody().trim();
+    const content = this.messageBody().trim();
     const attachments = this.selectedAttachments();
-    if (!conversationId || this.isSending() || (!body && attachments.length === 0)) return;
+    if (!conversationId || this.isSending() || (!content && attachments.length === 0)) return;
 
     const optimisticId = `pending-${crypto.randomUUID()}`;
-    const optimisticMessage = this.buildOptimisticMessage(optimisticId, conversationId, body, attachments);
+    const optimisticMessage = this.buildOptimisticMessage(optimisticId, conversationId, content, attachments);
     this.messages.update(messages => [...messages, optimisticMessage]);
-    this.queueScroll();
+    this.queueScroll(conversationId);
 
     this.messageBody.set('');
+    this.messageInputRef.nativeElement.innerHTML = '';  // ← add this
     this.selectedAttachments.set([]);
     this.isSending.set(true);
     this.teamsService.sendTyping(conversationId, false);
 
-    this.teamsService.sendMessage(conversationId, body, attachments.map(attachment => attachment.file)).subscribe({
+    this.teamsService.sendMessage(conversationId, content, attachments.map(attachment => attachment.file)).subscribe({
       next: saved => {
         attachments.forEach(attachment => this.revokePreview(attachment));
         this.isSending.set(false);
@@ -231,7 +310,9 @@ isLastInRun(index: number): boolean {
       },
       error: () => {
         this.isSending.set(false);
-        this.messages.update(messages => messages.map(message => message.id === optimisticId ? { ...message, pending: false, failed: true } : message));
+        this.messages.update(messages => messages.map(message =>
+          message.id === optimisticId ? { ...message, pending: false, failed: true } : message
+        ));
       }
     });
   }
@@ -263,51 +344,6 @@ isLastInRun(index: number): boolean {
     });
   }
 
-  applyFormat(format: 'bold' | 'italic' | 'inlineCode' | 'codeBlock' | 'quote'): void {
-    const textarea = this.messageInput?.nativeElement;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const value = this.messageBody();
-    const selected = value.slice(start, end);
-    const fallback = format === 'codeBlock' ? 'code goes here' : 'text';
-    const content = selected || fallback;
-    const wrapped = this.wrapSelection(format, content);
-
-    this.messageBody.set(`${value.slice(0, start)}${wrapped}${value.slice(end)}`);
-    queueMicrotask(() => {
-      textarea.focus();
-      textarea.selectionStart = start + wrapped.length;
-      textarea.selectionEnd = start + wrapped.length;
-    });
-  }
-
-  startCall(callType: 'voice' | 'video'): void {
-    const conversationId = this.selectedConversationId();
-    if (!conversationId) return;
-    const callId = crypto.randomUUID();
-    this.activeCall.set({ callId, callType, conversationId, status: `${callType === 'video' ? 'Video' : 'Voice'} call ringing` });
-    this.teamsService.sendCallSignal({ conversationId, callId, callType, signalType: 'incoming' });
-  }
-
-  answerCall(accepted: boolean): void {
-    const call = this.activeCall();
-    if (!call) return;
-    const signal: TeamCallSignal = { conversationId: call.conversationId, callId: call.callId, callType: call.callType, signalType: accepted ? 'accepted' : 'declined' };
-    this.teamsService.sendCallSignal(signal);
-    this.activeCall.set(accepted ? { ...call, status: 'Connected. Signaling is ready for media wiring.' } : null);
-  }
-
-  endCall(): void {
-    const call = this.activeCall();
-    if (!call) return;
-    this.teamsService.sendCallSignal({ conversationId: call.conversationId, callId: call.callId, callType: call.callType, signalType: 'ended' });
-    this.activeCall.set(null);
-  }
-
-  // ── Display helpers ──────────────────────────────────────────────────────
-
   getConversationTitle(conversation: TeamConversation): string {
     if (conversation.isGroup) return conversation.name ?? 'New group';
     return conversation.members.find(m => m.id !== this.currentUserId())?.name ?? 'Direct chat';
@@ -323,16 +359,14 @@ isLastInRun(index: number): boolean {
 
   getMessagePreview(conversation: TeamConversation): string {
     const message = conversation.lastMessage;
-    if (!message) return conversation.isGroup ? 'Group conversation' : 'Direct conversation';
-    if (message.body?.trim()) return message.body;
+    if (!message) return conversation.isGroup ? `${conversation.members.length} members` : 'No messages yet';
+    if (message.content?.trim()) return message.content;
     const count = message.attachments?.length ?? 0;
     return count === 1 ? 'Sent an attachment' : `Sent ${count} attachments`;
   }
 
-  getMessageSegments(body: string): MessageSegment[] {
-    const parts = body.split(/```/g);
-    return parts.map((content, index) => ({ type: index % 2 === 0 ? 'text' : 'code', content }))
-      .filter(segment => segment.content.length > 0) as MessageSegment[];
+  getMemberName(userId: string): string {
+    return this.users().find(u => u.id === userId)?.name ?? userId;
   }
 
   formatBytes(bytes: number): string {
@@ -347,111 +381,127 @@ isLastInRun(index: number): boolean {
     this.sendMessage();
   }
 
-  // ── Online / Offline ─────────────────────────────────────────────────────
-
-  /**
-   * Returns true if the OTHER member in a direct conversation is online.
-   * Uses the live onlineUserIds set from SignalR UserPresenceChanged events.
-   */
   isUserOnline(conversation: TeamConversation): boolean {
     if (conversation.isGroup) return false;
     const other = this.getOtherMember(conversation);
-    console.log('[isUserOnline] other:', other?.id, 'onlineSet:', [...this.onlineUserIds()]);
     return other ? this.onlineUserIds().has(other.id) : false;
   }
 
-  /** Returns the other participant in a direct conversation. */
   getOtherMember(conversation: TeamConversation): TeamConversationMember | undefined {
     return conversation.members.find(m => m.id !== this.currentUserId());
   }
 
-  // ── Unread / Read status ─────────────────────────────────────────────────
-
-  /**
-   * A conversation has unread messages if:
-   *   - there is a lastMessage
-   *   - the current user's lastReadAt is null OR earlier than lastMessage.sentAt
-   * This is derived purely from members[].lastReadAt — no unreadCount field needed.
-   */
   hasUnread(conversation: TeamConversation): boolean {
     const lastMsg = conversation.lastMessage;
-    if (!lastMsg) return false;
-    // Don't show unread for currently open conversation
-    if (conversation.id === this.selectedConversationId()) return false;
-    const me = conversation.members.find(m => m.id === this.currentUserId());
-    if (!me) return false;
-    if (!me.lastReadAt) return true; // never read
-    return new Date(lastMsg.sentAt) > new Date(me.lastReadAt);
+    const me = this.currentUserId();
+    if (!lastMsg || !me || conversation.id === this.selectedConversationId() || lastMsg.senderId === me) return false;
+    return !(lastMsg.seenByIds ?? []).includes(me);
   }
 
-  /**
-   * "Seen" tick for MY outgoing messages.
-   * A message is seen if at least one OTHER member has a lastReadAt
-   * that is >= the message's sentAt.
-   */
   isMessageSeen(message: TeamMessage): boolean {
     if (message.pending || message.failed) return false;
     const conversation = this.conversations().find(c => c.id === message.conversationId);
-    if (!conversation) return false;
-    const others = conversation.members.filter(m => m.id !== this.currentUserId());
-    return others.some(m => m.lastReadAt && new Date(m.lastReadAt) >= new Date(message.sentAt));
+    const me = this.currentUserId();
+    if (!conversation || !me || message.senderId !== me) return false;
+    const otherIds = conversation.members.map(member => member.id).filter(id => id !== me);
+    return otherIds.length > 0 && otherIds.every(id => message.seenByIds.includes(id));
   }
 
-  /**
-   * Returns the last message I sent in the current conversation,
-   * used to show a single seen/sent tick at the bottom.
-   */
+  getMessageReceipt(message: TeamMessage): 'pending' | 'seen' | 'delivered' | null {
+    if (message.senderId !== this.currentUserId()) return null;
+    if (message.failed) return null;
+    const last = this.getLastMyMessage();
+    if (!last || message.id !== last.id) return null;
+    if (message.pending) return 'pending';
+    return this.isMessageSeen(message) ? 'seen' : 'delivered';
+  }
+
   getLastMyMessage(): TeamMessage | null {
     const myId = this.currentUserId();
     const msgs = this.messages();
     for (let i = msgs.length - 1; i >= 0; i--) {
-      if (msgs[i].senderId === myId && !msgs[i].pending && !msgs[i].failed) return msgs[i];
+      if (msgs[i].senderId === myId && !msgs[i].failed) return msgs[i];
     }
     return null;
   }
 
-  // ── Track functions ──────────────────────────────────────────────────────
+  isFirstInRun(index: number): boolean {
+    const msgs = this.messages();
+    if (index <= 0) return true;
+    const current = msgs[index];
+    const previous = msgs[index - 1];
+    if (!current || !previous) return true;
+    return current.senderId !== previous.senderId;
+  }
+
+  isLastInRun(index: number): boolean {
+    const msgs = this.messages();
+    if (index >= msgs.length - 1) return true;
+    const current = msgs[index];
+    const next = msgs[index + 1];
+    if (!current || !next) return true;
+    return current.senderId !== next.senderId;
+  }
+
+
+  handleSend(event: { content: string; attachments: PendingAttachment[] }) {
+    const conversationId = this.selectedConversationId();
+    if (!conversationId) return;
+
+    const { content, attachments } = event;
+    const optimisticId = `pending-${crypto.randomUUID()}`;
+    const optimisticMessage = this.buildOptimisticMessage(optimisticId, conversationId, content, attachments);
+    this.messages.update(messages => [...messages, optimisticMessage]);
+    this.queueScroll(conversationId);
+    this.isSending.set(true);
+    this.teamsService.sendTyping(conversationId, false);
+
+    this.teamsService.sendMessage(conversationId, content, attachments.map(a => a.file)).subscribe({
+      next: saved => {
+        attachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
+        this.isSending.set(false);
+        this.replaceOptimisticMessage(optimisticId, saved);
+        this.receiveMessage(saved);
+      },
+      error: () => {
+        this.isSending.set(false);
+        this.messages.update(messages => messages.map(m =>
+          m.id === optimisticId ? { ...m, pending: false, failed: true } : m
+        ));
+      }
+    });
+  }
+
+  handleTyping(isTyping: boolean) {
+    const conversationId = this.selectedConversationId();
+    if (!conversationId) return;
+    this.teamsService.sendTyping(conversationId, isTyping);
+  }
 
   trackByConversation = (_: number, conversation: TeamConversation) => conversation.id;
   trackByUser = (_: number, user: TeamUser) => user.id;
+  trackByMember = (_: number, member: TeamConversationMember) => member.id;
   trackByMessage = (_: number, message: TeamMessage) => message.id;
   trackByAttachment = (_: number, attachment: TeamMessageAttachment | PendingAttachment) => attachment.id;
-  trackBySegment = (index: number) => index;
-
-  // ── Private ──────────────────────────────────────────────────────────────
 
   private receiveMessage(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
       this.messages.update(messages => {
         const withoutPending = messages.filter(existing =>
-          !existing.id.startsWith('pending-') || existing.body !== message.body
+          !existing.id.startsWith('pending-') || existing.content !== message.content
         );
         return withoutPending.some(m => m.id === message.id) ? withoutPending : [...withoutPending, message];
       });
-      this.queueScroll();
-
-      // Auto mark-read because the conversation is open
-      this.teamsService.markRead(message.conversationId).subscribe(() => {
-        const now = new Date().toISOString();
-        this.teamsService.conversations.update(convs => convs.map(c => {
-          if (c.id !== message.conversationId) return c;
-          return {
-            ...c,
-            members: c.members.map(m =>
-              m.id === this.currentUserId() ? { ...m, lastReadAt: now } : m
-            )
-          };
-        }));
-      });
+      // Scroll for both incoming messages from others and confirmed sent messages
+      this.queueScroll(message.conversationId);
+      this.markConversationRead(message.conversationId);
     }
 
     this.teamsService.conversations.update(conversations => conversations.map(c =>
       c.id === message.conversationId
-        ? { ...c, lastMessage: message, lastMessageAt: message.sentAt }
+        ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
         : c
-    ).sort((a, b) =>
-      new Date(b.lastMessageAt ?? b.createdAt).getTime() - new Date(a.lastMessageAt ?? a.createdAt).getTime()
-    ));
+    ).sort((a, b) => this.sortByRecent(a, b)));
   }
 
   private upsertConversation(conversation: TeamConversation): void {
@@ -460,20 +510,52 @@ isLastInRun(index: number): boolean {
       const next = exists
         ? conversations.map(c => c.id === conversation.id ? conversation : c)
         : [conversation, ...conversations];
-      return next.sort((a, b) =>
-        new Date(b.lastMessageAt ?? b.createdAt).getTime() - new Date(a.lastMessageAt ?? a.createdAt).getTime()
-      );
+      return next.sort((a, b) => this.sortByRecent(a, b));
     });
   }
 
-  private buildOptimisticMessage(id: string, conversationId: string, body: string, attachments: PendingAttachment[]): TeamMessage {
+  private applyMessagesSeen(conversationId: string, messageIds: string[], seenById: string): void {
+    const ids = new Set(messageIds);
+    const appendSeen = (message: TeamMessage): TeamMessage => ids.has(message.id) && !message.seenByIds.includes(seenById)
+      ? { ...message, seenByIds: [...message.seenByIds, seenById] }
+      : message;
+
+    if (conversationId === this.selectedConversationId()) {
+      this.messages.update(messages => messages.map(appendSeen));
+    }
+
+    this.teamsService.conversations.update(conversations => conversations.map(conversation => {
+      if (conversation.id !== conversationId || !conversation.lastMessage) return conversation;
+      return { ...conversation, lastMessage: appendSeen(conversation.lastMessage) };
+    }));
+  }
+
+  private markConversationRead(conversationId: string): void {
+    const me = this.currentUserId();
+    if (!me) return;
+    this.teamsService.markRead(conversationId).subscribe(() => {
+      this.teamsService.conversations.update(conversations => conversations.map(conversation => {
+        if (conversation.id !== conversationId || !conversation.lastMessage || conversation.lastMessage.seenByIds.includes(me)) return conversation;
+        return {
+          ...conversation,
+          lastMessage: {
+            ...conversation.lastMessage,
+            seenByIds: [...conversation.lastMessage.seenByIds, me]
+          }
+        };
+      }));
+    });
+  }
+
+  private buildOptimisticMessage(id: string, conversationId: string, content: string, attachments: PendingAttachment[]): TeamMessage {
     return {
       id,
       conversationId,
       senderId: this.currentUserId() ?? '',
+      seenByIds: [this.currentUserId() ?? ''].filter(Boolean),
       senderName: this.currentUserName(),
-      body,
-      sentAt: new Date().toISOString(),
+      content,
+      createdAt: new Date().toISOString(),
       attachments: attachments.map(attachment => ({
         id: attachment.id,
         fileName: attachment.name,
@@ -490,7 +572,8 @@ isLastInRun(index: number): boolean {
 
   private replaceOptimisticMessage(id: string, saved: TeamMessage): void {
     this.messages.update(messages => messages.map(message => message.id === id ? saved : message));
-    this.queueScroll();
+    // No scroll here — message count hasn't changed (replace, not append),
+    // and receiveMessage() will handle scrolling when the confirmed copy arrives
   }
 
   private toPendingAttachment(file: File): PendingAttachment {
@@ -518,23 +601,35 @@ isLastInRun(index: number): boolean {
     if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
   }
 
-  private wrapSelection(format: 'bold' | 'italic' | 'inlineCode' | 'codeBlock' | 'quote', selected: string): string {
-    switch (format) {
-      case 'bold': return `**${selected}**`;
-      case 'italic': return `_${selected}_`;
-      case 'inlineCode': return `\`${selected}\``;
-      case 'codeBlock': return `\n\n\`\`\`\n${selected}\n\`\`\`\n`;
-      case 'quote': return selected.split('\n').map(line => `> ${line}`).join('\n');
-    }
+  private queueScroll(conversationId: string): void {
+    this.pendingScrollConversationId = conversationId;
+    this.scrollToBottom('smooth');
   }
 
-  private queueScroll(): void {
-    this.shouldScrollToBottom = true;
-  }
-
-  private scrollToBottom(): void {
+  private scrollToBottom(behavior: ScrollBehavior = 'smooth'): void {
     const element = this.messagesScroller?.nativeElement;
     if (!element) return;
-    element.scrollTo({ top: element.scrollHeight, behavior: 'smooth' });
+    setTimeout(() => {
+      element.scrollTop = element.scrollHeight + 9999;
+    }, 50);
+  }
+
+  private sortByRecent(a: TeamConversation, b: TeamConversation): number {
+    return new Date(b.lastMessageAt ?? b.createdAt).getTime() - new Date(a.lastMessageAt ?? a.createdAt).getTime();
+  }
+
+  private findDirectConversation(userId: string): TeamConversation | undefined {
+    const me = this.currentUserId();
+    return this.conversations().find(conversation =>
+      !conversation.isGroup &&
+      conversation.members.some(member => member.id === userId) &&
+      conversation.members.some(member => member.id === me)
+    );
+  }
+
+  private toggleSet(current: Set<string>, value: string): Set<string> {
+    const next = new Set(current);
+    next.has(value) ? next.delete(value) : next.add(value);
+    return next;
   }
 }

@@ -34,7 +34,10 @@ namespace ArielCRM.DataLayer.Entities
         [Column("last_message_at")]
         public DateTime? LastMessageAt { get; set; }
 
-        public ICollection<TeamConversationMember> Members { get; set; } = new List<TeamConversationMember>();
+        [Required]
+        [Column("members", TypeName = "text[]")]
+        public string[] Members { get; set; } = [];
+
         public ICollection<TeamMessage> Messages { get; set; } = new List<TeamMessage>();
     }
 }

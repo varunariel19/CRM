@@ -43,33 +43,51 @@ namespace ArielCRM.API.Controllers
         public async Task<ActionResult<List<TeamConversationDto>>> GetConversations()
         {
             var conversations = await BaseConversationQuery()
-                .Where(c => c.Members.Any(m => m.UserId == UserId))
+                .Where(c => c.Members.Contains(UserId))
                 .OrderByDescending(c => c.LastMessageAt ?? c.CreatedAt)
                 .ToListAsync();
 
-            return Ok(conversations.Select(MapConversation).ToList());
+            var users = await LoadUsers(conversations.SelectMany(c => c.Members));
+            return Ok(conversations.Select(c => MapConversation(c, users)).ToList());
         }
 
         [HttpGet("conversations/{conversationId}/messages")]
-        public async Task<ActionResult<List<TeamMessageDto>>> GetMessages(string conversationId, [FromQuery] int take = 80)
+        public async Task<ActionResult<List<TeamMessageDto>>> GetMessages(
+            string conversationId,
+            [FromQuery] int take = 40,
+            [FromQuery] string? before = null)
         {
             if (!await IsMember(conversationId)) return Forbid();
 
-            take = Math.Clamp(take, 1, 200);
-            var messages = await db.TeamMessages
+            take = Math.Clamp(take, 1, 100);
+
+            var query = db.TeamMessages
                 .AsNoTracking()
                 .Include(m => m.Sender)
                 .Include(m => m.Attachments)
-                .Where(m => m.ConversationId == conversationId)
-                .OrderByDescending(m => m.SentAt)
+                .Where(m => m.ConversationId == conversationId);
+
+            if (!string.IsNullOrEmpty(before))
+            {
+                var pivot = await db.TeamMessages
+                    .AsNoTracking()
+                    .Where(m => m.Id == before && m.ConversationId == conversationId)
+                    .Select(m => m.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                if (pivot != default)
+                    query = query.Where(m => m.CreatedAt < pivot);
+            }
+
+            var messages = await query
+                .OrderByDescending(m => m.CreatedAt)
                 .Take(take)
-                .OrderBy(m => m.SentAt)
+                .OrderBy(m => m.CreatedAt)
                 .Select(m => MapMessage(m))
                 .ToListAsync();
 
             return Ok(messages);
         }
-
         [HttpPost("conversations/direct")]
         public async Task<ActionResult<TeamConversationDto>> CreateDirectConversation(CreateDirectConversationDto dto)
         {
@@ -80,77 +98,107 @@ namespace ArielCRM.API.Controllers
             if (!targetExists) return NotFound(new { message = "Employee not found." });
 
             var existing = await BaseConversationQuery()
-                .Where(c => !c.IsGroup && c.Members.Any(m => m.UserId == UserId) && c.Members.Any(m => m.UserId == dto.UserId))
+                .Where(c => !c.IsGroup && c.Members.Contains(UserId) && c.Members.Contains(dto.UserId))
                 .FirstOrDefaultAsync();
 
-            if (existing is not null) return Ok(MapConversation(existing));
+            if (existing is not null)
+            {
+                var existingUsers = await LoadUsers(existing.Members);
+                return Ok(MapConversation(existing, existingUsers));
+            }
 
             var conversation = new TeamConversation
             {
                 IsGroup = false,
                 CreatedById = UserId,
-                Members =
-                [
-                    new TeamConversationMember { UserId = UserId },
-                    new TeamConversationMember { UserId = dto.UserId }
-                ]
+                Members = [UserId, dto.UserId]
             };
 
             db.TeamConversations.Add(conversation);
             await db.SaveChangesAsync();
 
             var created = await BaseConversationQuery().FirstAsync(c => c.Id == conversation.Id);
-            await hubContext.Clients.Users(UserId, dto.UserId).SendAsync("ConversationChanged", MapConversation(created));
-            return Ok(MapConversation(created));
+            var users = await LoadUsers(created.Members);
+            var mapped = MapConversation(created, users);
+            await hubContext.Clients.Users(created.Members).SendAsync("ConversationChanged", mapped);
+            return Ok(mapped);
         }
 
         [HttpPost("conversations/groups")]
         public async Task<ActionResult<TeamConversationDto>> CreateGroupConversation(CreateGroupConversationDto dto)
         {
             var name = dto.Name.Trim();
-            var memberIds = dto.MemberIds.Where(id => !string.IsNullOrWhiteSpace(id)).Append(UserId).Distinct().ToList();
+            var memberIds = dto.MemberIds.Where(id => !string.IsNullOrWhiteSpace(id)).Append(UserId).Distinct().ToArray();
 
             if (name.Length < 2) return BadRequest(new { message = "Group name must be at least 2 characters." });
-            if (memberIds.Count < 3) return BadRequest(new { message = "A group needs at least 3 employees including you." });
+            if (memberIds.Length < 3) return BadRequest(new { message = "A group needs at least 3 employees including you." });
 
-            var validMemberIds = await db.Users.Where(u => memberIds.Contains(u.Id)).Select(u => u.Id).ToListAsync();
-            if (validMemberIds.Count != memberIds.Count) return BadRequest(new { message = "One or more selected employees do not exist." });
+            var validMemberIds = await db.Users.Where(u => memberIds.Contains(u.Id)).Select(u => u.Id).ToArrayAsync();
+            if (validMemberIds.Length != memberIds.Length) return BadRequest(new { message = "One or more selected employees do not exist." });
 
             var conversation = new TeamConversation
             {
                 Name = name,
                 IsGroup = true,
                 CreatedById = UserId,
-                Members = validMemberIds.Select(id => new TeamConversationMember { UserId = id }).ToList()
+                Members = validMemberIds
             };
 
             db.TeamConversations.Add(conversation);
             await db.SaveChangesAsync();
 
             var created = await BaseConversationQuery().FirstAsync(c => c.Id == conversation.Id);
-            await hubContext.Clients.Users(validMemberIds).SendAsync("ConversationChanged", MapConversation(created));
-            return Ok(MapConversation(created));
+            var users = await LoadUsers(created.Members);
+            var mapped = MapConversation(created, users);
+            await hubContext.Clients.Users(created.Members).SendAsync("ConversationChanged", mapped);
+            return Ok(mapped);
+        }
+
+        [HttpPost("conversations/{conversationId}/members")]
+        public async Task<ActionResult<TeamConversationDto>> AddGroupMembers(string conversationId, AddGroupMembersDto dto)
+        {
+            var conversation = await db.TeamConversations.FirstOrDefaultAsync(c => c.Id == conversationId);
+            if (conversation is null) return NotFound();
+            if (!conversation.Members.Contains(UserId)) return Forbid();
+            if (!conversation.IsGroup) return BadRequest(new { message = "Members can only be added to group conversations." });
+
+            var requestedIds = dto.MemberIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToArray();
+            var nextMemberIds = conversation.Members.Concat(requestedIds).Distinct().ToArray();
+            var validMemberIds = await db.Users.Where(u => nextMemberIds.Contains(u.Id)).Select(u => u.Id).ToArrayAsync();
+            if (validMemberIds.Length != nextMemberIds.Length) return BadRequest(new { message = "One or more selected employees do not exist." });
+
+            conversation.Members = nextMemberIds;
+            await db.SaveChangesAsync();
+
+            var updated = await BaseConversationQuery().FirstAsync(c => c.Id == conversationId);
+            var users = await LoadUsers(updated.Members);
+            var mapped = MapConversation(updated, users);
+            await hubContext.Clients.Users(updated.Members).SendAsync("ConversationChanged", mapped);
+            return Ok(mapped);
         }
 
         [HttpPost("conversations/{conversationId}/messages")]
         [RequestSizeLimit(420_000_000)]
         public async Task<ActionResult<TeamMessageDto>> SendMessage(string conversationId, [FromForm] SendTeamMessageDto dto)
         {
-            if (!await IsMember(conversationId)) return Forbid();
+            var conversation = await db.TeamConversations.FirstOrDefaultAsync(c => c.Id == conversationId);
+            if (conversation is null || !conversation.Members.Contains(UserId)) return Forbid();
 
-            var body = (dto.Body ?? string.Empty).Trim();
-            var files = dto.Attachments.Where(f => f.Length > 0).ToList();
-            if (body.Length == 0 && files.Count == 0) return BadRequest(new { message = "Message cannot be empty." });
-            if (body.Length > 4000) return BadRequest(new { message = "Message is too long." });
+            var content = (dto.Body ?? string.Empty).Trim();
+            var files = (dto.Attachments ?? []).Where(f => f.Length > 0).ToList();
+            if (content.Length == 0 && files.Count == 0) return BadRequest(new { message = "Message cannot be empty." });
+            if (content.Length > 4000) return BadRequest(new { message = "Message is too long." });
             if (files.Count > MaxAttachmentCount) return BadRequest(new { message = $"Attach up to {MaxAttachmentCount} files per message." });
             if (files.Any(f => f.Length > MaxAttachmentBytes)) return BadRequest(new { message = "Each attachment must be 50 MB or smaller." });
 
+            var now = DateTime.UtcNow;
             var message = new TeamMessage
             {
                 ConversationId = conversationId,
                 SenderId = UserId,
-                Body = body,
-                SentAt = DateTime.UtcNow
+                SeenByIds = [UserId],
+                Content = content,
+                CreatedAt = now
             };
 
             foreach (var file in files)
@@ -164,13 +212,11 @@ namespace ArielCRM.API.Controllers
                     ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
                     AttachmentType = GetAttachmentType(file.ContentType, file.FileName),
                     SizeBytes = file.Length,
-                    CreatedAt = message.SentAt
+                    CreatedAt = now
                 });
             }
 
-            var conversation = await db.TeamConversations.FirstAsync(c => c.Id == conversationId);
-            conversation.LastMessageAt = message.SentAt;
-
+            conversation.LastMessageAt = now;
             db.TeamMessages.Add(message);
             await db.SaveChangesAsync();
 
@@ -181,36 +227,66 @@ namespace ArielCRM.API.Controllers
                 .FirstAsync(m => m.Id == message.Id);
 
             var mapped = MapMessage(saved);
-            var memberIds = await db.TeamConversationMembers
-                .Where(m => m.ConversationId == conversationId)
-                .Select(m => m.UserId)
-                .ToListAsync();
-
-            await hubContext.Clients.Users(memberIds).SendAsync("MessageReceived", mapped);
+            await hubContext.Clients.Users(conversation.Members).SendAsync("MessageReceived", mapped);
             return Ok(mapped);
         }
 
         [HttpPost("conversations/{conversationId}/read")]
         public async Task<IActionResult> MarkRead(string conversationId)
         {
-            var member = await db.TeamConversationMembers.FirstOrDefaultAsync(m => m.ConversationId == conversationId && m.UserId == UserId);
-            if (member is null) return Forbid();
+            if (!await IsMember(conversationId)) return Forbid();
 
-            member.LastReadAt = DateTime.UtcNow;
+            var messages = await db.TeamMessages
+                .Where(m => m.ConversationId == conversationId && m.SenderId != UserId)
+                .ToListAsync();
+
+            var changedMessageIds = new List<string>();
+            foreach (var message in messages)
+            {
+                if (message.SeenByIds.Contains(UserId)) continue;
+                message.SeenByIds = message.SeenByIds.Append(UserId).Distinct().ToArray();
+                changedMessageIds.Add(message.Id);
+            }
+
+            if (changedMessageIds.Count == 0) return NoContent();
+
             await db.SaveChangesAsync();
+
+            var senderIds = messages
+                .Where(m => changedMessageIds.Contains(m.Id))
+                .Select(m => m.SenderId)
+                .Distinct()
+                .ToArray();
+
+            await hubContext.Clients.Users(senderIds).SendAsync("MessagesSeen", conversationId, changedMessageIds, UserId);
             return NoContent();
         }
 
         private IQueryable<TeamConversation> BaseConversationQuery() => db.TeamConversations
             .AsNoTracking()
-            .Include(c => c.Members).ThenInclude(m => m.User)
-            .Include(c => c.Messages.OrderByDescending(m => m.SentAt).Take(1)).ThenInclude(m => m.Sender)
-            .Include(c => c.Messages.OrderByDescending(m => m.SentAt).Take(1)).ThenInclude(m => m.Attachments);
+            .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1)).ThenInclude(m => m.Sender)
+            .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1)).ThenInclude(m => m.Attachments);
 
-        private Task<bool> IsMember(string conversationId) => db.TeamConversationMembers
-            .AnyAsync(m => m.ConversationId == conversationId && m.UserId == UserId);
+        private Task<bool> IsMember(string conversationId) => db.TeamConversations
+            .AnyAsync(c => c.Id == conversationId && c.Members.Contains(UserId));
 
-        private static TeamConversationDto MapConversation(TeamConversation conversation) => new()
+        private async Task<Dictionary<string, TeamUserDto>> LoadUsers(IEnumerable<string> userIds)
+        {
+            var ids = userIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToArray();
+            return await db.Users
+                .AsNoTracking()
+                .Where(u => ids.Contains(u.Id))
+                .Select(u => new TeamUserDto
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Email = u.Email,
+                    ProfileImage = u.ProfileImage
+                })
+                .ToDictionaryAsync(u => u.Id);
+        }
+
+        private static TeamConversationDto MapConversation(TeamConversation conversation, IReadOnlyDictionary<string, TeamUserDto> users) => new()
         {
             Id = conversation.Id,
             Name = conversation.Name,
@@ -218,16 +294,17 @@ namespace ArielCRM.API.Controllers
             CreatedById = conversation.CreatedById,
             CreatedAt = conversation.CreatedAt,
             LastMessageAt = conversation.LastMessageAt,
-            Members = conversation.Members.Select(m => new TeamConversationMemberDto
-            {
-                Id = m.User.Id,
-                Name = m.User.Name,
-                Email = m.User.Email,
-                ProfileImage = m.User.ProfileImage,
-                JoinedAt = m.JoinedAt,
-                LastReadAt = m.LastReadAt
-            }).OrderBy(m => m.Name).ToList(),
-            LastMessage = conversation.Messages.OrderByDescending(m => m.SentAt).Select(MapMessage).FirstOrDefault()
+            Members = conversation.Members
+                .Select(id => users.TryGetValue(id, out var user) ? new TeamConversationMemberDto
+                {
+                    Id = user.Id,
+                    Name = user.Name,
+                    Email = user.Email,
+                    ProfileImage = user.ProfileImage
+                } : new TeamConversationMemberDto { Id = id, Name = id })
+                .OrderBy(m => m.Name)
+                .ToList(),
+            LastMessage = conversation.Messages.OrderByDescending(m => m.CreatedAt).Select(MapMessage).FirstOrDefault()
         };
 
         private static TeamMessageDto MapMessage(TeamMessage message) => new()
@@ -235,11 +312,12 @@ namespace ArielCRM.API.Controllers
             Id = message.Id,
             ConversationId = message.ConversationId,
             SenderId = message.SenderId,
+            SeenByIds = message.SeenByIds.ToList(),
             SenderName = message.Sender.Name,
             SenderProfileImage = message.Sender.ProfileImage,
-            Body = message.Body,
-            SentAt = message.SentAt,
-            EditedAt = message.EditedAt,
+            Content = message.Content ?? string.Empty,
+            CreatedAt = message.CreatedAt,
+            UpdatedAt = message.UpdatedAt,
             Attachments = message.Attachments.OrderBy(a => a.CreatedAt).Select(a => new TeamMessageAttachmentDto
             {
                 Id = a.Id,

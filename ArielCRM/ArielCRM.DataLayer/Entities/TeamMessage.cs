@@ -28,16 +28,19 @@ namespace ArielCRM.DataLayer.Entities
         public User Sender { get; set; } = null!;
 
         [Required]
-        [Column("body")]
+        [Column("seen_by_ids", TypeName = "text[]")]
+        public string[] SeenByIds { get; set; } = [];
+
+        [Column("content")]
         [MaxLength(4000)]
-        public string? Body { get; set; } = string.Empty;
+        public string? Content { get; set; } = string.Empty;
 
         [Required]
-        [Column("sent_at")]
-        public DateTime SentAt { get; set; } = DateTime.UtcNow;
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [Column("edited_at")]
-        public DateTime? EditedAt { get; set; }
+        [Column("updated_at")]
+        public DateTime? UpdatedAt { get; set; }
 
         public ICollection<TeamMessageAttachment> Attachments { get; set; } = new List<TeamMessageAttachment>();
     }

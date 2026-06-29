@@ -12,8 +12,6 @@ namespace ArielCRM.Infrastructure.DTOs
 
     public class TeamConversationMemberDto : TeamUserDto
     {
-        public DateTime JoinedAt { get; set; }
-        public DateTime? LastReadAt { get; set; }
     }
 
     public class TeamMessageDto
@@ -21,11 +19,12 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Id { get; set; } = string.Empty;
         public string ConversationId { get; set; } = string.Empty;
         public string SenderId { get; set; } = string.Empty;
+        public List<string> SeenByIds { get; set; } = [];
         public string SenderName { get; set; } = string.Empty;
         public string? SenderProfileImage { get; set; }
-        public string Body { get; set; } = string.Empty;
-        public DateTime SentAt { get; set; }
-        public DateTime? EditedAt { get; set; }
+        public string Content { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
         public List<TeamMessageAttachmentDto> Attachments { get; set; } = [];
     }
 
@@ -66,16 +65,12 @@ namespace ArielCRM.Infrastructure.DTOs
 
     public class SendTeamMessageDto
     {
-        public string Body { get; set; } = string.Empty;
+        public string? Body { get; set; }
         public List<IFormFile> Attachments { get; set; } = [];
     }
 
-    public class TeamCallSignalDto
+    public class AddGroupMembersDto
     {
-        public string ConversationId { get; set; } = string.Empty;
-        public string CallId { get; set; } = string.Empty;
-        public string CallType { get; set; } = "voice";
-        public string SignalType { get; set; } = string.Empty;
-        public string? Payload { get; set; }
+        public List<string> MemberIds { get; set; } = [];
     }
 }

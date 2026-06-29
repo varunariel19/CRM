@@ -1,0 +1,262 @@
+.composer {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: visible; // allow emoji picker / tooltip to overflow
+  position: relative;
+  transition: border-color 0.2s;
+
+  &:focus-within {
+    border-color: var(--button-color);
+  }
+
+  // ── Formatting Toolbar ──────────────────────────────────────────
+  .composer-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--surface-muted);
+    border-radius: 10px 10px 0 0;
+    animation: slide-down 0.15s ease;
+
+    button {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      border-radius: 5px;
+      cursor: pointer;
+      color: var(--text-light);
+      font-size: 12px;
+      transition: background 0.15s, color 0.15s;
+
+      &:hover {
+        background: var(--surface-hover);
+        color: var(--text-dark);
+      }
+
+      &.active {
+        background: var(--primary-soft-bg);
+        color: var(--button-color);
+      }
+    }
+  }
+
+  // ── Attachments ─────────────────────────────────────────────────
+  .composer-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 10px 0;
+
+    .attachment-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-light);
+      max-width: 200px;
+
+      .attachment-thumb {
+        width: 24px;
+        height: 24px;
+        object-fit: cover;
+        border-radius: 3px;
+      }
+
+      i { color: var(--placeholder-text); font-size: 11px; }
+
+      .attachment-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--text-dark);
+        font-size: 12px;
+      }
+
+      .attachment-size {
+        color: var(--placeholder-text);
+        font-size: 11px;
+        flex-shrink: 0;
+      }
+
+      button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        color: var(--placeholder-text);
+        padding: 0;
+        flex-shrink: 0;
+        border-radius: 3px;
+        transition: color 0.15s, background 0.15s;
+
+        &:hover {
+          color: var(--danger-text);
+          background: var(--danger-soft-bg);
+        }
+      }
+    }
+  }
+
+  // ── Editor Body ─────────────────────────────────────────────────
+  .composer-body {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    padding: 8px 10px;
+  }
+
+  .composer-editor {
+    flex: 1;
+    min-height: 36px;
+    max-height: 160px;
+    overflow-y: auto;
+    cursor: text;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 4px;
+    }
+
+    :deep(.ProseMirror) {
+      outline: none !important;
+      border: none !important;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-dark);
+
+      p.is-editor-empty:first-child::before {
+        content: attr(data-placeholder);
+        color: var(--placeholder-text);
+        pointer-events: none;
+        float: left;
+        height: 0;
+      }
+    }
+  }
+
+  .composer-tools-right {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+
+    .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border-color);
+      margin: 0 4px;
+    }
+
+    .toolbar-btn {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-light);
+      font-size: 14px;
+      transition: background 0.15s, color 0.15s;
+
+      &:hover {
+        background: var(--surface-hover);
+        color: var(--text-dark);
+      }
+
+      &.format-btn.active {
+        color: var(--button-color);
+        background: var(--primary-soft-bg);
+      }
+    }
+
+    .send-btn {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background: var(--button-color);
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--on-primary);
+      font-size: 13px;
+      transition: background 0.15s, opacity 0.15s;
+
+      &:hover:not(:disabled) { background: var(--button-hover-color); }
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
+    }
+  }
+
+  // ── Tooltip ─────────────────────────────────────────────────────
+  .tooltip-wrap {
+    position: relative;
+    display: flex;
+
+    &:hover .tooltip-text {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: none;
+    }
+
+    .tooltip-text {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) translateY(4px);
+      background: var(--surface-hover, #2a2a2a);
+      color: var(--text-dark);
+      font-size: 12px;
+      white-space: nowrap;
+      padding: 5px 9px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      opacity: 0;
+      transition: opacity 0.15s, transform 0.15s;
+      pointer-events: none;
+      z-index: 100;
+    }
+  }
+
+  // ── Emoji Picker ────────────────────────────────────────────────
+  .emoji-picker-wrap {
+    position: relative;
+
+    .emoji-picker-popup {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      right: 0;
+      z-index: 200;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+  }
+}
+
+// ── Animation ────────────────────────────────────────────────────
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

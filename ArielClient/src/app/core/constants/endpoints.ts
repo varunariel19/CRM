@@ -78,6 +78,7 @@ export const endpoints = {
         conversations: `${BASE_URL}/api/teams/conversations`,
         direct: `${BASE_URL}/api/teams/conversations/direct`,
         groups: `${BASE_URL}/api/teams/conversations/groups`,
+        addMembers: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/members`,
         messages: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages`,
         sendMessage: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages`,
         markRead: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/read`,

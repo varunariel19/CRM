@@ -6,8 +6,6 @@ export interface TeamUser {
 }
 
 export interface TeamConversationMember extends TeamUser {
-  joinedAt: string;
-  lastReadAt?: string | null;
 }
 
 export type TeamAttachmentType = 'image' | 'audio' | 'video' | 'document' | 'file';
@@ -27,11 +25,12 @@ export interface TeamMessage {
   id: string;
   conversationId: string;
   senderId: string;
+  seenByIds: string[];
   senderName: string;
   senderProfileImage?: string | null;
-  body: string;
-  sentAt: string;
-  editedAt?: string | null;
+  content: string;
+  createdAt: string;
+  updatedAt?: string | null;
   attachments: TeamMessageAttachment[];
   pending?: boolean;
   failed?: boolean;
@@ -46,12 +45,4 @@ export interface TeamConversation {
   lastMessageAt?: string | null;
   members: TeamConversationMember[];
   lastMessage?: TeamMessage | null;
-}
-
-export interface TeamCallSignal {
-  conversationId: string;
-  callId: string;
-  callType: 'voice' | 'video';
-  signalType: 'incoming' | 'accepted' | 'declined' | 'ended';
-  payload?: string | null;
 }
