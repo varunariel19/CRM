@@ -7,3 +7,5 @@ export enum DepartmentKey {
     PROJECT_MANAGEMENT = 'PROJECT_MANAGEMENT',
     HUMAN_RESOURCES = 'HUMAN_RESOURCES'
 }   
+
+export const ProjectMemberDepartment: (keyof typeof DepartmentKey)[] = ['DEVELOPMENT' , 'DESIGN'];

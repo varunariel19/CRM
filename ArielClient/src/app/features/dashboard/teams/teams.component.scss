@@ -38,7 +38,9 @@
   background: var(--remaining-bg);
   border-right: 1px solid var(--border-color);
   overflow: hidden;
-  transition: width 0.25s ease, opacity 0.2s ease;
+  transition:
+    width 0.25s ease,
+    opacity 0.2s ease;
   width: 260px;
 }
 
@@ -218,7 +220,6 @@
   color: var(--text-light);
 }
 
-
 .primary-btn {
   height: 32px;
   border: 0;
@@ -297,7 +298,6 @@
 .conversation.active .conversation__title {
   color: var(--text-dark);
 }
-
 
 .conversation.active .conversation__preview {
   color: var(--muted-text);
@@ -441,7 +441,7 @@
   min-width: 0;
 }
 
-.chat-title>div {
+.chat-title > div {
   min-width: 0;
 }
 
@@ -609,12 +609,12 @@
 }
 
 /* spacing between sender groups */
-.message+.message {
+.message + .message {
   margin-top: 1px;
 }
 
-.message.mine+.message:not(.mine),
-.message:not(.mine)+.message.mine {
+.message.mine + .message:not(.mine),
+.message:not(.mine) + .message.mine {
   margin-top: 12px;
 }
 
@@ -629,7 +629,6 @@
 .message.failed .bubble {
   border-color: var(--danger-text);
 }
-
 
 .msg-row {
   display: flex;
@@ -656,8 +655,9 @@
   word-break: break-word;
 
   overflow: visible;
-  
-  ul, ol {
+
+  ul,
+  ol {
     padding-left: 30px;
     margin: 4px 0;
   }
@@ -692,14 +692,26 @@
 .message.mine .bubble .message__body * {
   color: white !important;
 }
-/* ── Message header (sender + timestamp) — first in run only ─────────────── */
 .msg-header {
   display: flex;
   align-items: baseline;
   gap: 6px;
   margin-bottom: 3px;
   padding-left: 38px;
-  /* indent to clear avatar width (30px) + gap (8px) */
+
+  &.msg-header--mine {
+    justify-content: flex-end;
+  }
+}
+
+.msg-timestamp {
+  color: #888;
+}
+
+.edited-tag {
+  color: #888;
+  font-style: normal;
+  font-size: 0.72rem;
 }
 
 .msg-header--mine {
@@ -727,7 +739,6 @@
 .message__body {
   display: grid;
   gap: 4px;
-
 }
 
 .message__body p {
@@ -752,7 +763,6 @@
 
 /* Read receipt — below the bubble row, right-aligned */
 .read-receipt {
-
   display: flex;
 
   justify-content: flex-end;
@@ -766,7 +776,6 @@
   margin-top: 2px;
 
   padding-right: 6px;
-
 }
 
 .tick {
@@ -915,7 +924,12 @@
 .skeleton-avatar,
 .skeleton-name,
 .skeleton-bubble {
-  background: linear-gradient(90deg, var(--surface-bg) 0%, var(--surface-hover) 50%, var(--surface-bg) 100%);
+  background: linear-gradient(
+    90deg,
+    var(--surface-bg) 0%,
+    var(--surface-hover) 50%,
+    var(--surface-bg) 100%
+  );
   background-size: 300% 100%;
   animation: shimmer 1.4s ease-in-out infinite;
 }
@@ -934,7 +948,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: var(--surface-muted, rgba(255,255,255,0.07));
+  background: var(--surface-muted, rgba(255, 255, 255, 0.07));
   border: 1px solid var(--border-color);
   padding: 7px 10px;
   border-radius: 12px 12px 12px 3px;
@@ -948,9 +962,15 @@
   display: inline-block;
   animation: typing-bounce 1.2s ease-in-out infinite;
 
-  &:nth-child(1) { animation-delay: 0s; }
-  &:nth-child(2) { animation-delay: 0.18s; }
-  &:nth-child(3) { animation-delay: 0.36s; }
+  &:nth-child(1) {
+    animation-delay: 0s;
+  }
+  &:nth-child(2) {
+    animation-delay: 0.18s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.36s;
+  }
 }
 
 .typing-name {
@@ -959,7 +979,9 @@
 }
 
 @keyframes typing-bounce {
-  0%, 60%, 100% {
+  0%,
+  60%,
+  100% {
     transform: translateY(0);
     opacity: 0.4;
   }
@@ -970,8 +992,14 @@
 }
 
 @keyframes typing-fade {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ── Composer ─────────────────────────────────────────────────────────────── */
@@ -1071,7 +1099,9 @@
   border-radius: 10px;
   padding: 0 6px;
   min-height: 44px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .composer:focus-within {
@@ -1119,7 +1149,9 @@
   font-size: 0.82rem;
   display: inline-grid;
   place-items: center;
-  transition: background 0.1s, color 0.1s;
+  transition:
+    background 0.1s,
+    color 0.1s;
   flex-shrink: 0;
 }
 
@@ -1148,7 +1180,9 @@
   place-items: center;
   cursor: pointer;
   font-size: 0.85rem;
-  transition: background 0.12s, opacity 0.12s;
+  transition:
+    background 0.12s,
+    opacity 0.12s;
 }
 
 .send-btn:hover:not(:disabled) {
@@ -1423,7 +1457,6 @@
   }
 }
 
-
 .composer-input {
   flex: 1;
   min-height: 36px;
@@ -1443,7 +1476,6 @@
   pointer-events: none;
 }
 
-
 .message__body {
   p {
     margin: 0;
@@ -1462,7 +1494,6 @@
   }
 }
 
-
 .load-more-indicator {
   display: flex;
   justify-content: center;
@@ -1478,6 +1509,248 @@
     i {
       font-size: 14px;
       color: var(--button-color);
+    }
+  }
+}
+
+.msg-row {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+
+  .message-hover-toolbar {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    align-self: center;
+    background: #1e1f24;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 3px 4px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+    order: -1; // sits to the left of the bubble since it's "mine" (right-aligned)
+
+    button {
+      background: transparent;
+      border: none;
+      color: #c7c9d1;
+      cursor: pointer;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition:
+        background 0.15s,
+        color 0.15s;
+      font-size: 12px;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+      }
+
+      &:last-child:hover i {
+        color: #ef4444;
+      }
+    }
+  }
+
+  &:hover .message-hover-toolbar {
+    display: flex;
+  }
+}
+
+.bubble {
+  position: relative; // anchor for the absolutely positioned toolbar
+
+  .message-hover-toolbar {
+    position: absolute;
+    top: -14px;
+    right: 8px;
+    z-index: 10;
+
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
+    background: #1e1f24;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 3px 4px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(4px) scale(0.95);
+    transform-origin: top right;
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease,
+      visibility 0.15s;
+    pointer-events: none;
+
+    button {
+      background: transparent;
+      border: none;
+      color: #c7c9d1;
+      cursor: pointer;
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition:
+        background 0.15s,
+        color 0.15s;
+      font-size: 12px;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+      }
+
+      &:last-child:hover i {
+        color: #ef4444;
+      }
+    }
+  }
+
+  &:hover .message-hover-toolbar {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+}
+
+
+.message-edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .message-edit-input {
+    width: 100%;
+    min-width: 220px;
+    min-height: 36px;
+    max-height: 200px;
+    overflow-y: auto;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: inherit;
+    padding: 6px 8px;
+    font: inherit;
+    outline: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+
+    &:focus {
+      border-color: #a855f7;
+    }
+  }
+
+  .message-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+
+    button {
+      font-size: 0.8em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-cancel { background: transparent; color: #c7c9d1; }
+    .btn-save { background: #4a6cf7; color: #fff; }
+  }
+}
+
+
+
+
+
+.deleted_message__body {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.message-deleted {
+  color: var(--on-primary);
+  font-style: italic;
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.undo-delete-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-weight: bolder;
+  margin-left: 6px;
+  color: #161697;
+  font-size: 1rem;
+  text-decoration: underline;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #16169795;
+  }
+}
+
+.edited-tag {
+  font-size: 0.7em;
+  color: #888;
+  margin-left: 4px;
+}
+
+.message-edit-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  textarea {
+    width: 100%;
+    min-width: 220px;
+    resize: vertical;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    padding: 6px 8px;
+    font: inherit;
+  }
+
+  .message-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+
+    button {
+      font-size: 0.8em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-cancel {
+      background: transparent;
+      color: #c7c9d1;
+    }
+    .btn-save {
+      background: #4a6cf7;
+      color: #fff;
     }
   }
 }

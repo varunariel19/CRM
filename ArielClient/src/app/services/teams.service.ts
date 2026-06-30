@@ -19,6 +19,10 @@ export class TeamsService {
   readonly onlineUserIds = signal<Set<string>>(new Set());
   readonly typing = signal<Record<string, string[]>>({});
 
+  private messageEditedHandlers: Array<(message: TeamMessage) => void> = [];
+  private messageDeletedHandlers: Array<(message: TeamMessage) => void> = [];
+  private messageRestoredHandlers: Array<(message: TeamMessage) => void> = [];
+
   loadUsers() {
     return this.http.get<TeamUser[]>(endpoints.teams.users, { withCredentials: true });
   }
@@ -63,14 +67,24 @@ export class TeamsService {
     return this.http.post<void>(endpoints.teams.markRead(conversationId), {}, { withCredentials: true });
   }
 
+  restoreMessage(conversationId: string, messageId: string) {
+    return this.http.post<TeamMessage>(endpoints.teams.restoreMessage(conversationId, messageId), {}, { withCredentials: true });
+  }
+
   async connect(
     onMessage?: (message: TeamMessage) => void,
     onConversation?: (conversation: TeamConversation) => void,
-    onSeen?: (conversationId: string, messageIds: string[], seenById: string) => void
+    onSeen?: (conversationId: string, messageIds: string[], seenById: string) => void,
+    onMessageEdited?: (message: TeamMessage) => void,
+    onMessageDeleted?: (message: TeamMessage) => void,
+    onMessageRestored?: (message: TeamMessage) => void
   ): Promise<void> {
     if (onMessage) this.messageHandlers.push(onMessage);
     if (onConversation) this.conversationHandlers.push(onConversation);
     if (onSeen) this.seenHandlers.push(onSeen);
+    if (onMessageEdited) this.messageEditedHandlers.push(onMessageEdited);
+    if (onMessageDeleted) this.messageDeletedHandlers.push(onMessageDeleted);
+    if (onMessageRestored) this.messageRestoredHandlers.push(onMessageRestored);
 
     if (!this.connection) {
       this.connection = new signalR.HubConnectionBuilder()
@@ -97,6 +111,14 @@ export class TeamsService {
 
   async sendTyping(conversationId: string, isTyping: boolean): Promise<void> {
     await this.connection?.invoke('SendTyping', conversationId, isTyping);
+  }
+
+  editMessage(conversationId: string, messageId: string, content: string) {
+    return this.http.put<TeamMessage>(endpoints.teams.editMessage(conversationId, messageId), { content }, { withCredentials: true });
+  }
+
+  deleteMessage(conversationId: string, messageId: string) {
+    return this.http.delete<void>(endpoints.teams.deleteMessage(conversationId, messageId), { withCredentials: true });
   }
 
   private registerHandlers(): void {
@@ -134,5 +156,20 @@ export class TeamsService {
         return { ...current, [conversationId]: [...names] };
       });
     });
+
+
+    this.connection.on('MessageEdited', (message: TeamMessage) => {
+      this.messageEditedHandlers.forEach(handler => handler(message));
+    });
+
+    this.connection.on('MessageDeleted', (message: TeamMessage) => {
+      this.messageDeletedHandlers.forEach(handler => handler(message));
+    });
+
+    this.connection.on('MessageRestored', (message: TeamMessage) => {
+      this.messageRestoredHandlers.forEach(handler => handler(message));
+    });
   }
+
+
 }

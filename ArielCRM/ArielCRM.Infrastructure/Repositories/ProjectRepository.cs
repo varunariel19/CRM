@@ -54,10 +54,10 @@ namespace ArielCRM.Infrastructure.Repositories
                 .Include(p => p.Contact)
                 .Include(p => p.Members)
                 .Include(p => p.Documents)
-                .Include(p => p.Tasks)
+                .Include(p => p.Tasks).ThenInclude(t => t.AssignedUser)
+                .Include(p => p.Tasks).ThenInclude(t => t.ReportedUser)
                 .ToListAsync();
         }
-
 
         public async Task<List<Project>> GetAllProjectAsync()
         {
@@ -66,7 +66,8 @@ namespace ArielCRM.Infrastructure.Repositories
                 .Include(p => p.Contact)
                 .Include(p => p.Members)
                 .Include(p => p.Documents)
-                .Include(p => p.Tasks)
+                .Include(p => p.Tasks).ThenInclude(t => t.AssignedUser)
+                .Include(p => p.Tasks).ThenInclude(t => t.ReportedUser)
                 .ToListAsync();
         }
 

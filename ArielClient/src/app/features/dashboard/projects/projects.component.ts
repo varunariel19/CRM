@@ -6,6 +6,9 @@ import { ProjectService } from '../../../services/project.service';
 import { ProjectState } from '../../../state/project.state';
 import { TeamState } from '../../../state/team.state';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
+import { Task } from '../../../services/task-management.service';
+import { GlobalState } from '../../../state/global.state';
+import { ProjectMemberDepartment } from '../../../core/constants/global';
 
 export interface ProjectMember {
   id: string;
@@ -40,6 +43,7 @@ export interface Project {
   client?: ClientInfo;
   projectLead?: ProjectMember;
   members: ProjectMember[];
+  tasks: Task[],
   documents: ProjectDocument[];
   tasksTotal: number;
   tasksCompleted: number;
@@ -57,6 +61,7 @@ export class ProjectsComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly projectState = inject(ProjectState);
   private readonly teamState = inject(TeamState);
+  private readonly globalState = inject(GlobalState);
   perm = inject(PermissionFacade);
 
   searchQuery = signal('');
@@ -102,9 +107,25 @@ export class ProjectsComponent implements OnInit {
     });
   }
 
-  get teamMembers() {
-    return this.teamState.teamMembers();
+  get departments() {
+    return this.globalState.departments();
   }
+
+  department(key: string) {
+    return this.departments.find(each => each.departmentKey == key);
+  }
+
+  get teamMembers() {
+    const departmentIds = ProjectMemberDepartment
+      .map(key => this.department(key)?.id)
+      .filter((id): id is string => !!id);
+
+    return this.teamState.teamMembers().filter(each =>
+      departmentIds.includes(each.departmentId)
+    );
+  }
+
+
 
   availableToAdd = computed(() => {
     const proj = this.selectedProject();

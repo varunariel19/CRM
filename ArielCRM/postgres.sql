@@ -179,11 +179,24 @@ INSERT INTO departments (id, name, department_key) VALUES
 ('8BA75023-83D6-47A5-8966-FFFBD428BDDD', 'Project Management', 'PROJECT_MANAGEMENT'),
 ('C388B23E-4C85-4EB9-91C2-4B4E23F4F15D', 'Support', 'SUPPORT'),
 ('FE90BF2E-8A85-417C-B0EE-A0AC6A05CC8D', 'Human Resources', 'HUMAN_RESOURCES'),
-('215BCD48-5EF1-4EEA-B37C-2AEB7A34F70C', 'Administration', 'ADMINISTRATION');
+('215BCD48-5EF1-4EEA-B37C-2AEB7A34F70C', 'Management', 'ADMINISTRATION');
 
 -- ============================================================
 -- DESIGNATIONS
 -- ============================================================
+
+-- Department
+INSERT INTO departments (id, name, department_key)
+VALUES
+('9f5c3d0e-6d45-4d64-a4e6-0d9e9c7f1001', 'Account', 'ACCOUNT');
+
+-- Designations
+INSERT INTO designations (id, name, department_id)
+VALUES
+('F3B9D1A7-5C84-4E12-9A6D-8C2F7B4E1A90', 'Associate Software Engineer', '3B5DCEEC-97EA-4AAE-B622-7467CEA3BB2C'),
+('8E2C7A4F-1D56-4B93-A7F1-3D9B6E2C5A1', 'Software Trainee', '3B5DCEEC-97EA-4AAE-B622-7467CEA3BB2C');
+
+
 INSERT INTO designations (id, name, department_id) VALUES
 ('D870ABDF-242A-492D-9237-5A171EDBB9C9', 'BDE', '11E8BF98-EC10-494B-8575-8064819780D9'),
 ('3DFD3452-5771-4CEB-8F09-7793EFFE811A', 'Senior BDE', '11E8BF98-EC10-494B-8575-8064819780D9'),

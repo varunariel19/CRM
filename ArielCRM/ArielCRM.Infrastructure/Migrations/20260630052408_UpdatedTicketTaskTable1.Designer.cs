@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ArielCRM.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ArielCRM.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630052408_UpdatedTicketTaskTable1")]
+    partial class UpdatedTicketTaskTable1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1017,14 +1020,6 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_deleted");
-
-                    b.Property<bool>("IsEdited")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_edited");
-
                     b.Property<string[]>("SeenByIds")
                         .IsRequired()
                         .HasColumnType("text[]")
@@ -1312,12 +1307,6 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)")
                         .HasColumnName("email");
-
-                    b.Property<string>("EmployeeId")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)")
-                        .HasColumnName("employee_id");
 
                     b.Property<string>("Name")
                         .IsRequired()

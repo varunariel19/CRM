@@ -28,6 +28,8 @@ interface PendingAttachment {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
+
+  private readonly UNDO_WINDOW_MS = 5 * 60 * 1000;
   private teamsService = inject(TeamsService);
   private authState = inject(AuthState);
   private sanitizer = inject(DomSanitizer);
@@ -74,6 +76,9 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   pendingDirect = signal<TeamUser | null>(null);
 
 
+  editingMessageId = signal<string | null>(null);
+  editingMessageContent = signal('');
+
 
   selectedConversation = computed(() => this.conversations().find(c => c.id === this.selectedConversationId()) ?? null);
   availableUsers = computed(() => this.users().filter(u => u.id !== this.currentUserId()));
@@ -117,7 +122,10 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.teamsService.connect(
       message => this.receiveMessage(message),
       conversation => this.upsertConversation(conversation),
-      (conversationId, messageIds, seenById) => this.applyMessagesSeen(conversationId, messageIds, seenById)
+      (conversationId, messageIds, seenById) => this.applyMessagesSeen(conversationId, messageIds, seenById),
+      message => this.applyMessageEdited(message),
+      message => this.applyMessageDeleted(message),
+      message => this.applyMessageRestored(message)
     ).catch(err => console.error('Teams realtime connection failed', err));
   }
 
@@ -443,6 +451,20 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     return null;
   }
 
+  canUndoDelete(msg: TeamMessage): boolean {
+    if (!msg.isDeleted || msg.senderId != this.authState.userId()) return false;
+    const deletedAt = new Date(msg.updatedAt).getTime();
+    return Date.now() < deletedAt + this.UNDO_WINDOW_MS;
+  }
+
+  undoDelete(msg: TeamMessage): void {
+    this.teamsService.restoreMessage(msg.conversationId, msg.id).subscribe({
+      next: updated => this.applyMessageRestored(updated),
+      error: () => {
+      }
+    });
+  }
+
   isFirstInRun(index: number): boolean {
     const msgs = this.messages();
     if (index <= 0) return true;
@@ -515,11 +537,117 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.teamsService.sendTyping(conversationId, isTyping);
   }
 
+
+
+  onEditInput(event: Event): void {
+    const el = event.target as HTMLElement;
+    this.editingMessageContent.set(el.innerHTML);
+  }
+
+  private originalContentCache = new Map<string, string>();
+  startEditMessage(msg: TeamMessage) {
+    this.editingMessageId.set(msg.id);
+    this.editingMessageContent.set(msg.content ?? '');
+    if (!this.originalContentCache.has(msg.id)) {
+      this.originalContentCache.set(msg.id, msg.content ?? '');
+    }
+
+    setTimeout(() => {
+      const el = document.querySelector('.message-edit-input') as HTMLElement;
+      if (!el) return;
+
+      el.innerHTML = msg.content ?? ''; // set once, imperatively — no reactive binding
+      el.focus();
+
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    });
+  }
+
+  cancelEditMessage() {
+    this.editingMessageId.set(null);
+    this.editingMessageContent.set('');
+  }
+
+  saveEditMessage(msg: TeamMessage) {
+    const content = this.editingMessageContent().trim();
+    if (!content) return;
+
+    this.teamsService.editMessage(msg.conversationId, msg.id, content).subscribe({
+      next: updated => {
+        this.applyMessageEdited(updated);
+        this.cancelEditMessage();
+      },
+      error: () => {
+        // optionally surface an error toast here
+      }
+    });
+  }
+
+  deleteMessage(msg: TeamMessage) {
+    this.teamsService.deleteMessage(msg.conversationId, msg.id).subscribe({
+      next: () => this.applyMessageDeleted({ ...msg, isDeleted: true, content: '' }),
+      error: () => {
+        // optionally surface an error toast here
+      }
+    });
+  }
+
+
+
+
+
+
+
   trackByConversation = (_: number, conversation: TeamConversation) => conversation.id;
   trackByUser = (_: number, user: TeamUser) => user.id;
   trackByMember = (_: number, member: TeamConversationMember) => member.id;
   trackByMessage = (_: number, message: TeamMessage) => message.id;
   trackByAttachment = (_: number, attachment: TeamMessageAttachment | PendingAttachment) => attachment.id;
+
+
+  private applyMessageEdited(message: TeamMessage): void {
+    if (message.conversationId === this.selectedConversationId()) {
+      this.messages.update(messages => messages.map(m => m.id === message.id ? message : m));
+    }
+
+    this.teamsService.conversations.update(conversations => conversations.map(c =>
+      c.id === message.conversationId && c.lastMessage?.id === message.id
+        ? { ...c, lastMessage: message }
+        : c
+    ));
+  }
+
+  private applyMessageDeleted(message: TeamMessage): void {
+    const currentTime = new Date(Date.now()).toString();
+    if (message.conversationId === this.selectedConversationId()) {
+      this.messages.update(messages => messages.map(m => m.id === message.id ? { ...m, isDeleted: true, updatedAt: currentTime, content: '' } : m));
+    }
+
+    this.teamsService.conversations.update(conversations => conversations.map(c =>
+      c.id === message.conversationId && c.lastMessage?.id === message.id
+        ? { ...c, lastMessage: { ...c.lastMessage, isDeleted: true, content: '' } }
+        : c
+    ));
+  }
+
+
+  private applyMessageRestored(message: TeamMessage): void {
+    if (message.conversationId === this.selectedConversationId()) {
+      this.messages.update(messages => messages.map(m => m.id === message.id ? message : m));
+    }
+
+    this.teamsService.conversations.update(conversations => conversations.map(c =>
+      c.id === message.conversationId && c.lastMessage?.id === message.id
+        ? { ...c, lastMessage: message }
+        : c
+    ));
+  }
+
 
   private receiveMessage(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
@@ -593,6 +721,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
       senderName: this.currentUserName(),
       content,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       attachments: attachments.map(attachment => ({
         id: attachment.id,
         fileName: attachment.name,

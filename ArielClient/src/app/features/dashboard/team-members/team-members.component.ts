@@ -42,6 +42,7 @@ export class TeamMembersComponent implements OnInit {
     designationId: '',
     accessLevelId: '',
     profileImage: '',
+    joinedAt: ''
   };
 
 
@@ -63,13 +64,34 @@ export class TeamMembersComponent implements OnInit {
     });
   });
 
+  maxJoinDate: string = this.getTodayDateString();
+
+  private getTodayDateString(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   get departments() {
     return this.globalState.departments();
   }
 
   get designations() {
+    if (!this.newMember.departmentId) {
+      return [];
+    }
+    return this.globalState.designations().filter(
+      d => d.departmentId === this.newMember.departmentId
+    );
+  }
+
+  get allDesignations() {
     return this.globalState.designations();
   }
+
+
 
   get teamMemberList() {
     return this.filteredMembers();
@@ -118,6 +140,7 @@ export class TeamMembersComponent implements OnInit {
     this.newMember = {
       name: '',
       email: '',
+      joinedAt: '',
       departmentId: '',
       designationId: '',
       accessLevelId: '',
@@ -161,6 +184,11 @@ export class TeamMembersComponent implements OnInit {
     }
     if (!this.newMember.accessLevelId) {
       this.formError.set('Access level is required.');
+      return false;
+    }
+
+    if (!this.newMember.joinedAt) {
+      this.formError.set('Joined At date is required.');
       return false;
     }
     return true;

@@ -205,14 +205,21 @@
                                         [class.pending]="message.pending" [class.failed]="message.failed"
                                         [class.continuation]="!isFirstInRun(i)" [class.last-in-run]="isLastInRun(i)">
 
-                                        <div class="msg-header" *ngIf="isFirstInRun(i)"
+                                        <div class="msg-header"
+                                            *ngIf="isFirstInRun(i) || (message.isEdited && !message.isDeleted)"
                                             [class.msg-header--mine]="message.senderId === currentUserId()">
-                                            <span class="msg-sender" *ngIf="message.senderId !== currentUserId()">
+                                            <span class="msg-sender"
+                                                *ngIf="message.senderId !== currentUserId() && isFirstInRun(i)">
                                                 {{ message.senderName }}
                                             </span>
-                                            <time class="msg-timestamp">
-                                                {{ message.createdAt | date:'h:mm a' }}
+                                            <time class="msg-timestamp" *ngIf="isFirstInRun(i)">
+                                                {{ (message.isEdited ? message.updatedAt : message.createdAt) |
+                                                date:'h:mm a' }}
                                             </time>
+                                            <span class="edited-tag" *ngIf="message.isEdited && !message.isDeleted">
+                                                {{ isFirstInRun(i) ? '' : (message.updatedAt | date:'h:mm a') }} ·
+                                                Edited
+                                            </span>
                                         </div>
 
                                         <div class="msg-row">
@@ -223,34 +230,75 @@
                                             </span>
 
                                             <div class="bubble">
-                                                <div class="message__body" *ngIf="message.content"
-                                                    [innerHTML]="sanitize(message.content)"></div>
+                                                <ng-container *ngIf="editingMessageId() === message.id; else viewMode">
+                                                    <div class="message-edit-box">
+                                                        <div #editBox class="message-edit-input" contenteditable="true"
+                                                            (input)="onEditInput($event)"
+                                                            (keydown.enter)="$event.preventDefault(); saveEditMessage(message)"
+                                                            (keydown.escape)="cancelEditMessage()">
+                                                        </div>
+                                                        <div class="message-edit-actions">
+                                                            <button type="button" class="btn-cancel"
+                                                                (click)="cancelEditMessage()">Cancel</button>
+                                                            <button type="button" class="btn-save"
+                                                                (click)="saveEditMessage(message)">Save</button>
+                                                        </div>
+                                                    </div>
+                                                </ng-container>
+                                                <ng-template #viewMode>
+                                                    <div class="deleted_message__body" *ngIf="message.isDeleted">
+                                                        <em class="message-deleted">This message was deleted</em>
+                                                        <button type="button" class="undo-delete-btn"
+                                                            *ngIf="canUndoDelete(message)"
+                                                            (click)="undoDelete(message)">
+                                                            Undo
+                                                        </button>
+                                                    </div>
+                                                    <div class="message__body"
+                                                        *ngIf="!message.isDeleted && message.content"
+                                                        [innerHTML]="sanitize(message.content)"></div>
 
-                                                <div class="attachment-grid" *ngIf="message.attachments.length">
-                                                    <div class="attachment"
-                                                        *ngFor="let att of message.attachments; trackBy: trackByAttachment"
-                                                        (click)="openViewer(att, message.attachments)"
-                                                        style="cursor:pointer">
-                                                        <img *ngIf="att.attachmentType === 'image' && att.fileUrl"
-                                                            [src]="att.fileUrl" [alt]="att.fileName" loading="lazy">
-                                                        <video *ngIf="att.attachmentType === 'video' && att.fileUrl"
-                                                            [src]="att.fileUrl" preload="metadata"></video>
-                                                        <audio *ngIf="att.attachmentType === 'audio' && att.fileUrl"
-                                                            [src]="att.fileUrl" preload="metadata" controls
-                                                            (click)="$event.stopPropagation()"></audio>
-                                                        <div class="file-chip"
-                                                            *ngIf="att.attachmentType !== 'image' && att.attachmentType !== 'video' && att.attachmentType !== 'audio'">
-                                                            <i class="fas"
-                                                                [class.fa-file-lines]="att.attachmentType === 'document'"
-                                                                [class.fa-file]="att.attachmentType !== 'document'"></i>
-                                                            <div class="file-chip-info">
-                                                                <strong>{{ att.fileName }}</strong>
-                                                                <small>{{ formatBytes(att.sizeBytes) }}</small>
+                                                    <div class="attachment-grid"
+                                                        *ngIf="!message.isDeleted && message.attachments.length">
+                                                        <div class="attachment"
+                                                            *ngFor="let att of message.attachments; trackBy: trackByAttachment"
+                                                            (click)="openViewer(att, message.attachments)"
+                                                            style="cursor:pointer">
+                                                            <img *ngIf="att.attachmentType === 'image' && att.fileUrl"
+                                                                [src]="att.fileUrl" [alt]="att.fileName" loading="lazy">
+                                                            <video *ngIf="att.attachmentType === 'video' && att.fileUrl"
+                                                                [src]="att.fileUrl" preload="metadata"></video>
+                                                            <audio *ngIf="att.attachmentType === 'audio' && att.fileUrl"
+                                                                [src]="att.fileUrl" preload="metadata" controls
+                                                                (click)="$event.stopPropagation()"></audio>
+                                                            <div class="file-chip"
+                                                                *ngIf="att.attachmentType !== 'image' && att.attachmentType !== 'video' && att.attachmentType !== 'audio'">
+                                                                <i class="fas"
+                                                                    [class.fa-file-lines]="att.attachmentType === 'document'"
+                                                                    [class.fa-file]="att.attachmentType !== 'document'"></i>
+                                                                <div class="file-chip-info">
+                                                                    <strong>{{ att.fileName }}</strong>
+                                                                    <small>{{ formatBytes(att.sizeBytes) }}</small>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
+                                                </ng-template>
+
+                                                <div class="message-hover-toolbar"
+                                                    *ngIf="message.senderId === currentUserId() && !message.pending && !message.failed && !message.isDeleted && editingMessageId() !== message.id">
+                                                    <button type="button" title="Edit"
+                                                        (click)="startEditMessage(message)">
+                                                        <i class="fas fa-pen"></i>
+                                                    </button>
+                                                    <button type="button" title="Delete"
+                                                        (click)="deleteMessage(message)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
                                                 </div>
                                             </div>
+
+
                                         </div>
 
                                         <div class="read-receipt" *ngIf="getMessageReceipt(message) as receipt">

@@ -24,7 +24,7 @@ namespace ArielCRM.DataLayer.Entities
         [Column("title")]
         [MaxLength(255)]
         public string Title { get; set; } = string.Empty;
-    
+
         [Required]
         [Column("type")]
         public string Type { get; set; } = TicketTaskType.TASK.ToString();
@@ -55,11 +55,12 @@ namespace ArielCRM.DataLayer.Entities
         [Column("updated_at")]
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        [NotMapped]
-        public List<string> AiSummary { get; set; } = new();
+      
+
+        public List<string>? AiSummary { get; set; } = [];
 
         [NotMapped]
-        public List<string> AllowedMembers { get; set; } = new();
+        public List<string> AllowedMembers { get; set; } = [];
 
         [ForeignKey(nameof(AssignToId))]
         public User? AssignedUser { get; set; }
@@ -70,9 +71,8 @@ namespace ArielCRM.DataLayer.Entities
         [ForeignKey(nameof(ProjectId))]
         public Project Project { get; set; } = null!;
 
-        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
-        public ICollection<ActivityLog> ActivityLogs { get; set; } = new List<ActivityLog>();
-
+        public ICollection<Comment> Comments { get; set; } = [];
+        public ICollection<ActivityLog> ActivityLogs { get; set; } = [];
         public static string GenerateFiveDigitTaskId()
         {
             return RandomNumberGenerator.GetInt32(10000, 100000).ToString();

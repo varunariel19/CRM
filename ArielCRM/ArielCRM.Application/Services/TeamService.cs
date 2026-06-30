@@ -11,8 +11,6 @@ namespace ArielCRM.Application.Services
     public class TeamService(
         ITeamRepository repository,
         IEmailService emailService
-        // IDepartmentRepository departmentRepository,
-        // IDesignationRepository designationRepository
         ) : ITeamService
     {
         private readonly ITeamRepository _repository = repository;
@@ -23,11 +21,7 @@ namespace ArielCRM.Application.Services
             if (await _repository.GetByEmailAsync(dto.Email) != null)
                 throw new Exception("Email already exists.");
 
-            // var department = await _departmentRepository.GetByNameAsync(dto.Department)
-            //     ?? throw new Exception("Department not found.");
 
-            // var designation = await _designationRepository.GetByNameAsync(dto.Designation)
-            //     ?? throw new Exception("Designation not found.");
 
             string generatedPass = Utils.GeneratePassword();
 
@@ -66,11 +60,6 @@ namespace ArielCRM.Application.Services
             if (user == null)
                 return null;
 
-            // var department = await _departmentRepository.GetByNameAsync(dto.Department)
-            //     ?? throw new Exception("Department not found.");
-
-            // var designation = await _designationRepository.GetByNameAsync(dto.Designation)
-            //     ?? throw new Exception("Designation not found.");
 
             user.Name = dto.Name;
             user.Email = dto.Email;
@@ -111,6 +100,7 @@ namespace ArielCRM.Application.Services
             return [.. users.Select(x => new TeamMemberDto
             {
                 Id = x.Id,
+                EmployeeId = x.EmployeeId,
                 ProfileImage = x.ProfileImage,
                 Name = x.Name,
                 Email = x.Email,

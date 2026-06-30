@@ -48,6 +48,7 @@ export interface UpdateTaskRequest {
     priority: TaskPriority;
     type: TaskType;
     status: TaskStatus;
+    aiSummary? : string[];
     assignToId: string;
 }
 

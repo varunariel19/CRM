@@ -19,6 +19,9 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Id { get; set; } = string.Empty;
         public string ConversationId { get; set; } = string.Empty;
         public string SenderId { get; set; } = string.Empty;
+
+        public bool IsEdited { get; set; }
+        public bool IsDeleted { get; set; }
         public List<string> SeenByIds { get; set; } = [];
         public string SenderName { get; set; } = string.Empty;
         public string? SenderProfileImage { get; set; }
@@ -74,5 +77,10 @@ namespace ArielCRM.Infrastructure.DTOs
     public class AddGroupMembersDto
     {
         public List<string> MemberIds { get; set; } = [];
+    }
+
+    public class EditTeamMessageDto
+    {
+        public string Content { get; set; } = string.Empty;
     }
 }

@@ -56,7 +56,9 @@
   </div>
 
   <!-- EDIT MODAL -->
-  <div class="modal-overlay" *ngIf="showEditModal && editTask && perm.taskManagement.canEdit()" (click)="closeEditModal($event)">
+  <div class="modal-overlay"
+    *ngIf="showEditModal && editTask && (perm.taskManagement.canEdit() || canEditAsAssignee(editTask))"
+    (click)="closeEditModal($event)">
     <div class="modal-box">
       <div class="modal-header">
         <h2>Edit Task</h2>
@@ -69,10 +71,7 @@
           <label>Task Title <span class="required">*</span></label>
           <input type="text" [(ngModel)]="editTask.title" />
         </div>
-        <div class="form-group full-width">
-          <label>Description</label>
-          <textarea [(ngModel)]="editTask.description" rows="2"></textarea>
-        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label>Status</label>
@@ -192,26 +191,23 @@
         </div>
       </div>
 
-      <div class="deal-list"
-        [class.drop-enabled]="perm.taskManagement.canEdit()"
-        (dragover)="perm.taskManagement.canEdit() && allowDrop($event)"
-        (drop)="perm.taskManagement.canEdit() && dropTask($event, col.key)">
+      <div class="deal-list" [class.drop-enabled]="perm.taskManagement.canEdit() || canEditAsAssignee(draggedTask)"
+        (dragover)="(perm.taskManagement.canEdit() || canEditAsAssignee(draggedTask)) && allowDrop($event)"
+        (drop)="(perm.taskManagement.canEdit() || canEditAsAssignee(draggedTask)) && dropTask($event, col.key)">
 
         <div *ngIf="getColumnTasks(col.key).length === 0" class="empty-state">
           No tasks here.
         </div>
 
-        <div class="deal-card"
-          *ngFor="let task of getColumnTasks(col.key)"
-          [draggable]="perm.taskManagement.canEdit()"
-          (click)="viewTicket(task)"
-          (dragstart)="perm.taskManagement.canEdit() && dragTask($event, task, col.key)">
+        <div class="deal-card" *ngFor="let task of getColumnTasks(col.key)"
+          [draggable]="perm.taskManagement.canEdit() || canEditAsAssignee(task)" (click)="viewTicket(task)"
+          (dragstart)="(perm.taskManagement.canEdit() || canEditAsAssignee(task)) && dragTask($event, task, col.key)"
+          (dragend)="draggedTask = null; draggedFrom = ''">
 
           <!-- Top row: ID + Priority badge -->
           <div class="task-top">
             <span class="task-id">#{{ task.taskId }}</span>
-            <span class="priority-badge"
-              [style.color]="priorityMeta(task.priority).color"
+            <span class="priority-badge" [style.color]="priorityMeta(task.priority).color"
               [style.background]="priorityMeta(task.priority).bg">
               {{ priorityMeta(task.priority).icon }} {{ task.priority }}
             </span>
@@ -231,8 +227,7 @@
             <div>
               <span>TYPE</span>
               <p>
-                <span class="type-badge"
-                  [style.color]="typeMeta(task.type).color"
+                <span class="type-badge" [style.color]="typeMeta(task.type).color"
                   [style.background]="typeMeta(task.type).bg">
                   {{ task.type }}
                 </span>
@@ -253,18 +248,12 @@
             </div>
 
             <div class="deal-actions">
-              <i *ngIf="perm.taskManagement.canEdit()"
-                class="fas fa-pen"
-                title="Edit"
+              <i *ngIf="perm.taskManagement.canEdit()" class="fas fa-pen" title="Edit"
                 (click)="openEditModal($event, task)"></i>
-              <i *ngIf="perm.taskManagement.canEdit()"
-                class="fas fa-chevron-left"
-                title="Move Left"
-                (click)="moveLeft(col.key, task)"></i>
-              <i *ngIf="perm.taskManagement.canEdit()"
-                class="fas fa-chevron-right"
-                title="Move Right"
-                (click)="moveRight(col.key, task)"></i>
+              <i *ngIf="perm.taskManagement.canEdit() || canEditAsAssignee(task)" class="fas fa-chevron-left"
+                [title]="previousStep(task.status)" (click)="moveLeft($event , col.key, task)"></i>
+              <i *ngIf="perm.taskManagement.canEdit() || canEditAsAssignee(task)" class="fas fa-chevron-right"
+                [title]="nextStep(task.status)" (click)="moveRight($event ,col.key, task)"></i>
             </div>
           </div>
 
@@ -274,11 +263,6 @@
   </div>
 </div>
 
-<app-view-ticket
-  *ngIf="selectedTicket"
-  [projectMembers]="assignee"
-  [isOpen]="showTicketModal"
-  [ticket]="selectedTicket"
-  (ticketUpdated)="updateTicketFromView($event)"
-  (closeModal)="closeModal()">
+<app-view-ticket *ngIf="selectedTicket" [projectMembers]="assignee" [isOpen]="showTicketModal" [ticket]="selectedTicket"
+  (ticketUpdated)="updateTicketFromView($event)" (closeModal)="closeModal()">
 </app-view-ticket>

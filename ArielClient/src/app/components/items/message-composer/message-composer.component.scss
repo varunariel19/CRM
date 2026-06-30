@@ -1,9 +1,8 @@
-// ── Composer ──────────────────────────────────────────────────────
 .composer {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  overflow: visible; // allow emoji picker / tooltip to overflow
+  overflow: visible;
   position: relative;
   transition: border-color 0.2s, box-shadow 0.2s;
 
@@ -12,7 +11,6 @@
     box-shadow: 0 0 0 3px var(--primary-soft-bg);
   }
 
-  // ── Formatting Toolbar ─────────────────────────────────────────
   .composer-toolbar {
     display: flex;
     align-items: center;
@@ -64,7 +62,6 @@
     }
   }
 
-  // ── Attachments ────────────────────────────────────────────────
   .composer-attachments {
     display: flex;
     flex-wrap: wrap;
@@ -143,7 +140,6 @@
     }
   }
 
-  // ── Editor Body ────────────────────────────────────────────────
   .composer-body {
     display: flex;
     align-items: flex-end;
@@ -183,7 +179,6 @@
         height: 0;
       }
 
-      // inline code
       code {
         font-size: 12px;
         background: var(--surface-muted);
@@ -195,13 +190,11 @@
     }
   }
 
-  // ── Right-side Tools ───────────────────────────────────────────
   .composer-tools-right {
     display: flex;
     align-items: center;
     gap: 1px;
     flex-shrink: 0;
-    padding-bottom: 1px; // optical baseline alignment
 
     .divider {
       width: 1px;
@@ -261,7 +254,6 @@
     }
   }
 
-  // ── Tooltip ────────────────────────────────────────────────────
   .tooltip-wrap {
     position: relative;
     display: flex;
@@ -310,7 +302,6 @@
 }
 
 
-// ── Animations ─────────────────────────────────────────────────────
 @keyframes slide-down {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }

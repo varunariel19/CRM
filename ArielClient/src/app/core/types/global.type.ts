@@ -23,6 +23,7 @@ export interface ActivityLog {
 // global.type.ts
 export interface TeamMember {
   id: string;
+  employeeId  : string;
   profileImage?: string;
   name: string;
   email: string;
@@ -45,6 +46,7 @@ export interface CreateTeamMemberDto {
   designationId: string;
   accessLevelId: string;
   profileImage?: string;
+  joinedAt : string;
 }
 
 export interface UpdateTeamMemberDto {

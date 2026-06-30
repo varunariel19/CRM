@@ -82,6 +82,9 @@ export const endpoints = {
         messages: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages`,
         sendMessage: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages`,
         markRead: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/read`,
+        editMessage: (conversationId: string, messageId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages/${messageId}`,
+        deleteMessage: (conversationId: string, messageId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages/${messageId}`,
+        restoreMessage: (conversationId: string, messageId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages/${messageId}/restore`,
     },
 
 

@@ -90,12 +90,8 @@ export class TaskManagementComponent {
 
   loadTasks(): void {
     this.isLoading.set(true);
-    this.taskService.getAllTasks()
-      .pipe(finalize(() => this.isLoading.set(false)))
-      .subscribe({
-        next: (tasks) => this.allTasks.set(tasks),
-        error: (err) => console.error('Failed to load tasks', err),
-      });
+    const taskList = this.allProjects.flatMap(project => project.tasks);
+    this.allTasks.set(taskList);
   }
 
   submitTask(): void {
@@ -183,12 +179,16 @@ export class TaskManagementComponent {
     this.draggedFrom = '';
   }
 
-  moveLeft(colKey: string, task: Task): void {
+  moveLeft(event: Event, colKey: string, task: Task): void {
+    event.preventDefault();
+    event.stopPropagation();
     const idx = this.columns.findIndex((c) => c.key === colKey);
     if (idx > 0) this.moveTaskToStatus(task, this.columns[idx - 1].key as TaskStatus);
   }
 
-  moveRight(colKey: string, task: Task): void {
+  moveRight(event: Event, colKey: string, task: Task): void {
+    event.preventDefault();
+    event.stopPropagation();
     const idx = this.columns.findIndex((c) => c.key === colKey);
     if (idx < this.columns.length - 1)
       this.moveTaskToStatus(task, this.columns[idx + 1].key as TaskStatus);
@@ -221,8 +221,28 @@ export class TaskManagementComponent {
   }
 
 
+  nextStep(status: string): string {
+    switch (status) {
+      case "TODO": return "Move to In Progress";
+      case "IN_PROGRESS": return "Move to Review";
+      case "REVIEW": return "Move to Done";
+      case "DONE": return "Already Done";
+      default: return "";
+    }
+  }
+
+  previousStep(status: string): string {
+    switch (status) {
+      case "DONE": return "Move to Review";
+      case "REVIEW": return "Move to In Progress";
+      case "IN_PROGRESS": return "Move to To Do";
+      case "TODO": return "Already at To Do";
+      default: return "";
+    }
+  }
 
   get allProjects() { return this.projectState.projects(); }
+
 
   get projectMembers(): TaskMember[] {
     const pid = this.selectedProjectId();
@@ -261,6 +281,11 @@ export class TaskManagementComponent {
   }
 
   onProjectChange(): void { this.selectedMemberId.set(''); }
+
+
+  canEditAsAssignee(task: Task | null | undefined) {
+    return task?.assignee?.id === this.authState.userId();
+  }
 
   clearFilters(): void {
     this.selectedProjectId.set('');
@@ -313,6 +338,7 @@ export class TaskManagementComponent {
   }
 
   updateTicketFromView(ticket: Task): void {
+    debugger;
     const previousTicket = this.allTasks().find((t) => t.taskId === ticket.taskId);
     if (!previousTicket) return;
 
@@ -328,6 +354,7 @@ export class TaskManagementComponent {
       description: updatedTicket.description,
       priority: updatedTicket.priority,
       type: updatedTicket.type,
+      aiSummary: updatedTicket.aiSummary ?? [],
       status: updatedTicket.status,
       assignToId: updatedTicket.assignee.id ?? '',
     };

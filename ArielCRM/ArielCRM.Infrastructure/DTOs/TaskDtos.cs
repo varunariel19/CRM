@@ -36,6 +36,8 @@ namespace ArielCRM.Infrastructure.DTOs
 
         public TasksStatus? Status { get; set; }
 
+        public List<string>? AiSummary { get; set; } = [];
+
         public string? AssignToId { get; set; }
     }
 
@@ -55,8 +57,10 @@ namespace ArielCRM.Infrastructure.DTOs
 
         public string Status { get; set; } = string.Empty;
 
-         public UserSummaryDto Assignee {get ;set;}  = null!;
-         public UserSummaryDto Reporter {get ;set;}  = null!;
+        public List<string>? AiSummary { get; set; } = [];
+
+        public UserSummaryDto Assignee { get; set; } = null!;
+        public UserSummaryDto Reporter { get; set; } = null!;
 
         public string ProjectId { get; set; } = string.Empty;
 
@@ -66,11 +70,11 @@ namespace ArielCRM.Infrastructure.DTOs
     }
 
 
-    public  class UserDetail
+    public class UserDetail
     {
-    public string Id {get; set;} = string.Empty;
-    public string Name {get; set;} = string.Empty;
-    
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+
     }
 
 

@@ -81,7 +81,7 @@
     <select class="tm-input tm-select" [value]="filterDesignation()"
       (change)="onDesignationChange($any($event.target).value)">
       <option value="">All Designations</option>
-      <option *ngFor="let d of designations" [value]="d.id">{{ d.name }}</option>
+      <option *ngFor="let d of allDesignations" [value]="d.id">{{ d.name }}</option>
     </select>
 
     <button *ngIf="hasActiveFilters" class="tm-btn-ghost tm-clear-all" (click)="clearFilters()">
@@ -109,7 +109,8 @@
       </svg>
     </div>
     <p class="tm-empty__title">{{ hasActiveFilters ? 'No members match your filters' : 'No team members yet' }}</p>
-    <p class="tm-empty__sub">{{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Add your first team member to get started.' }}</p>
+    <p class="tm-empty__sub">{{ hasActiveFilters ? 'Try adjusting or clearing your filters.' : 'Add your first team
+      member to get started.' }}</p>
 
     @if(!hasActiveFilters && perm.teamMembers.canCreate()) {
     <button class="tm-btn-primary" (click)="openAddModal()">Add First Member</button>
@@ -139,7 +140,7 @@
         </div>
         <div class="tm-card__info">
           <h3 class="tm-card__name">{{ member.name }}</h3>
-          <span class="tm-badge tm-badge--designation">{{ globalState.getDepartmentName(member.departmentId) }}</span>
+          <span class="tm-badge tm-badge--designation">{{ globalState.getDesignationName(member.designationId) }}</span>
         </div>
       </div>
       <div class="tm-card__body">
@@ -269,29 +270,48 @@
         </div>
       </div>
 
+
+
       <div class="tm-form-row">
         <div class="tm-form-group">
           <label class="tm-label">Department <span class="tm-required">*</span></label>
           <select class="tm-input" [(ngModel)]="newMember.departmentId" (focus)="formError.set('')">
+
             <option value="">Select department</option>
             <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
           </select>
         </div>
+
         <div class="tm-form-group">
           <label class="tm-label">Designation <span class="tm-required">*</span></label>
-          <select class="tm-input" [(ngModel)]="newMember.designationId" (focus)="formError.set('')">
-            <option value="">Select designation</option>
+          <select class="tm-input" [(ngModel)]="newMember.designationId" (focus)="formError.set('')"
+            [disabled]="!newMember.departmentId">
+            <option value="">
+              {{ newMember.departmentId ? 'Select designation' : 'Select department first' }}
+            </option>
             <option *ngFor="let d of designations" [value]="d.id">{{ d.name }}</option>
           </select>
         </div>
+
         <div class="tm-form-group">
           <label class="tm-label">Access Level <span class="tm-required">*</span></label>
           <select class="tm-input" [(ngModel)]="newMember.accessLevelId" (focus)="formError.set('')">
-            <option value="">Select level</option>
+     F?       <option value="">Select level</option>
             <option *ngFor="let level of accessLevels" [value]="level.id">{{ level.name }}</option>
           </select>
         </div>
+
+        <div class="tm-form-group">
+          <label class="tm-label">Joined At <span class="tm-required">*</span></label>
+          <input class="tm-input" type="date" [(ngModel)]="newMember.joinedAt" [max]="maxJoinDate"
+            (focus)="formError.set('')" />
+        </div>
       </div>
+
+
+
+
+
     </div>
 
     <div class="tm-modal__footer">
@@ -394,7 +414,7 @@
           </div>
           <div>
             <span class="tm-profile__item-label">Member ID</span>
-            <span class="tm-profile__item-value tm-mono">#{{ selectedMember()!.id }}</span>
+            <span class="tm-profile__item-value tm-mono">#{{ selectedMember()!.employeeId ?? "ARLE-?" }}</span>
           </div>
         </div>
       </div>

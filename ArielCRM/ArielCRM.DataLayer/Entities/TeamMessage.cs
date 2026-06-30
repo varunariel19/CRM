@@ -35,12 +35,19 @@ namespace ArielCRM.DataLayer.Entities
         [MaxLength(4000)]
         public string? Content { get; set; } = string.Empty;
 
+
+          [Column("is_edited")]
+        public bool IsEdited { get; set; } = false;
+
+        [Column("is_deleted")]
+        public bool IsDeleted { get; set; } = false;
+
         [Required]
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; } 
 
         public ICollection<TeamMessageAttachment> Attachments { get; set; } = new List<TeamMessageAttachment>();
     }

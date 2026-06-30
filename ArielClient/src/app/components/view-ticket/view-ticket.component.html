@@ -39,8 +39,9 @@
 
         <div *ngIf="!isEditingDescription" class="description-view" [innerHTML]="safeDescription"></div>
 
-        <div *ngIf="isEditingDescription && perm.taskManagement.canEdit()" class="editor-wrapper"
-          [class.ai-editor-glow]="isDescriptionGlowing">
+        <div *ngIf="isEditingDescription && (perm.taskManagement.canEdit() || canEditAsAssignee())"
+          class="editor-wrapper" [class.ai-editor-glow]="isDescriptionGlowing">
+
           <p-editor [(ngModel)]="htmlContent" [style]="{ height: '300px' }" (onInit)="onEditorInit($event)">
           </p-editor>
 
@@ -59,7 +60,7 @@
           </div>
         </div>
 
-        <div class="actions" *ngIf="!isEditingDescription && perm.taskManagement.canEdit()">
+        <div class="actions" *ngIf="!isEditingDescription && (perm.taskManagement.canEdit() || canEditAsAssignee())">
           <button (click)="startEditing()">Edit</button>
         </div>
 
@@ -70,7 +71,8 @@
 
         <div class="summary-header">
           <h4>AI Summary</h4>
-          <button *ngIf="perm.taskManagement.canEdit()" (click)="generateSummary()" [disabled]="isGeneratingSummary">
+          <button *ngIf="perm.taskManagement.canEdit()" (click)="generateSummary()"
+            [disabled]="isGeneratingSummary">
             <span *ngIf="!isGeneratingSummary">Generate</span>
             <span *ngIf="isGeneratingSummary" class="generating-text">
               <span class="dot-1">.</span><span class="dot-2">.</span><span class="dot-3">.</span>
@@ -303,7 +305,7 @@
       <div class="detail-card">
         <label>Status</label>
         <select [ngModel]="ticket.status" (ngModelChange)="onStatusChange($event)"
-          [disabled]="!perm.taskManagement.canEdit()">
+          [disabled]="!(perm.taskManagement.canEdit() || canEditAsAssignee())">
           <option *ngFor="let p of statuses" [value]="p">{{ p }}</option>
         </select>
       </div>
@@ -311,7 +313,7 @@
       <div class="detail-card">
         <label>Priority</label>
         <select [ngModel]="ticket.priority" (ngModelChange)="onPriorityChange($event)"
-          [disabled]="!perm.taskManagement.canEdit()">
+          [disabled]="!(perm.taskManagement.canEdit() || canEditAsAssignee())">
           <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
         </select>
       </div>
@@ -319,7 +321,7 @@
       <div class="detail-card">
         <label>Type</label>
         <select [ngModel]="ticket.type" (ngModelChange)="onTypeChange($event)"
-          [disabled]="!perm.taskManagement.canEdit()">
+          [disabled]="!(perm.taskManagement.canEdit() || canEditAsAssignee())">
           <option *ngFor="let p of types" [value]="p">{{ p }}</option>
         </select>
       </div>

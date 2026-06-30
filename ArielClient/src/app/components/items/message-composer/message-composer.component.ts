@@ -4,8 +4,7 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TeamAttachmentType } from '../../../core/types/teams.type';
-import { PickerComponent } from '@ctrl/ngx-emoji-mart';
-
+import { PickerComponent } from "@ctrl/ngx-emoji-mart";
 export interface PendingAttachment {
   id: string;
   file: File;
@@ -38,37 +37,37 @@ export class ComposerComponent implements OnInit, OnDestroy {
   showEmojiPicker = signal(false);
   showToolbar = signal(false);
 
- ngOnInit() {
-  setTimeout(() => {
-    this.editor = new Editor({
-      element: this.editorEl.nativeElement,
-      extensions: [
-        StarterKit,
-        Placeholder.configure({ placeholder: 'Type a message' }),
-      ],
-      editorProps: {
-        handleKeyDown: (_, event) => {
-          if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            this.send();
-            return true;
+  ngOnInit() {
+    setTimeout(() => {
+      this.editor = new Editor({
+        element: this.editorEl.nativeElement,
+        extensions: [
+          StarterKit,
+          Placeholder.configure({ placeholder: 'Type a message' }),
+        ],
+        editorProps: {
+          handleKeyDown: (_, event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              this.send();
+              return true;
+            }
+            return false;
           }
-          return false;
-        }
-      },
-      onUpdate: ({ editor }) => {
-        this.content = editor.getText().trim() ? editor.getHTML() : '';
-        this.onTyping.emit(this.content.length > 0);
-      },
+        },
+        onUpdate: ({ editor }) => {
+          this.content = editor.getText().trim() ? editor.getHTML() : '';
+          this.onTyping.emit(this.content.length > 0);
+        },
+      });
+
+      document.addEventListener('keydown', this.handleShortcut);
     });
+  }
 
-    document.addEventListener('keydown', this.handleShortcut);
-  });
-}
-
-  toggleToolbar() { 
-  this.showToolbar.set(!this.showToolbar()); 
-}
+  toggleToolbar() {
+    this.showToolbar.set(!this.showToolbar());
+  }
 
   get canSend(): boolean {
     return !this.disabled() && (this.content.trim().length > 0 || this.attachments.length > 0);
@@ -118,11 +117,11 @@ export class ComposerComponent implements OnInit, OnDestroy {
   }
 
   handleShortcut = (e: KeyboardEvent) => {
-  if (e.ctrlKey && e.shiftKey && e.key === 'X') {
-    e.preventDefault();
-    this.toggleToolbar();
-  }
-};
+    if (e.ctrlKey && e.shiftKey && e.key === 'X') {
+      e.preventDefault();
+      this.toggleToolbar();
+    }
+  };
 
   ngOnDestroy() {
     document.removeEventListener('keydown', this.handleShortcut);

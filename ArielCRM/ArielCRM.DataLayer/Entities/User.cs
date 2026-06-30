@@ -12,6 +12,11 @@ namespace ArielCRM.DataLayer.Entities
         public string Id { get; set; } = Guid.NewGuid().ToString();
 
         [Required]
+        [Column("employee_id")]
+        [MaxLength(150)]
+        public string EmployeeId { get; set; } = string.Empty;
+
+        [Required]
         [Column("name")]
         [MaxLength(100)]
         public string Name { get; set; } = string.Empty;
@@ -58,13 +63,13 @@ namespace ArielCRM.DataLayer.Entities
         [ForeignKey(nameof(AccessLevelId))]
         public AccessLevel AccessLevel { get; set; } = null!;
 
-        public ICollection<Lead> AssignedLeads { get; set; } = new List<Lead>();
-        public ICollection<Deal> AssignedDeals { get; set; } = new List<Deal>();
-        public ICollection<CrmTask> AssignedTasks { get; set; } = new List<CrmTask>();
-        public ICollection<TicketTask> AssignedProjTickets { get; set; } = new List<TicketTask>();
-        public ICollection<TicketTask> ReportedProjTickets { get; set; } = new List<TicketTask>();
-        public ICollection<Ticket> AssignedTickets { get; set; } = new List<Ticket>();
-        public ICollection<Project> LedProjects { get; set; } = new List<Project>();
-        public ICollection<Project> MemberProjects { get; set; } = new List<Project>();
+        public ICollection<Lead> AssignedLeads { get; set; } = [];
+        public ICollection<Deal> AssignedDeals { get; set; } = [];
+        public ICollection<CrmTask> AssignedTasks { get; set; } = [];
+        public ICollection<TicketTask> AssignedProjTickets { get; set; } = [];
+        public ICollection<TicketTask> ReportedProjTickets { get; set; } = [];
+        public ICollection<Ticket> AssignedTickets { get; set; } = [];
+        public ICollection<Project> LedProjects { get; set; } = [];
+        public ICollection<Project> MemberProjects { get; set; } = [];
     }
 }

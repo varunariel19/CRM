@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using ArielCRM.DataLayer.Entities;
 using Microsoft.AspNetCore.Http;
 
 namespace ArielCRM.Infrastructure.DTOs
@@ -56,9 +57,10 @@ namespace ArielCRM.Infrastructure.DTOs
 
         public ProjectMemberDto? ProjectLead { get; set; }
         public List<ProjectMemberDto> Members { get; set; } = [];
+        public List<TaskDetailDto> Tasks { get; set; } = [];
         public List<ProjectDocumentDto> Documents { get; set; } = [];
         public int TasksTotal { get; set; }
-        public int TasksCompleted { get; set; }  = 0;
+        public int TasksCompleted { get; set; } = 0;
     }
 
 

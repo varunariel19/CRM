@@ -77,6 +77,12 @@ namespace ArielCRM.Application.Services
                 task.Title = dto.Title;
             }
 
+            if (dto.AiSummary is not null)
+            {
+                // changes.Add(("AiSummary", task.AiSummary, dto.AiSummary));
+                task.AiSummary = dto.AiSummary;
+            }
+
             if (dto.Description is not null && dto.Description != task.Description)
             {
                 changes.Add(("Description", task.Description, dto.Description));
@@ -103,9 +109,8 @@ namespace ArielCRM.Application.Services
 
             if (dto.AssignToId is not null && dto.AssignToId != task.AssignToId)
             {
-                // Resolve display name — pass assignee name via dto or fetch from repo
                 var oldName = task.AssignedUser?.Name ?? task.AssignToId ?? "Unassigned";
-                changes.Add(("Assignee", oldName, dto.AssignToId)); // NewValue = ID, resolved on frontend
+                changes.Add(("Assignee", oldName, dto.AssignToId));
                 task.AssignToId = dto.AssignToId;
             }
 
@@ -118,10 +123,9 @@ namespace ArielCRM.Application.Services
                 await _ticketHRepo.CreateAsync(new TicketHistory
                 {
                     TicketId = task.TaskId,
-                    Title = GetHistoryTitle(field),   // e.g. "Status changed"
+                    Title = GetHistoryTitle(field),
                     Content = BuildPillHtml(field, oldVal, newVal),
                     CreatedAt = DateTime.UtcNow
-                    // CommitedBy is set by the caller — see note below
                 });
             }
             else if (changes.Count > 1)
@@ -191,6 +195,7 @@ namespace ArielCRM.Application.Services
                 Description = task.Description,
                 Priority = task.Priority,
                 Type = task.Type,
+                AiSummary = task.AiSummary ?? [],
                 Status = task.Status,
                 Assignee = new UserSummaryDto
                 {

@@ -30,10 +30,12 @@ export interface TeamMessage {
   senderProfileImage?: string | null;
   content: string;
   createdAt: string;
-  updatedAt?: string | null;
+  updatedAt: string;
   attachments: TeamMessageAttachment[];
   pending?: boolean;
   failed?: boolean;
+  isEdited?: boolean;
+  isDeleted?: boolean;
 }
 
 export interface TeamConversation {

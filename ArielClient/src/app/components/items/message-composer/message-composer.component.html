@@ -1,125 +1,80 @@
 <div class="composer" [class.toolbar-visible]="showToolbar()">
 
-  <!-- ── Formatting Toolbar (toggled) ─────────────────────────── -->
   <div class="composer-toolbar" *ngIf="showToolbar()">
 
     <div class="toolbar-group">
-      <button type="button"
-        (click)="toggleBold()"
-        [class.active]="isActive('bold')"
-        title="Bold (Ctrl+B)">
+      <button type="button" (click)="toggleBold()" [class.active]="isActive('bold')" title="Bold (Ctrl+B)">
         <i class="fas fa-bold"></i>
       </button>
-      <button type="button"
-        (click)="toggleItalic()"
-        [class.active]="isActive('italic')"
-        title="Italic (Ctrl+I)">
+      <button type="button" (click)="toggleItalic()" [class.active]="isActive('italic')" title="Italic (Ctrl+I)">
         <i class="fas fa-italic"></i>
       </button>
-      <button type="button"
-        (click)="toggleStrike()"
-        [class.active]="isActive('strike')"
-        title="Strikethrough">
+      <button type="button" (click)="toggleStrike()" [class.active]="isActive('strike')" title="Strikethrough">
         <i class="fas fa-strikethrough"></i>
       </button>
-      <button type="button"
-        (click)="toggleCode()"
-        [class.active]="isActive('code')"
-        title="Inline code">
+      <button type="button" (click)="toggleCode()" [class.active]="isActive('code')" title="Inline code">
         <i class="fas fa-code"></i>
       </button>
     </div>
 
     <div class="toolbar-group">
-      <button type="button"
-        (click)="toggleBulletList()"
-        [class.active]="isActive('bulletList')"
-        title="Bullet list">
+      <button type="button" (click)="toggleBulletList()" [class.active]="isActive('bulletList')" title="Bullet list">
         <i class="fas fa-list-ul"></i>
       </button>
     </div>
 
   </div>
 
-  <!-- ── Attachment Previews ───────────────────────────────────── -->
   <div class="composer-attachments" *ngIf="attachments.length > 0">
     <div class="attachment-chip" *ngFor="let a of attachments">
 
-      <img
-        *ngIf="a.previewUrl && a.type === 'image'"
-        [src]="a.previewUrl"
-        class="attachment-thumb"
-        [alt]="a.name" />
+      <img *ngIf="a.previewUrl && a.type === 'image'" [src]="a.previewUrl" class="attachment-thumb" [alt]="a.name" />
 
-      <i
-        *ngIf="a.type !== 'image'"
-        class="fas fa-paperclip attachment-icon"></i>
+      <i *ngIf="a.type !== 'image'" class="fas fa-paperclip attachment-icon"></i>
 
       <div class="attachment-info">
         <span class="attachment-name">{{ a.name }}</span>
         <span class="attachment-size">{{ formatBytes(a.size) }}</span>
       </div>
 
-      <button
-        type="button"
-        class="attachment-remove"
-        (click)="removeAttachment(a.id)"
-        [title]="'Remove ' + a.name">
+      <button type="button" class="attachment-remove" (click)="removeAttachment(a.id)" [title]="'Remove ' + a.name">
         <i class="fas fa-times"></i>
       </button>
 
     </div>
   </div>
 
-  <!-- ── Editor Body ────────────────────────────────────────────── -->
   <div class="composer-body">
 
     <div #editorEl class="composer-editor"></div>
 
     <div class="composer-tools-right">
 
-      <!-- Format toggle -->
       <div class="tooltip-wrap">
-        <button
-          type="button"
-          class="toolbar-btn"
-          [class.active]="showToolbar()"
-          (click)="toggleToolbar()">
+        <button type="button" class="toolbar-btn" [class.active]="showToolbar()" (click)="toggleToolbar()">
           <i class="fas fa-pen-nib"></i>
         </button>
         <span class="tooltip-text">Formatting (Ctrl+Shift+X)</span>
       </div>
 
-      <!-- Emoji picker -->
       <div class="emoji-picker-wrap">
         <div class="tooltip-wrap">
-          <button
-            type="button"
-            class="toolbar-btn"
-            [class.active]="showEmojiPicker()"
-            (click)="showEmojiPicker.set(!showEmojiPicker())"
-            title="">
+          <button type="button" class="toolbar-btn" [class.active]="showEmojiPicker()"
+            (click)="showEmojiPicker.set(!showEmojiPicker())" title="">
             <i class="far fa-face-smile"></i>
           </button>
           <span class="tooltip-text">Emoji</span>
         </div>
 
         <div class="emoji-picker-popup" *ngIf="showEmojiPicker()">
-          <emoji-mart
-            [darkMode]="true"
-            [showPreview]="false"
-            [emojiTooltip]="false"
+          <emoji-mart [darkMode]="true" [showPreview]="false" [emojiTooltip]="false"
             (emojiSelect)="onEmojiSelect($event)">
           </emoji-mart>
         </div>
       </div>
 
-      <!-- Attach file -->
       <div class="tooltip-wrap">
-        <button
-          type="button"
-          class="toolbar-btn"
-          (click)="fileInputRef.nativeElement.click()">
+        <button type="button" class="toolbar-btn" (click)="fileInputRef.nativeElement.click()">
           <i class="fas fa-paperclip"></i>
         </button>
         <span class="tooltip-text">Attach file</span>
@@ -127,28 +82,17 @@
 
       <div class="divider"></div>
 
-      <!-- Send -->
       <div class="tooltip-wrap">
-        <button
-          type="button"
-          class="send-btn"
-          [disabled]="!canSend"
-          (click)="send()">
+        <button type="button" class="send-btn" [disabled]="!canSend" (click)="send()">
           <i class="fas fa-paper-plane"></i>
         </button>
         <span class="tooltip-text">Send (Enter)</span>
       </div>
 
-    </div><!-- /composer-tools-right -->
+    </div>
 
-    <!-- Hidden file input -->
-    <input
-      #fileInput
-      type="file"
-      multiple
-      hidden
-      (change)="onFileSelected($event)" />
+    <input #fileInput type="file" multiple hidden (change)="onFileSelected($event)" />
 
-  </div><!-- /composer-body -->
+  </div>
 
-</div><!-- /composer -->
+</div>

@@ -22,7 +22,6 @@ import { CommentState, TicketComment } from '../../state/comment.state';
 import { AuthState } from '../../state/auth.state';
 import { AiService } from '../../core/services/ai-modal.service';
 import { PermissionFacade } from '../../core/services/permissionFacade.service';
-import { firstValueFrom } from 'rxjs';
 import { AppwriteService } from '../../core/services/appwrite.service';
 
 
@@ -72,6 +71,7 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
   activeTab: 'all' | 'comments' | 'history' = 'all';
   isEditingDescription = false;
   isGeneratingSummary = false;
+  isUploading = false;
   isAiGlowing = false;
   summaryError = '';
   summaryPoints: string[] = [];
@@ -120,7 +120,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   get safeDescription(): SafeHtml {
-
     return this.sanitizer.bypassSecurityTrustHtml(this.ticket?.description ?? "");
   }
 
@@ -134,7 +133,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
 
 
   handleImageInsert(): void {
-    debugger;
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
     input.setAttribute('accept', 'image/*');
@@ -144,6 +142,7 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
       const file = input.files?.[0];
       if (!file) return;
 
+      this.isUploading = true;
       document.body.style.cursor = 'wait';
       try {
         const url = await this.appwrite.uploadFile(file);
@@ -151,9 +150,15 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
         const range = this.quillInstance.getSelection(true);
         this.quillInstance.insertEmbed(range.index, 'image', url);
         this.quillInstance.setSelection(range.index + 1);
+
+        this.htmlContent = this.quillInstance.root.innerHTML;
+        this.cdr.detectChanges();
+
+        console.log("description", this.htmlContent);
       } catch {
-        // show error toast
+        // consider setting an error/toast here, this is currently a silent failure
       } finally {
+        this.isUploading = false;
         document.body.style.cursor = 'default';
       }
     };
@@ -283,7 +288,14 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       await this.typePointsEffect(points, 10);
+      debugger;
       this.ticket.aiSummary = [...points];
+      const updatedTicket = {
+        ...this.ticket,
+        aiSummary: [...points],
+      };
+      console.log("updated ticket data ", updatedTicket);
+      this.ticketUpdated.emit(updatedTicket);
       this.cdr.detectChanges();
     } catch {
       this.summaryError = 'Service is currently unavailable. Please try again later.';
@@ -324,6 +336,11 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  canEditAsAssignee(): boolean {
+    return this.ticket?.assignee?.id === this.authState.userId();
+  }
+
+
   async saveCommentEdit(commentId: string): Promise<void> {
     const msg = this.editingCommentText.trim();
     if (!msg) return;
@@ -352,8 +369,8 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     this.emitTicketUpdate({
       ...this.ticket,
       assignee: {
-        ...this.ticket.assignee,
         id: assigneeId,
+        profileImage: member?.profileImage ?? "",
         name: member?.name ?? this.ticket.assignee?.name ?? '',
       },
     });
@@ -412,11 +429,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     return `
 Title: ${this.ticket?.title ?? ''}
 Current Description Draft: ${referenceDescription}
-Status: ${this.ticket?.status ?? ''}
-Priority: ${this.ticket?.priority ?? ''}
-Type: ${this.ticket?.type ?? ''}
-Assignee: ${this.ticket?.assignee?.name ?? ''}
-Reporter: ${this.ticket?.reporter?.name ?? ''}
 
 Rewrite the current description into a polished, clear, actionable ticket description.
 Keep the same intent and do not add unsupported facts.
@@ -459,30 +471,12 @@ Keep the same intent and do not add unsupported facts.
   }
 
   private buildSummaryPayload(): string {
-    const comments = this.comments()
-      .map((comment) => {
-        const author = comment.author?.name ?? 'Unknown';
-        const createdAt = comment.createdAt
-          ? new Date(comment.createdAt).toLocaleString()
-          : 'Unknown time';
-        return `${author} (${createdAt}): ${comment.content}`;
-      })
-      .join('\n');
-
     return `
-Title: ${this.ticket?.title ?? ''}
-Description: ${this.ticket?.description ?? ''}
-Status: ${this.ticket?.status ?? ''}
-Priority: ${this.ticket?.priority ?? ''}
-Type: ${this.ticket?.type ?? ''}
-Assignee: ${this.ticket?.assignee?.name ?? ''}
-Reporter: ${this.ticket?.reporter?.name ?? ''}
+    Title: ${this.ticket?.title ?? ''}
+    Description: ${this.ticket?.description ?? ''}
+  `.trim();
 
-Comments:
-${comments || 'No comments available.'}
-    `.trim();
   }
-
 
   private isAiErrorResponse(response: string): boolean {
     const normalized = response.trim().toLowerCase();
@@ -540,7 +534,6 @@ ${comments || 'No comments available.'}
   }
 
 
-  // Dummy history data (replace with API call by taskId)
   ticketHistory: TicketHistory[] = [
     {
       id: crypto.randomUUID(),

@@ -89,6 +89,63 @@ namespace ArielCRM.API.Controllers
             return Ok(messages);
         }
 
+
+        [HttpPut("conversations/{conversationId}/messages/{messageId}")]
+        public async Task<ActionResult<TeamMessageDto>> EditMessage(string conversationId, string messageId, EditTeamMessageDto dto)
+        {
+            var conversation = await db.TeamConversations.FirstOrDefaultAsync(c => c.Id == conversationId);
+            if (conversation is null || !conversation.Members.Contains(UserId)) return Forbid();
+
+            var message = await db.TeamMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Attachments)
+                .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == conversationId);
+
+            if (message is null) return NotFound();
+            if (message.SenderId != UserId) return Forbid();
+            if (message.IsDeleted) return BadRequest(new { message = "Cannot edit a deleted message." });
+
+            var content = (dto.Content ?? string.Empty).Trim();
+            if (content.Length == 0) return BadRequest(new { message = "Message cannot be empty." });
+            if (content.Length > 4000) return BadRequest(new { message = "Message is too long." });
+
+            message.Content = content;
+            message.IsEdited = true;
+            message.UpdatedAt = DateTime.UtcNow;
+
+            await db.SaveChangesAsync();
+
+            var mapped = MapMessage(message);
+            await hubContext.Clients.Group(conversationId).SendAsync("MessageEdited", mapped);
+            return Ok(mapped);
+        }
+
+        [HttpDelete("conversations/{conversationId}/messages/{messageId}")]
+        public async Task<IActionResult> DeleteMessage(string conversationId, string messageId)
+        {
+            var conversation = await db.TeamConversations.FirstOrDefaultAsync(c => c.Id == conversationId);
+            if (conversation is null || !conversation.Members.Contains(UserId)) return Forbid();
+
+            var message = await db.TeamMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Attachments)
+                .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == conversationId);
+
+            if (message is null) return NotFound();
+            if (message.SenderId != UserId) return Forbid();
+            if (message.IsDeleted) return NoContent();
+
+            message.IsDeleted = true;
+            message.UpdatedAt = DateTime.UtcNow;
+
+            await db.SaveChangesAsync();
+
+            var mapped = MapMessage(message);
+            await hubContext.Clients.Group(conversationId).SendAsync("MessageDeleted", mapped);
+            return NoContent();
+        }
+
+
         [HttpPost("conversations/direct")]
         [RequestSizeLimit(420_000_000)]
         public async Task<ActionResult<TeamConversationDto>> CreateDirectConversation([FromForm] CreateDirectConversationDto dto)
@@ -111,7 +168,6 @@ namespace ArielCRM.API.Controllers
             var targetExists = await db.Users.AnyAsync(u => u.Id == dto.UserId);
             if (!targetExists) return NotFound(new { message = "Employee not found." });
 
-            // If conversation already exists, just send the message normally into it
             var existing = await db.TeamConversations
                 .FirstOrDefaultAsync(c => !c.IsGroup && c.Members.Contains(UserId) && c.Members.Contains(dto.UserId));
 
@@ -134,7 +190,6 @@ namespace ArielCRM.API.Controllers
                 conversationId = conversation.Id;
             }
 
-            // Save the first message exactly like SendMessage does
             var now = DateTime.UtcNow;
             var message = new TeamMessage
             {
@@ -160,14 +215,12 @@ namespace ArielCRM.API.Controllers
                 });
             }
 
-            // Update conversation's LastMessageAt
             var targetConversation = await db.TeamConversations.FirstAsync(c => c.Id == conversationId);
             targetConversation.LastMessageAt = now;
 
             db.TeamMessages.Add(message);
             await db.SaveChangesAsync();
 
-            // Load the saved message with sender + attachments for SignalR broadcast
             var savedMessage = await db.TeamMessages
                 .AsNoTracking()
                 .Include(m => m.Sender)
@@ -176,12 +229,10 @@ namespace ArielCRM.API.Controllers
 
             var mappedMessage = MapMessage(savedMessage);
 
-            // Load conversation for response
             var created = await BaseConversationQuery().FirstAsync(c => c.Id == conversationId);
             var users = await LoadUsers(created.Members);
             var mappedConversation = MapConversation(created, users);
 
-            // Broadcast both events to all members
             await hubContext.Clients.Users(created.Members).SendAsync("ConversationChanged", mappedConversation);
             await hubContext.Clients.Users(created.Members).SendAsync("MessageReceived", mappedMessage);
 
@@ -262,7 +313,8 @@ namespace ArielCRM.API.Controllers
                 SenderId = UserId,
                 SeenByIds = [UserId],
                 Content = content,
-                CreatedAt = now
+                CreatedAt = now,
+                UpdatedAt = now
             };
 
             foreach (var file in files)
@@ -294,6 +346,37 @@ namespace ArielCRM.API.Controllers
             await hubContext.Clients.Users(conversation.Members).SendAsync("MessageReceived", mapped);
             return Ok(mapped);
         }
+
+        [HttpPost("conversations/{conversationId}/messages/{messageId}/restore")]
+        public async Task<ActionResult<TeamMessageDto>> RestoreMessage(string conversationId, string messageId)
+        {
+            var conversation = await db.TeamConversations.FirstOrDefaultAsync(c => c.Id == conversationId);
+            if (conversation is null || !conversation.Members.Contains(UserId)) return Forbid();
+
+            var message = await db.TeamMessages
+                .Include(m => m.Sender)
+                .Include(m => m.Attachments)
+                .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == conversationId);
+
+            if (message is null) return NotFound();
+            if (message.SenderId != UserId) return Forbid();
+            if (!message.IsDeleted) return BadRequest(new { message = "Message is not deleted." });
+
+            var deletedAt = message.UpdatedAt ?? DateTime.MinValue;
+            if (DateTime.UtcNow > deletedAt.AddMinutes(5))
+                return BadRequest(new { message = "Undo window has expired." });
+
+            message.IsDeleted = false;
+            message.UpdatedAt = DateTime.UtcNow;
+
+            await db.SaveChangesAsync();
+
+            var mapped = MapMessage(message);
+            await hubContext.Clients.Group(conversationId).SendAsync("MessageRestored", mapped);
+            return Ok(mapped);
+        }
+
+
 
         [HttpPost("conversations/{conversationId}/read")]
         public async Task<IActionResult> MarkRead(string conversationId)
@@ -358,7 +441,7 @@ namespace ArielCRM.API.Controllers
             CreatedById = conversation.CreatedById,
             CreatedAt = conversation.CreatedAt,
             LastMessageAt = conversation.LastMessageAt,
-            Members = conversation.Members
+            Members = [.. conversation.Members
                 .Select(id => users.TryGetValue(id, out var user) ? new TeamConversationMemberDto
                 {
                     Id = user.Id,
@@ -366,8 +449,7 @@ namespace ArielCRM.API.Controllers
                     Email = user.Email,
                     ProfileImage = user.ProfileImage
                 } : new TeamConversationMemberDto { Id = id, Name = id })
-                .OrderBy(m => m.Name)
-                .ToList(),
+                .OrderBy(m => m.Name)],
             LastMessage = conversation.Messages.OrderByDescending(m => m.CreatedAt).Select(MapMessage).FirstOrDefault()
         };
 
@@ -376,25 +458,26 @@ namespace ArielCRM.API.Controllers
             Id = message.Id,
             ConversationId = message.ConversationId,
             SenderId = message.SenderId,
-            SeenByIds = message.SeenByIds.ToList(),
+            SeenByIds = [.. message.SeenByIds],
             SenderName = message.Sender.Name,
             SenderProfileImage = message.Sender.ProfileImage,
-            Content = message.Content ?? string.Empty,
+            Content = message.IsDeleted ? string.Empty : (message.Content ?? ""),
             CreatedAt = message.CreatedAt,
             UpdatedAt = message.UpdatedAt,
-            Attachments = message.Attachments.OrderBy(a => a.CreatedAt).Select(a => new TeamMessageAttachmentDto
-            {
-                Id = a.Id,
-                FileName = a.FileName,
-                FileUrl = a.FileUrl,
-                UploadId = a.UploadId,
-                ContentType = a.ContentType,
-                AttachmentType = a.AttachmentType,
-                SizeBytes = a.SizeBytes,
-                CreatedAt = a.CreatedAt
-            }).ToList()
+            IsDeleted = message.IsDeleted,
+            IsEdited = message.IsEdited,
+            Attachments = [..message.Attachments.OrderBy(a => a.CreatedAt).Select(a => new TeamMessageAttachmentDto
+                {
+                    Id = a.Id,
+                    FileName = a.FileName,
+                    FileUrl = a.FileUrl,
+                    UploadId = a.UploadId,
+                    ContentType = a.ContentType,
+                    AttachmentType = a.AttachmentType,
+                    SizeBytes = a.SizeBytes,
+                    CreatedAt = a.CreatedAt
+                })]
         };
-
         private static string GetAttachmentType(string? contentType, string fileName)
         {
             var type = contentType?.ToLowerInvariant() ?? string.Empty;

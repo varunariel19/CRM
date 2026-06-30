@@ -161,11 +161,42 @@ namespace ArielCRM.Application.Services
                 UploadId = d.UploadId,
                 UploadedAt = d.UploadedAt
             })],
+
+            Tasks = [.. p.Tasks.Select(MapToDto)],
             TasksTotal = p.Tasks.Count,
             TasksCompleted = p.Tasks.Count(t => t.Status == TasksStatus.DONE.ToString())
         };
 
 
+        private static TaskDetailDto MapToDto(TicketTask task)
+        {
+            return new TaskDetailDto
+            {
+                TaskId = task.TaskId,
+                TicketId = task.TicketId,
+                Title = task.Title,
+                Description = task.Description,
+                Priority = task.Priority,
+                Type = task.Type,
+                AiSummary = task.AiSummary ?? [],
+                Status = task.Status,
+                Assignee = new UserSummaryDto
+                {
+                    Id = task.AssignToId!,
+                    Name = task.AssignedUser?.Name ?? "",
+                    ProfileImage = task.AssignedUser?.ProfileImage,
+                },
+                Reporter = new UserSummaryDto
+                {
+                    Id = task.ReportedById,
+                    Name = task.ReportedUser?.Name ?? "",
+                    ProfileImage = task.ReportedUser?.ProfileImage,
+                },
+                ProjectId = task.ProjectId,
+                CreatedAt = task.CreatedAt,
+                UpdatedAt = task.UpdatedAt
+            };
+        }
 
         public async Task<bool> AddMemberToProjectAsync(string projectId, string memberId)
         {
