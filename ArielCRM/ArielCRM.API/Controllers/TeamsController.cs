@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using ArielCRM.API.Hubs;
+using ArielCRM.Application.Hubs;
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.DTOs;
@@ -14,7 +14,8 @@ namespace ArielCRM.API.Controllers
     [ApiController]
     [Route("api/teams")]
     [Authorize]
-    public class TeamsController(AppDbContext db, IHubContext<TeamsHub> hubContext, IAppwriteStorageService storageService) : ControllerBase
+    public class TeamsController(AppDbContext db, IHubContext<TeamsHub> hubContext, IAppwriteStorageService storageService,
+    IConfiguration configuration, IHttpClientFactory httpClientFactory) : ControllerBase
     {
         private const int MaxAttachmentCount = 8;
         private const long MaxAttachmentBytes = 50 * 1024 * 1024;
@@ -292,6 +293,7 @@ namespace ArielCRM.API.Controllers
             return Ok(mapped);
         }
 
+
         [HttpPost("conversations/{conversationId}/messages")]
         [RequestSizeLimit(420_000_000)]
         public async Task<ActionResult<TeamMessageDto>> SendMessage(string conversationId, [FromForm] SendTeamMessageDto dto)
@@ -307,6 +309,46 @@ namespace ArielCRM.API.Controllers
             if (files.Any(f => f.Length > MaxAttachmentBytes)) return BadRequest(new { message = "Each attachment must be 50 MB or smaller." });
 
             var now = DateTime.UtcNow;
+            var isScheduled = dto.ScheduledAt is not null && dto.ScheduledAt > now;
+
+            if (isScheduled)
+            {
+                var scheduled = new ScheduledTeamMessage
+                {
+                    ConversationId = conversationId,
+                    SenderId = UserId,
+                    Content = content,
+                    ScheduledAt = dto.ScheduledAt!.Value,
+                    Status = "Pending",
+                    CreatedAt = now
+                };
+
+                foreach (var file in files)
+                {
+                    var uploaded = await storageService.UploadFileAsync(file);
+                    scheduled.Attachments.Add(new ScheduledTeamMessageAttachment
+                    {
+                        FileName = Path.GetFileName(file.FileName),
+                        FileUrl = uploaded.FileUrl,
+                        UploadId = uploaded.FileId,
+                        ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
+                        AttachmentType = GetAttachmentType(file.ContentType, file.FileName),
+                        SizeBytes = file.Length,
+                        CreatedAt = now
+                    });
+                }
+
+                db.ScheduledTeamMessages.Add(scheduled);
+                await db.SaveChangesAsync();
+
+                var jobId = await ScheduleDelayedMessageAsync(scheduled, conversation);
+
+                scheduled.JobId = jobId;
+                await db.SaveChangesAsync();
+
+                return Accepted(MapScheduledMessage(scheduled));
+            }
+
             var message = new TeamMessage
             {
                 ConversationId = conversationId,
@@ -347,6 +389,7 @@ namespace ArielCRM.API.Controllers
             return Ok(mapped);
         }
 
+
         [HttpPost("conversations/{conversationId}/messages/{messageId}/restore")]
         public async Task<ActionResult<TeamMessageDto>> RestoreMessage(string conversationId, string messageId)
         {
@@ -375,7 +418,6 @@ namespace ArielCRM.API.Controllers
             await hubContext.Clients.Group(conversationId).SendAsync("MessageRestored", mapped);
             return Ok(mapped);
         }
-
 
 
         [HttpPost("conversations/{conversationId}/read")]
@@ -408,6 +450,81 @@ namespace ArielCRM.API.Controllers
             await hubContext.Clients.Users(senderIds).SendAsync("MessagesSeen", conversationId, changedMessageIds, UserId);
             return NoContent();
         }
+
+
+        [HttpGet("conversations/{conversationId}/scheduled-messages")]
+        public async Task<ActionResult<List<ScheduledTeamMessageDto>>> GetScheduledMessages(string conversationId)
+        {
+            var userId = UserId;
+
+            var conversation = await db.TeamConversations
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == conversationId);
+
+            if (conversation is null) return NotFound();
+            if (!conversation.Members.Contains(userId)) return Forbid();
+
+            var scheduled = await db.ScheduledTeamMessages
+                .AsNoTracking()
+                .Where(m => m.ConversationId == conversationId
+                         && m.SenderId == userId
+                         && m.Status == "Pending")
+                .OrderBy(m => m.ScheduledAt)
+                .Select(m => new ScheduledTeamMessageDto
+                {
+                    Id = m.Id,
+                    ConversationId = m.ConversationId,
+                    SenderId = m.SenderId,
+                    Content = m.Content ?? string.Empty,
+                    ScheduledAt = m.ScheduledAt,
+                    Status = m.Status.ToString(),
+                    JobId = m.JobId,
+                    CreatedAt = m.CreatedAt,
+                    Attachments = m.Attachments.Select(a => new TeamMessageAttachmentDto
+                    {
+                        Id = a.Id,
+                        FileName = a.FileName,
+                        FileUrl = a.FileUrl,
+                        UploadId = a.UploadId,
+                        ContentType = a.ContentType,
+                        AttachmentType = a.AttachmentType,
+                        SizeBytes = a.SizeBytes,
+                        CreatedAt = a.CreatedAt,
+                    }).ToList(),
+                })
+                .ToListAsync();
+
+            return Ok(scheduled);
+        }
+
+        // DELETE api/teams/conversations/{conversationId}/scheduled-messages/{messageId}
+        [HttpDelete("conversations/{conversationId}/scheduled-messages/{messageId}")]
+        public async Task<IActionResult> CancelScheduledMessage(string conversationId, string messageId)
+        {
+            var userId = UserId;
+
+            var scheduled = await db.ScheduledTeamMessages
+                .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == conversationId);
+
+            if (scheduled is null) return NotFound();
+            if (scheduled.SenderId != userId) return Forbid();
+            if (scheduled.Status != ScheduledMessageStatus.Pending.ToString()) return BadRequest("Message is no longer pending.");
+
+            scheduled.Status = ScheduledMessageStatus.Cancelled.ToString();
+            await db.SaveChangesAsync();
+
+            // Optional: also cancel the BullMQ job on the Node scheduler service, e.g.:
+            // if (!string.IsNullOrEmpty(scheduled.JobId))
+            //     await _schedulerClient.CancelJobAsync(scheduled.JobId);
+
+            return NoContent();
+        }
+
+
+
+
+
+        //   PRIVATE  FUNCATIONS : 
 
         private IQueryable<TeamConversation> BaseConversationQuery() => db.TeamConversations
             .AsNoTracking()
@@ -453,6 +570,7 @@ namespace ArielCRM.API.Controllers
             LastMessage = conversation.Messages.OrderByDescending(m => m.CreatedAt).Select(MapMessage).FirstOrDefault()
         };
 
+
         private static TeamMessageDto MapMessage(TeamMessage message) => new()
         {
             Id = message.Id,
@@ -466,18 +584,22 @@ namespace ArielCRM.API.Controllers
             UpdatedAt = message.UpdatedAt,
             IsDeleted = message.IsDeleted,
             IsEdited = message.IsEdited,
+            IsScheduled = message.IsScheduled,
+            ScheduledAt = message.ScheduledAt,
             Attachments = [..message.Attachments.OrderBy(a => a.CreatedAt).Select(a => new TeamMessageAttachmentDto
-                {
-                    Id = a.Id,
-                    FileName = a.FileName,
-                    FileUrl = a.FileUrl,
-                    UploadId = a.UploadId,
-                    ContentType = a.ContentType,
-                    AttachmentType = a.AttachmentType,
-                    SizeBytes = a.SizeBytes,
-                    CreatedAt = a.CreatedAt
-                })]
+        {
+            Id = a.Id,
+            FileName = a.FileName,
+            FileUrl = a.FileUrl,
+            UploadId = a.UploadId,
+            ContentType = a.ContentType,
+            AttachmentType = a.AttachmentType,
+            SizeBytes = a.SizeBytes,
+            CreatedAt = a.CreatedAt
+        })]
         };
+
+
         private static string GetAttachmentType(string? contentType, string fileName)
         {
             var type = contentType?.ToLowerInvariant() ?? string.Empty;
@@ -490,5 +612,65 @@ namespace ArielCRM.API.Controllers
                 ? "document"
                 : "file";
         }
+
+
+        private async Task<string> ScheduleDelayedMessageAsync(ScheduledTeamMessage scheduled, TeamConversation conversation)
+        {
+            var client = httpClientFactory.CreateClient();
+            var schedulerBaseUrl = configuration["MessageSchedulerUrl"]
+                ?? throw new InvalidOperationException("MessageSchedulerUrl is not configured.");
+
+            var payload = new
+            {
+                messageId = scheduled.Id,
+                conversationId = scheduled.ConversationId,
+                senderId = scheduled.SenderId,
+                scheduledAt = scheduled.ScheduledAt.ToString("o"), // ISO-8601
+                webhookPayload = new
+                {
+                    content = scheduled.Content,
+                    recipientIds = conversation.Members
+                }
+            };
+
+            var response = await client.PostAsJsonAsync($"{schedulerBaseUrl}/schedule-message", payload);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<ScheduleMessageResult>();
+            return result?.JobId ?? scheduled.Id;
+        }
+
+
+        private static ScheduledTeamMessageDto MapScheduledMessage(ScheduledTeamMessage s) => new()
+        {
+            Id = s.Id,
+            ConversationId = s.ConversationId,
+            SenderId = s.SenderId,
+            Content = s.Content ?? string.Empty,
+            ScheduledAt = s.ScheduledAt,
+            Status = s.Status,
+            JobId = s.JobId,
+            CreatedAt = s.CreatedAt,
+            Attachments = [.. s.Attachments.OrderBy(a => a.CreatedAt).Select(a => new TeamMessageAttachmentDto
+            {
+                Id = a.Id,
+                FileName = a.FileName,
+                FileUrl = a.FileUrl,
+                UploadId = a.UploadId,
+                ContentType = a.ContentType,
+                AttachmentType = a.AttachmentType,
+                SizeBytes = a.SizeBytes,
+                CreatedAt = a.CreatedAt
+            })]
+        };
+
+
+        private record ScheduleMessageResult(string JobId);
+
+
+
+
+
+
     }
 }

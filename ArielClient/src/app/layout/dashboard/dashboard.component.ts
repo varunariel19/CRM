@@ -1,4 +1,4 @@
-import { afterNextRender, Component, effect, ElementRef, inject, Injector, OnInit, ViewChild } from '@angular/core';
+import { afterNextRender, Component, effect, ElementRef, inject, Injector, OnInit, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 import { AnalyticsDashboardComponent } from "../../features/dashboard/analytics-dashboard/analytics-dashboard.component";
@@ -42,6 +42,8 @@ import { LoaderService } from '../../core/services/loader.service';
 import { TeamsComponent } from '../../features/dashboard/teams/teams.component';
 import { ProjectService } from '../../services/project.service';
 import { ProjectState } from '../../state/project.state';
+import { NotificationState } from '../../state/notification.state';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -80,6 +82,8 @@ export class DashboardComponent implements OnInit {
   historyState = inject(HistoryState);
   teamState = inject(TeamState);
   projectState = inject(ProjectState);
+  notificationState = inject(NotificationState);
+
 
   leadService = inject(LeadService);
   contactService = inject(ContactService);
@@ -88,10 +92,10 @@ export class DashboardComponent implements OnInit {
   meetingService = inject(MeetingService);
   historyService = inject(HistoryService);
   projectService = inject(ProjectService);
+  notificationService = inject(NotificationService);
   selectedMenu = this.menuState.selectedMenu;
 
   teamMemberList: TeamMember[] = [];
-
 
   constructor(private teamService: TeamService) {
   }
@@ -182,6 +186,15 @@ export class DashboardComponent implements OnInit {
       },
 
     });
+
+    this.notificationService.getNotifications().subscribe({
+      next: (notifications) => {
+        this.notificationState.setAll(notifications);
+      },
+      error: (err) => {
+        console.error('Failed to load notifications', err);
+      }
+    });
   }
 
 
@@ -201,11 +214,12 @@ export class DashboardComponent implements OnInit {
 
 
   refresh() {
-    const item = menuItems[this.menuState.activeIndex() ?? 0];
+    const item = this.menuState.menus()[this.menuState.activeIndex() ?? 0];
     this.loader.show("reloading...", 'lg');
     setTimeout(() => {
 
       switch (item.route) {
+
         case "leads": {
           this.leadService.handleGetLeads().subscribe({
             next: (leads) => {
@@ -214,6 +228,29 @@ export class DashboardComponent implements OnInit {
             error: (err) => {
               console.error('Failed to load leads', err);
             }
+          });
+          break;
+        }
+
+        case "customers": {
+          this.contactService.getAllContacts().subscribe({
+            next: (clients) => {
+              this.contactState.setContacts(clients);
+            },
+            error: (err) => {
+              console.error('Failed to load leads', err);
+            }
+          });
+          break;
+        }
+
+        case "projects": {
+          this.projectService.fetchAllProjects().subscribe({
+            next: (res: any) => {
+              this.projectState.setProjects(res.data ?? res);
+              this.projectState.setLoading(false);
+            },
+            error: () => this.projectState.setLoading(false)
           });
           break;
         }

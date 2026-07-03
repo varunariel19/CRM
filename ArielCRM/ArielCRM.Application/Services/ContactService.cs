@@ -2,18 +2,38 @@
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace ArielCRM.Application.Services
 {
-    public class ContactService(IContactRepository contactRepository, IHistoryService historyService) : IContactService
+    public class ContactService(IContactRepository contactRepository, IHistoryService historyService, IConfiguration configuration) : IContactService
     {
         private readonly IContactRepository _contactRepository = contactRepository;
         private readonly IHistoryService _historyService = historyService;
 
-        public async Task<IEnumerable<Contact>> GetAllContactsAsync()
+        private readonly IConfiguration _configuration = configuration;
+        public Task<IEnumerable<Contact>> GetAllContactsAsync(HttpContext context)
         {
-            return await _contactRepository.GetAllAsync();
+
+            if (context.User.Identity is null || !context.User.Identity.IsAuthenticated)
+                return Task.FromResult(Enumerable.Empty<Contact>());
+
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return Task.FromResult(Enumerable.Empty<Contact>());
+
+            var adminAccessLvlId = _configuration["Seeding:AdminLevel"];
+            var accessLevelId = context.User.FindFirst("AccessLevelId")?.Value;
+
+            if (accessLevelId == adminAccessLvlId)
+            {
+                return _contactRepository.GetAllAsync();
+            }
+
+            // based on lead id
+            return _contactRepository.GetAllByAssigneeAsync(userId);
         }
 
         public async Task<Contact?> GetContactByIdAsync(string id)

@@ -10,5 +10,6 @@ namespace ArielCRM.Infrastructure.Interfaces.IRepository
         void Update(Contact contact);
         void Delete(Contact contact);
         Task<bool> SaveChangesAsync();
+        Task<IEnumerable<Contact>> GetAllByAssigneeAsync(string userId);
     }
 }

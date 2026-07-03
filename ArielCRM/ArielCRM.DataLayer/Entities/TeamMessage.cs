@@ -36,18 +36,25 @@ namespace ArielCRM.DataLayer.Entities
         public string? Content { get; set; } = string.Empty;
 
 
-          [Column("is_edited")]
+        [Column("is_edited")]
         public bool IsEdited { get; set; } = false;
 
         [Column("is_deleted")]
         public bool IsDeleted { get; set; } = false;
+
+        [Column("is_scheduled")]
+        public bool IsScheduled { get; set; } = false;
 
         [Required]
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Column("updated_at")]
-        public DateTime? UpdatedAt { get; set; } 
+        public DateTime? UpdatedAt { get; set; }
+
+
+        [Column("schedule_at")]
+        public DateTime? ScheduledAt { get; set; }
 
         public ICollection<TeamMessageAttachment> Attachments { get; set; } = new List<TeamMessageAttachment>();
     }

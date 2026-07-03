@@ -1,4 +1,5 @@
 using ArielCRM.API.Hubs;
+using ArielCRM.Application.Hubs;
 using ArielCRM.Application.Interfaces;
 using ArielCRM.Application.Services;
 using ArielCRM.Infrastructure.Data;
@@ -10,6 +11,7 @@ using ArielCRM.Infrastructure.Repositories.ArielCRM.Infrastructure.Repository;
 using ArielCRM.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -21,6 +23,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
         options.JsonSerializerOptions.WriteIndented = true;
     });
+builder.Services.AddSingleton<IUserIdProvider, NameIdentifierUserIdProvider>();
 builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -35,7 +38,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:4200")
+        policy.WithOrigins(["http://localhost:4200", "http://192.168.4.106:4200", "https://porsche-retrorse-unblenchingly.ngrok-free.dev"])
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -65,7 +68,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         };
     });
 
-
+builder.Services.AddHttpClient();
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
@@ -106,6 +109,8 @@ builder.Services.AddScoped<ITaskManagementRepository, TaskManagementRepository>(
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSingleton<CredentialFileLogger>();
 
 
 

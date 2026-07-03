@@ -19,6 +19,18 @@ interface PendingAttachment {
   previewUrl?: string;
 }
 
+export interface ScheduledTeamMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  scheduledAt: string;
+  status: 'Pending' | 'Sent' | 'Cancelled' | 'Failed';
+  jobId: string | null;
+  createdAt: string;
+  attachments: TeamMessageAttachment[];
+}
+
 @Component({
   selector: 'app-teams',
   standalone: true,
@@ -41,8 +53,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   @ViewChild('messageInput') messageInputRef!: ElementRef<HTMLElement>;
   @ViewChild('messagesScroller') messagesScroller?: ElementRef<HTMLDivElement>;
-
-
 
   conversations = this.teamsService.conversations;
   users = this.teamsService.users;
@@ -75,10 +85,13 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   pendingDirect = signal<TeamUser | null>(null);
 
-
   editingMessageId = signal<string | null>(null);
   editingMessageContent = signal('');
+  peopleSearch = signal('');
 
+  scheduledMessages = signal<Record<string, ScheduledTeamMessage[]>>({});
+  isLoadingScheduled = signal(false);
+  cancellingScheduledId = signal<string | null>(null);
 
   selectedConversation = computed(() => this.conversations().find(c => c.id === this.selectedConversationId()) ?? null);
   availableUsers = computed(() => this.users().filter(u => u.id !== this.currentUserId()));
@@ -88,6 +101,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     if (!term) return conversations;
     return conversations.filter(c => this.getConversationTitle(c).toLowerCase().includes(term));
   });
+
   searchedUsers = computed(() => {
     const term = this.search().trim().toLowerCase();
     if (!term || this.isCreatingGroup()) return [];
@@ -95,6 +109,14 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
       .filter(user => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term))
       .slice(0, 8);
   });
+
+  searchedMembers = computed(() => {
+    const term = this.peopleSearch().trim().toLowerCase();
+    return this.availableUsers()
+      .filter(user => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term))
+      .slice(0, 8);
+  });
+
   addableGroupMembers = computed(() => {
     const conversation = this.selectedConversation();
     if (!conversation?.isGroup) return [];
@@ -109,28 +131,31 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     return names.length ? `${names.join(', ')} typing...` : '';
   });
 
-  ngOnInit(): void {
-    document.querySelector('.inner-content')?.classList.add('no-scroll');
+  scheduledForCurrentConversation = computed(() => {
+    const id = this.selectedConversationId();
+    return id ? (this.scheduledMessages()[id] ?? []) : [];
+  });
 
+  ngOnInit(): void {
     this.teamsService.loadUsers().subscribe(users => this.teamsService.users.set(users));
 
-    // No conversation is auto-selected on load — user must choose one explicitly
     this.teamsService.loadConversations().subscribe(conversations => {
       this.teamsService.conversations.set(conversations);
     });
 
-    this.teamsService.connect(
-      message => this.receiveMessage(message),
-      conversation => this.upsertConversation(conversation),
-      (conversationId, messageIds, seenById) => this.applyMessagesSeen(conversationId, messageIds, seenById),
-      message => this.applyMessageEdited(message),
-      message => this.applyMessageDeleted(message),
-      message => this.applyMessageRestored(message)
-    ).catch(err => console.error('Teams realtime connection failed', err));
+    this.teamsService.connect({
+      onMessage: message => this.receiveMessage(message),
+      onConversation: conversation => this.upsertConversation(conversation),
+      onSeen: (conversationId, messageIds, seenById) => this.applyMessagesSeen(conversationId, messageIds, seenById),
+      onMessageEdited: message => this.applyMessageEdited(message),
+      onMessageDeleted: message => this.applyMessageDeleted(message),
+      onMessageRestored: message => this.applyMessageRestored(message),
+      onScheduledDelivered: (conversationId, scheduledMessageId) => this.applyScheduledMessageDelivered(conversationId, scheduledMessageId)
+      // no lead handlers here — kept in leads component instead
+    }).catch(err => console.error('Teams realtime connection failed', err));
   }
 
   ngOnDestroy(): void {
-    document.querySelector('.inner-content')?.classList.remove('no-scroll');
     if (this.typingTimer) clearTimeout(this.typingTimer);
     this.selectedAttachments().forEach(attachment => this.revokePreview(attachment));
 
@@ -159,6 +184,32 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     }
   }
 
+  handleSend(event: { content: string; attachments: PendingAttachment[]; scheduledAt?: string }): void {
+    this.sendMessage(event);
+  }
+
+  handleTyping(isTyping: boolean): void {
+    const conversationId = this.selectedConversationId();
+    if (!conversationId) return;
+
+    this.teamsService.sendTyping(conversationId, isTyping);
+
+    if (this.typingTimer) clearTimeout(this.typingTimer);
+    if (isTyping) {
+      this.typingTimer = setTimeout(() => this.teamsService.sendTyping(conversationId, false), 1400);
+    }
+  }
+
+  private applyScheduledMessageDelivered(conversationId: string, scheduledMessageId: string): void {
+    this.scheduledMessages.update(map => {
+      const list = map[conversationId];
+      if (!list) return map;
+      return {
+        ...map,
+        [conversationId]: list.filter(m => m.id !== scheduledMessageId),
+      };
+    });
+  }
 
   openViewer(attachment: TeamMessageAttachment, allAttachments: TeamMessageAttachment[]) {
     this.viewerAttachment.set(attachment);
@@ -176,7 +227,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.setTyping();
   }
 
-
   sanitize(html: string): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }
@@ -190,12 +240,14 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.selectedAddMemberIds.set(new Set());
     this.isLoadingMessages.set(true);
     this.teamsService.joinConversation(conversation.id);
+
+    this.loadScheduledMessages(conversation.id);
+
     this.teamsService.loadMessages(conversation.id, undefined, this.PAGE_SIZE).subscribe({
       next: messages => {
         this.messages.set(messages);
         this.hasMoreMessages.set(messages.length === this.PAGE_SIZE);
         this.isLoadingMessages.set(false);
-        // Double-fire: once after signal update, once after paint
         this.scrollToBottom();
         setTimeout(() => this.scrollToBottom(), 150);
         this.markConversationRead(conversation.id);
@@ -204,6 +256,40 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     });
   }
 
+  loadScheduledMessages(conversationId: string): void {
+    this.isLoadingScheduled.set(true);
+    this.teamsService.loadScheduledMessages(conversationId).subscribe({
+      next: scheduled => {
+        this.scheduledMessages.update(map => ({
+          ...map,
+          [conversationId]: [...scheduled].sort(
+            (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+          ),
+        }));
+        this.isLoadingScheduled.set(false);
+      },
+      error: () => this.isLoadingScheduled.set(false),
+    });
+  }
+
+  cancelScheduledMessage(scheduled: ScheduledTeamMessage): void {
+    if (this.cancellingScheduledId()) return;
+    this.cancellingScheduledId.set(scheduled.id);
+
+    this.teamsService.cancelScheduledMessage(scheduled.conversationId, scheduled.id).subscribe({
+      next: () => {
+        this.scheduledMessages.update(map => {
+          const list = map[scheduled.conversationId] ?? [];
+          return {
+            ...map,
+            [scheduled.conversationId]: list.filter(m => m.id !== scheduled.id),
+          };
+        });
+        this.cancellingScheduledId.set(null);
+      },
+      error: () => this.cancellingScheduledId.set(null),
+    });
+  }
 
   loadMoreMessages(): void {
     const conversationId = this.selectedConversationId();
@@ -212,7 +298,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     const oldestMessageId = msgs[0].id;
     const scroller = this.messagesScroller?.nativeElement;
-    // Capture scroll height before new messages are prepended
     const scrollHeightBefore = scroller?.scrollHeight ?? 0;
 
     this.isLoadingMoreMessages.set(true);
@@ -222,7 +307,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.hasMoreMessages.set(older.length === this.PAGE_SIZE);
         this.isLoadingMoreMessages.set(false);
 
-        // Restore scroll position so user stays at the same message
         if (scroller) {
           requestAnimationFrame(() => {
             const added = scroller.scrollHeight - scrollHeightBefore;
@@ -236,7 +320,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   onMessagesScroll(event: Event): void {
     const el = event.target as HTMLDivElement;
-    // Trigger load when user is within 80px of the top
     if (el.scrollTop <= 80 && this.hasMoreMessages() && !this.isLoadingMoreMessages()) {
       this.loadMoreMessages();
     }
@@ -277,6 +360,12 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     });
   }
 
+  closeGroupModal() {
+    this.isCreatingGroup.set(false);
+    this.groupName.set("");
+    this.selectedMemberIds.set(new Set());
+  }
+
   addMembersToGroup(): void {
     const conversation = this.selectedConversation();
     const memberIds = [...this.selectedAddMemberIds()];
@@ -288,58 +377,67 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     });
   }
 
-  sendMessage(): void {
-    debugger;
-    const content = this.messageBody().trim();
-    const attachments = this.selectedAttachments();
+  sendMessage(event: { content: string; attachments: PendingAttachment[]; scheduledAt?: string }): void {
+    const content = event.content.trim();
+    const attachments = event.attachments;
+    const scheduledAt = event.scheduledAt;
     const pending = this.pendingDirect();
 
-    if (pending) {
-      if (this.isSending() || (!content && attachments.length === 0)) return;
+    if (!content && attachments.length === 0) return;
+    if (this.isSending()) return;
 
+    if (pending) {
       this.isSending.set(true);
       this.teamsService.createDirect(pending.id, content, attachments.map(a => a.file)).subscribe({
         next: conversation => {
+          attachments.forEach(a => this.revokePreview(a));
           this.pendingDirect.set(null);
           this.upsertConversation(conversation);
           this.selectConversation(conversation);
-          this.messageBody.set('');
-          this.messageInputRef.nativeElement.innerHTML = '';
-          this.selectedAttachments.set([]);
           this.isSending.set(false);
         },
-        error: () => this.isSending.set(false)
+        error: () => this.isSending.set(false),
       });
       return;
     }
 
     const conversationId = this.selectedConversationId();
-    if (!conversationId || this.isSending() || (!content && attachments.length === 0)) return;
+    if (!conversationId) return;
+
+    this.isSending.set(true);
+
+    if (scheduledAt) {
+      this.teamsService.sendMessage(conversationId, content, attachments.map(a => a.file), scheduledAt).subscribe({
+        next: res => {
+          attachments.forEach(a => this.revokePreview(a));
+          this.isSending.set(false);
+          this.addScheduledMessage(res.body as ScheduledTeamMessage);
+        },
+        error: () => this.isSending.set(false),
+      });
+      return;
+    }
 
     const optimisticId = `pending-${crypto.randomUUID()}`;
     const optimisticMessage = this.buildOptimisticMessage(optimisticId, conversationId, content, attachments);
     this.messages.update(messages => [...messages, optimisticMessage]);
     this.queueScroll(conversationId);
-
-    this.messageBody.set('');
-    this.messageInputRef.nativeElement.innerHTML = '';
-    this.selectedAttachments.set([]);
-    this.isSending.set(true);
     this.teamsService.sendTyping(conversationId, false);
 
     this.teamsService.sendMessage(conversationId, content, attachments.map(a => a.file)).subscribe({
-      next: saved => {
-        attachments.forEach(attachment => this.revokePreview(attachment));
+      next: res => {
+        attachments.forEach(a => this.revokePreview(a));
         this.isSending.set(false);
+        const saved = res.body as TeamMessage;
         this.replaceOptimisticMessage(optimisticId, saved);
         this.receiveMessage(saved);
       },
       error: () => {
         this.isSending.set(false);
-        this.messages.update(messages => messages.map(message =>
-          message.id === optimisticId ? { ...message, pending: false, failed: true } : message
+        this.messages.update(messages => messages.map(m =>
+          m.id === optimisticId ? { ...m, pending: false, failed: true } : m
         ));
-      }
+      },
     });
   }
 
@@ -401,10 +499,19 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   }
 
-  onEnterSend(event: Event): void {
-    if ((event as KeyboardEvent).shiftKey) return;
-    event.preventDefault();
-    this.sendMessage();
+  formatScheduledLabel(iso: string): string {
+    const date = new Date(iso);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    const isTomorrow = date.toDateString() === tomorrow.toDateString();
+
+    const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+    if (isToday) return `Today at ${time}`;
+    if (isTomorrow) return `Tomorrow at ${time}`;
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ` at ${time}`;
   }
 
   isUserOnline(conversation: TeamConversation): boolean {
@@ -460,8 +567,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   undoDelete(msg: TeamMessage): void {
     this.teamsService.restoreMessage(msg.conversationId, msg.id).subscribe({
       next: updated => this.applyMessageRestored(updated),
-      error: () => {
-      }
+      error: () => { }
     });
   }
 
@@ -483,62 +589,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     return current.senderId !== next.senderId;
   }
 
-
-  handleSend(event: { content: string; attachments: PendingAttachment[] }) {
-    debugger;
-    const { content, attachments } = event;
-    const pending = this.pendingDirect();
-
-    if (pending) {
-      this.isSending.set(true);
-      this.teamsService.createDirect(pending.id, content, attachments.map(a => a.file)).subscribe({
-        next: conversation => {
-          attachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
-          this.pendingDirect.set(null);
-          this.upsertConversation(conversation);
-          this.selectConversation(conversation);
-          this.isSending.set(false);
-        },
-        error: () => this.isSending.set(false)
-      });
-      return;
-    }
-
-    // Normal flow — existing conversation
-    const conversationId = this.selectedConversationId();
-    if (!conversationId) return;
-
-    const optimisticId = `pending-${crypto.randomUUID()}`;
-    const optimisticMessage = this.buildOptimisticMessage(optimisticId, conversationId, content, attachments);
-    this.messages.update(messages => [...messages, optimisticMessage]);
-    this.queueScroll(conversationId);
-    this.isSending.set(true);
-    this.teamsService.sendTyping(conversationId, false);
-
-    this.teamsService.sendMessage(conversationId, content, attachments.map(a => a.file)).subscribe({
-      next: saved => {
-        attachments.forEach(a => { if (a.previewUrl) URL.revokeObjectURL(a.previewUrl); });
-        this.isSending.set(false);
-        this.replaceOptimisticMessage(optimisticId, saved);
-        this.receiveMessage(saved);
-      },
-      error: () => {
-        this.isSending.set(false);
-        this.messages.update(messages => messages.map(m =>
-          m.id === optimisticId ? { ...m, pending: false, failed: true } : m
-        ));
-      }
-    });
-  }
-
-  handleTyping(isTyping: boolean) {
-    const conversationId = this.selectedConversationId();
-    if (!conversationId) return;
-    this.teamsService.sendTyping(conversationId, isTyping);
-  }
-
-
-
   onEditInput(event: Event): void {
     const el = event.target as HTMLElement;
     this.editingMessageContent.set(el.innerHTML);
@@ -556,7 +606,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
       const el = document.querySelector('.message-edit-input') as HTMLElement;
       if (!el) return;
 
-      el.innerHTML = msg.content ?? ''; // set once, imperatively — no reactive binding
+      el.innerHTML = msg.content ?? '';
       el.focus();
 
       const range = document.createRange();
@@ -582,33 +632,35 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.applyMessageEdited(updated);
         this.cancelEditMessage();
       },
-      error: () => {
-        // optionally surface an error toast here
-      }
+      error: () => { }
     });
   }
 
   deleteMessage(msg: TeamMessage) {
     this.teamsService.deleteMessage(msg.conversationId, msg.id).subscribe({
       next: () => this.applyMessageDeleted({ ...msg, isDeleted: true, content: '' }),
-      error: () => {
-        // optionally surface an error toast here
-      }
+      error: () => { }
     });
   }
 
-
-
-
-
-
+  private addScheduledMessage(scheduled: ScheduledTeamMessage): void {
+    this.scheduledMessages.update(map => {
+      const list = map[scheduled.conversationId] ?? [];
+      return {
+        ...map,
+        [scheduled.conversationId]: [...list, scheduled].sort(
+          (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
+        ),
+      };
+    });
+  }
 
   trackByConversation = (_: number, conversation: TeamConversation) => conversation.id;
   trackByUser = (_: number, user: TeamUser) => user.id;
   trackByMember = (_: number, member: TeamConversationMember) => member.id;
   trackByMessage = (_: number, message: TeamMessage) => message.id;
   trackByAttachment = (_: number, attachment: TeamMessageAttachment | PendingAttachment) => attachment.id;
-
+  trackByScheduled = (_: number, message: ScheduledTeamMessage) => message.id;
 
   private applyMessageEdited(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
@@ -635,7 +687,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     ));
   }
 
-
   private applyMessageRestored(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
       this.messages.update(messages => messages.map(m => m.id === message.id ? message : m));
@@ -648,7 +699,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     ));
   }
 
-
   private receiveMessage(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
       this.messages.update(messages => {
@@ -657,7 +707,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
         );
         return withoutPending.some(m => m.id === message.id) ? withoutPending : [...withoutPending, message];
       });
-      // Scroll for both incoming messages from others and confirmed sent messages
       this.queueScroll(message.conversationId);
       this.markConversationRead(message.conversationId);
     }
@@ -738,8 +787,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   private replaceOptimisticMessage(id: string, saved: TeamMessage): void {
     this.messages.update(messages => messages.map(message => message.id === id ? saved : message));
-    // No scroll here — message count hasn't changed (replace, not append),
-    // and receiveMessage() will handle scrolling when the confirmed copy arrives
   }
 
   private toPendingAttachment(file: File): PendingAttachment {

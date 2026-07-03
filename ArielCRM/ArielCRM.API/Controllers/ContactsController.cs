@@ -7,17 +7,19 @@ namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class ContactsController(IContactService contactService, ILogger<ContactsController> logger) : ControllerBase
     {
         private readonly IContactService _contactService = contactService;
         private readonly ILogger<ContactsController> _logger = logger;
 
         [HttpGet]
+        [Authorize(Policy = "Permission:Customers.View")]
         public async Task<IActionResult> GetAll()
         {
             try
             {
-                var contacts = await _contactService.GetAllContactsAsync();
+                var contacts = await _contactService.GetAllContactsAsync(HttpContext);
                 return Ok(contacts);
             }
             catch (Exception ex)

@@ -29,6 +29,8 @@ namespace ArielCRM.Infrastructure.Data
         public DbSet<Comment> Comments { get; set; } = null!;
         public DbSet<TeamConversation> TeamConversations { get; set; } = null!;
         public DbSet<TeamMessage> TeamMessages { get; set; } = null!;
+        public DbSet<ScheduledTeamMessage> ScheduledTeamMessages => Set<ScheduledTeamMessage>();
+        public DbSet<ScheduledTeamMessageAttachment> ScheduledTeamMessageAttachments => Set<ScheduledTeamMessageAttachment>();
         public DbSet<TeamMessageAttachment> TeamMessageAttachments { get; set; } = null!;
 
         public DbSet<TicketHistory> TicketHistories { get; set; } = null!;
@@ -37,6 +39,9 @@ namespace ArielCRM.Infrastructure.Data
         // Audit
         public DbSet<AuditLog> AuditLogs { get; set; } = null!;
         public DbSet<AuditRevertHistory> AuditRevertHistories { get; set; } = null!;
+
+        public DbSet<Notification> Notifications { get; set; } = null!;
+
 
 
         // ─────────────────────────────────────────────

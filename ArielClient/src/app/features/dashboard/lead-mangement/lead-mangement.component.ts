@@ -3,6 +3,7 @@ import {
   inject,
   ChangeDetectorRef,
   NgZone,
+  OnInit,
 } from '@angular/core';
 import { CreateLeadDto, Lead, LeadSource, LeadStatus, UpdateLeadDto, ProjectType } from '../../../core/types/lead.type';
 import { TeamMember } from '../../../core/types/global.type';
@@ -23,6 +24,7 @@ import { DepartmentItem, GlobalState } from '../../../state/global.state';
 import { DepartmentKey } from '../../../core/constants/global';
 import { HistoryState } from '../../../state/history.state';
 import { AuditHistoryStore } from '../../../state/audit-history.state';
+import { TeamsService } from '../../../services/teams.service';
 
 
 export interface ProjectDocument {
@@ -74,7 +76,7 @@ export const leadSourceOptions: { value: LeadSource; label: string }[] = [
   templateUrl: './lead-mangement.component.html',
   styleUrls: ['./lead-mangement.component.css', '../deals-pipeline/deals-pipeline.component.css'],
 })
-export class LeadManagementComponent {
+export class LeadManagementComponent implements OnInit {
 
   leadState = inject(LeadState);
   authState = inject(AuthState);
@@ -87,6 +89,7 @@ export class LeadManagementComponent {
   private contactService = inject(ContactService);
   perm = inject(PermissionFacade);
   history = inject(AuditHistoryStore);
+  teamsService = inject(TeamsService);
 
   viewMode: 'list' | 'pipeline' = 'pipeline';
 
@@ -144,6 +147,25 @@ export class LeadManagementComponent {
   ) { }
 
 
+  showOnlyMyLeads = this.authState.user()?.accessLevel.access != 100 ? true : false;
+
+
+  ngOnInit(): void {
+    this.teamsService.connect({
+      onLeadStatusChanged: (leadId, status) => this.applyLeadStatusChanged(leadId, status as LeadStatus),
+      onLeadConverted: (leadId, status) => this.applyLeadConverted(leadId, status as LeadStatus)
+    });
+  }
+
+  private applyLeadStatusChanged(leadId: string, status: LeadStatus): void {
+    this.leadState.updateLead(leadId, { status });
+  }
+
+  private applyLeadConverted(leadId: string, status: LeadStatus): void {
+    this.leadState.updateLead(leadId, { status });
+  }
+
+
   get businessDepartment(): DepartmentItem | undefined {
     return this.globalState.departments().find(department => department.departmentKey == DepartmentKey.BUSINESS_MANAGEMENT);
   }
@@ -176,9 +198,17 @@ export class LeadManagementComponent {
         lead.email.toLowerCase().includes(this.searchText.toLowerCase());
       const matchStatus = !this.filterStatus || lead.status === this.filterStatus;
       const matchSource = !this.filterSource || lead.source === this.filterSource;
-      return matchText && matchStatus && matchSource;
+      const matchAssignee = !this.showOnlyMyLeads || lead.assignedToId === this.authState.userId();
+      return matchText && matchStatus && matchSource && matchAssignee;
     });
   }
+
+
+
+  toggleMyLeads(): void {
+    this.showOnlyMyLeads = !this.showOnlyMyLeads;
+  }
+
 
   getSourceOptionLabel(value: string): string {
     return leadSourceOptions.find(s => s.value == value)!.label ?? "Unknown";
@@ -295,7 +325,7 @@ export class LeadManagementComponent {
       status: lead.status as LeadStatus,
       assignedToId: lead.assignedToId,
       projectTitle: lead.projectTitle ?? '',
-      budget: lead.budget ?? null,
+      budget: lead.budget ? Number(lead.budget.toFixed(2)) : null,
       projectType: lead.projectType ?? '',
       dealStartDate: lead.dealStartDate ?? '',
       dealCloseDate: lead.dealCloseDate ?? '',
@@ -306,6 +336,7 @@ export class LeadManagementComponent {
   submitEditLead(): void {
     if (!this.editLead.id) return;
     const { id, ...dto } = this.editLead;
+    dto.budget = Number(dto.budget?.toFixed(2));
     this.leadService.handleUpdateLead(id!, dto as UpdateLeadDto).subscribe({
       next: () => {
         this.leadState.updateLead(id!, this.editLead);
@@ -403,8 +434,35 @@ export class LeadManagementComponent {
     this.moveLeadToStatus(lead, order[idx + 1]);
   }
 
+
+  nextStep(status: string): string {
+    switch (status) {
+      case "Contracted": return "Move to Qualified";
+      case "Qualified": return "Move to Converted";
+      case "Converted": return "Move to Done";
+      case "Lost": return "Already Lost";
+      default: return "";
+    }
+  }
+
+  previousStep(status: string): string {
+    switch (status) {
+      case "Contracted": return "Already in Contacted";
+      case "Qualified": return "Move to  Contracted";
+      case "Converted": return "Move to Qualified";
+      case "Lost": return "Move to Converted";
+      default: return "";
+    }
+  }
+
+
   private moveLeadToStatus(lead: Lead, newStatus: LeadStatus): void {
     if (lead.status === newStatus) return;
+
+    if (lead.status == "Converted" || lead.status == "Lost") {
+      this.toastService.error(`Can't Move the lead from ${lead.status} Status!`);
+      return;
+    }
 
     if (newStatus === 'Converted' && !lead.contactId) {
       this.menuState.open({
@@ -570,11 +628,9 @@ export class LeadManagementComponent {
     this.cdr.detectChanges();
   }
 
-  // ── File upload ──
 
   openHistory(lead: Lead) {
     this.history.open('Lead', lead.id, lead.name);
-    // title becomes: "Lead history — John Doe"
   }
 
   onDocFileSelected(event: Event): void {

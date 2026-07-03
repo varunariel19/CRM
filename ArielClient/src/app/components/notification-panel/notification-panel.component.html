@@ -1,0 +1,60 @@
+<div class="np-overlay" *ngIf="globalState.isOpen()" (click)="closeOnOverlay($event)">
+  <aside class="np-panel" [class.open]="globalState.isOpen()">
+
+    <header class="np-header">
+      <h3 class="np-title">Notifications</h3>
+      <div class="np-header-actions">
+        <button class="np-mark-all" type="button" *ngIf="notificationState.unreadCount() > 0" (click)="markAllRead()">
+          Mark all as read
+        </button>
+        <button class="np-clear-all" type="button" *ngIf="hasReadNotifications()" (click)="clearAll()">
+          Clear all read
+        </button>
+        <button class="np-close-btn" type="button" aria-label="Close" (click)="close()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="np-list" *ngIf="notificationState.notifications().length; else npEmpty">
+      <div class="np-item-wrapper" [class.clearing]="clearingIds().has(n.id)"
+        [style.transition-delay.ms]="clearingIds().has(n.id) ? i * 30 : 0"
+        *ngFor="let n of notificationState.notifications(); trackBy: trackById; let i = index">
+        <div class="np-dismiss-bg" [class.armed]="isDismissing(n.id)" *ngIf="n.isRead">
+          <i class="fa-solid fa-trash"></i>
+        </div>
+
+        <div class="np-locked-hint" *ngIf="!n.isRead && itemOffset(n.id) > 0">
+          <i class="fa-solid fa-lock"></i>
+        </div>
+
+        <button type="button" class="np-item" [class.unread]="!n.isRead"
+          [style.transform]="'translateX(' + itemOffset(n.id) + 'px)'"
+          [style.transition]="itemOffset(n.id) === 0 || draggingId === n.id ? 'none' : 'transform 0.18s ease'"
+          (pointerdown)="onPointerDown($event, n)" (pointermove)="onPointerMove($event, n)"
+          (pointerup)="onPointerUp($event, n)" (pointercancel)="onPointerUp($event, n)"
+          (click)="onNotificationClick(n)">
+          <div class="np-item-icon">
+            <i class="fa-solid" [ngClass]="iconFor(n.entityType)"></i>
+          </div>
+
+          <div class="np-item-body">
+            <p class="np-item-title">{{ n.title }}</p>
+            <p class="np-item-message">{{ n.message }}</p>
+            <span class="np-item-time">{{ timeAgo(n.createdAt) }}</span>
+          </div>
+
+          <span class="np-dot" *ngIf="!n.isRead"></span>
+        </button>
+      </div>
+    </div>
+
+    <ng-template #npEmpty>
+      <div class="np-empty">
+        <i class="fa-regular fa-bell-slash"></i>
+        <p>No notifications yet</p>
+      </div>
+    </ng-template>
+
+  </aside>
+</div>

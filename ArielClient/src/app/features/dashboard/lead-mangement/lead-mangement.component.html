@@ -527,6 +527,12 @@
           <option value="">All Sources</option>
           <option *ngFor="let src of leadSourceOptions" [value]="src.value">{{ src.label }}</option>
         </select>
+
+        <button  type="button" class="my-leads-btn" [class.active]="showOnlyMyLeads" (click)="toggleMyLeads()">
+          <i class="fa fa-user"></i>
+          <span>My Leads</span>
+          <i class="fa fa-check check-icon" *ngIf="showOnlyMyLeads"></i>
+        </button>
       </div>
     </div>
 
@@ -594,9 +600,9 @@
           <div class="lead-card-footer">
             <div class="card-nav-actions" (click)="$event.stopPropagation()">
               @if(perm.leads.canEdit()) {
-              <button class="nav-btn" (click)="moveLeadLeft(lead)" title="Move left"><i
+              <button class="nav-btn" (click)="moveLeadLeft(lead)" [title]="previousStep(lead.status)"><i
                   class="fas fa-chevron-left"></i></button>
-              <button class="nav-btn" (click)="moveLeadRight(lead)" title="Move right"><i
+              <button class="nav-btn" (click)="moveLeadRight(lead)" [title]="nextStep(lead.status)"><i
                   class="fas fa-chevron-right"></i></button>
               }
             </div>

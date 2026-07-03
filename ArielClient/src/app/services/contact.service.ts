@@ -12,11 +12,11 @@ export class ContactService {
     constructor(private http: HttpClient) { }
 
     getContact(id: string): Observable<Contact> {
-        return this.http.get<Contact>(endpoints.getContactById(id));
+        return this.http.get<Contact>(endpoints.getContactById(id) , { withCredentials: true });
     }
 
     getAllContacts(): Observable<Contact[]> {
-        return this.http.get<Contact[]>(endpoints.getContacts);
+        return this.http.get<Contact[]>(endpoints.getContacts , { withCredentials: true });
     }
 
     createContact(payload: CreateContactPayload): Observable<Contact> {

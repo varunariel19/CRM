@@ -42,11 +42,11 @@ export interface UserDetails {
 export interface CreateTeamMemberDto {
   name: string;
   email: string;
+  employeeId: string;
   departmentId: string;
   designationId: string;
   accessLevelId: string;
-  profileImage?: string;
-  joinedAt : string;
+  profileImage?: File | null;
 }
 
 export interface UpdateTeamMemberDto {

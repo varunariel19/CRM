@@ -7,7 +7,7 @@ namespace ArielCRM.Infrastructure.Repositories
 {
     public class ContactRepository : IContactRepository
     {
-        private readonly AppDbContext _context; 
+        private readonly AppDbContext _context;
 
         public ContactRepository(AppDbContext context)
         {
@@ -18,6 +18,15 @@ namespace ArielCRM.Infrastructure.Repositories
         {
             return await _context.Set<Contact>().ToListAsync();
         }
+
+
+        public async Task<IEnumerable<Contact>> GetAllByAssigneeAsync(string userId)
+        {
+            return await _context.Set<Contact>().Where(c => c.Lead!.AssignedToId == userId).ToListAsync();
+        }
+
+
+
 
         public async Task<Contact?> GetByIdAsync(string id)
         {
@@ -44,6 +53,6 @@ namespace ArielCRM.Infrastructure.Repositories
             return (await _context.SaveChangesAsync()) > 0;
         }
 
-        
+
     }
 }

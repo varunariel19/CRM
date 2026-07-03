@@ -1,30 +1,47 @@
-<!-- <div *ngIf="role() === null; else dashboard" class="loading-container">
-    <div class="spinner"></div>
-    <p>Loading, please wait...</p>
-</div> -->
-
 <div class="dashboard-layout">
 
   <div class="dashboard-body">
 
     <div class="workspace-wrapper">
-      <!-- <div class="action-bar">
-        <button class="back-btn" (click)="goToPreviousMenu()">
-          <span class="back-icon">
+
+      <div class="action-bar">
+        <div class="action-bar-left">
+          <button class="ab-btn ab-btn-icon" (click)="goToPreviousMenu()" title="Back">
             <i class="fas fa-arrow-left"></i>
-          </span>
-          <span class="back-text">Back</span>
-        </button>
+          </button>
 
-        <button class="reload-btn" (click)="refresh()">
-          <span class="reload-icon">
+          <div class="ab-divider"></div>
+
+          <h2 class="ab-title">{{ selectedMenu().label }}</h2>
+        </div>
+
+        <div class="action-bar-right">
+          <button
+            class="ab-view-toggle"
+            [class.active]="this.globalState.myViewOnly()"
+            (click)="this.globalState.toggle()"
+            title="Toggle between your items and everyone's"
+          >
+            <i class="fas fa-user"></i>
+            <span>My Dashboard View</span>
+            <i class="fas fa-check ab-check" *ngIf="this.globalState.myViewOnly()"></i>
+          </button>
+
+          <div class="ab-divider"></div>
+
+          <button class="ab-btn ab-btn-icon" (click)="refresh()" title="Reload">
             <i class="fas fa-sync-alt"></i>
-          </span>
-          <span class="back-text">Reload</span>
-        </button>
-      </div> -->
-      <ng-container [ngSwitch]="selectedMenu().route">
+          </button>
 
+          
+
+          <button class="ab-btn ab-btn-icon ab-btn-more"  title="More">
+            <i class="fas fa-ellipsis-v"></i>
+          </button>
+        </div>
+      </div>
+
+      <ng-container [ngSwitch]="selectedMenu().route">
         <div *ngSwitchCase="'analytics'">
           <app-analytics-dashboard />
         </div>
@@ -66,7 +83,6 @@
         </div>
 
         <div *ngSwitchCase="'projects'">
-          <!-- Create this component -->
           <app-projects></app-projects>
         </div>
 
@@ -77,7 +93,6 @@
         <div *ngSwitchDefault>
           Select Menu
         </div>
-
       </ng-container>
 
     </div>

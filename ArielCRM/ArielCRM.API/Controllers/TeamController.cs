@@ -26,7 +26,7 @@ namespace ArielCRM.API.Controllers
 
         [HttpPost("register")]
         [Authorize(Policy = "Permission:TeamMembers.Create")]
-        public async Task<IActionResult> CreateMember(CreateTeamDto dto)
+        public async Task<IActionResult> CreateMember([FromForm] CreateTeamDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);

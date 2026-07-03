@@ -9,6 +9,7 @@ import { PermissionFacade } from '../../../core/services/permissionFacade.servic
 import { Task } from '../../../services/task-management.service';
 import { GlobalState } from '../../../state/global.state';
 import { ProjectMemberDepartment } from '../../../core/constants/global';
+import { AuthState } from '../../../state/auth.state';
 
 export interface ProjectMember {
   id: string;
@@ -61,6 +62,7 @@ export class ProjectsComponent implements OnInit {
   private readonly projectService = inject(ProjectService);
   private readonly projectState = inject(ProjectState);
   private readonly teamState = inject(TeamState);
+  private readonly authState = inject(AuthState);
   private readonly globalState = inject(GlobalState);
   perm = inject(PermissionFacade);
 
@@ -85,7 +87,7 @@ export class ProjectsComponent implements OnInit {
     description: '',
     startDate: '',
     endDate: '',
-    projectLeadId: '',
+    projectLeadId: this.authState.userId(),
     dealId: '',
   });
   selectedFiles = signal<File[]>([]);
@@ -336,7 +338,7 @@ export class ProjectsComponent implements OnInit {
     formData.append('description', p.description);
     formData.append('startDate', p.startDate);
     formData.append('endDate', p.endDate);
-    formData.append('projectLeadId', p.projectLeadId);
+    formData.append('projectLeadId', p.projectLeadId!);
     formData.append('dealId', p.dealId);
     this.selectedFiles().forEach(f => formData.append('documents', f));
 

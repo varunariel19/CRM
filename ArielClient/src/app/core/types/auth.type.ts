@@ -18,6 +18,12 @@ export interface AccessLevelPayload {
     permissions: PermissionPayload[];
 }
 
+export interface UserSummary  {
+     id : string;
+     name : string;
+     profileImage : string;
+}
+
 export interface UserPayload {
     id: string;
     name: string;

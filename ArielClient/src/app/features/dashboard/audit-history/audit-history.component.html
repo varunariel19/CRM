@@ -113,7 +113,7 @@
             <div class="card-footer">
               <span class="card-by">
                 <i class="fas fa-user-circle"></i>
-                {{ log.initiatedByName || 'System' }}
+                {{ log.commitedBy.name || 'System' }}
               </span>
               <span class="card-revert" [ngClass]="getRevertClass(log.revertType)">
                 <i class="fas fa-arrow-rotate-left"></i>
@@ -174,7 +174,7 @@
         <div class="meta-grid">
           <div class="meta-item">
             <span class="meta-label"><i class="fas fa-user-circle"></i> Performed by</span>
-            <span class="meta-value">{{ selectedLog.initiatedByName || 'System' }}</span>
+            <span class="meta-value">{{ selectedLog.commitedBy.name }}</span>
           </div>
           <div class="meta-item">
             <span class="meta-label"><i class="fas fa-clock"></i> Timestamp</span>

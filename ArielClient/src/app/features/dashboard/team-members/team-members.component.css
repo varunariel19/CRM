@@ -1,9 +1,3 @@
-/* ══════════════════════════════════════════════════════════════
-   TEAM MEMBERS – scoped component styles
-   Uses project CSS variables (light/dark via body.theme-*)
-══════════════════════════════════════════════════════════════ */
-
-/* ── PAGE SHELL ── */
 .tm-page {
   padding: 28px 32px;
   min-height: 100%;
@@ -689,4 +683,112 @@
 
 @media (max-width: 480px) {
   .tm-grid { grid-template-columns: 1fr; }
+}
+
+
+
+/* Profile Image Uploader */
+.tm-profile-image-group {
+  margin-bottom: 4px;
+}
+
+.tm-avatar-uploader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.tm-avatar-circle {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 4px #e5e7eb;
+}
+
+.tm-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.tm-avatar-initials {
+  font-size: 24px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+/* Upload overlay - shows a camera icon over the circle on hover */
+.tm-avatar-upload-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #ffffff;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.18s ease;
+}
+
+.tm-avatar-circle:hover .tm-avatar-upload-overlay {
+  opacity: 1;
+}
+
+/* Remove (X) button pinned to top-right of the circle */
+.tm-avatar-remove {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.tm-avatar-remove:hover {
+  background: #dc2626;
+  transform: scale(1.08);
+}
+
+.tm-avatar-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tm-avatar-choose-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #4f46e5;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.tm-avatar-choose-text:hover {
+  text-decoration: underline;
+}
+
+.tm-avatar-hint {
+  font-size: 12px;
+  color: #9ca3af;
 }

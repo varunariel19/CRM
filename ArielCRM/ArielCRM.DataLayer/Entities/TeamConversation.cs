@@ -3,6 +3,16 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ArielCRM.DataLayer.Entities
 {
+
+  public enum ScheduledMessageStatus
+    {
+        Pending,
+        Sent,
+        Cancelled,
+        Failed
+    }
+
+
     [Table("team_conversations")]
     public class TeamConversation
     {

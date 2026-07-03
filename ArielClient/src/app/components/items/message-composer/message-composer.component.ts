@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild, input, output, signal } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, input, output, signal, computed } from '@angular/core';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TeamAttachmentType } from '../../../core/types/teams.type';
 import { PickerComponent } from "@ctrl/ngx-emoji-mart";
+import { FormsModule } from '@angular/forms';
 export interface PendingAttachment {
   id: string;
   file: File;
@@ -18,7 +19,7 @@ export interface PendingAttachment {
 @Component({
   selector: 'app-composer',
   standalone: true,
-  imports: [CommonModule, PickerComponent],
+  imports: [CommonModule, PickerComponent, FormsModule],
   templateUrl: './message-composer.component.html',
   styleUrl: './message-composer.component.scss',
 })
@@ -28,7 +29,8 @@ export class ComposerComponent implements OnInit, OnDestroy {
 
   disabled = input<boolean>(false);
 
-  onSend = output<{ content: string; attachments: PendingAttachment[] }>();
+  onSend = output<{ content: string; attachments: PendingAttachment[]; scheduledAt?: string }>();
+  scheduledFor = signal<string | null>(null);
   onTyping = output<boolean>();
 
   editor!: Editor;
@@ -36,6 +38,156 @@ export class ComposerComponent implements OnInit, OnDestroy {
   attachments: PendingAttachment[] = [];
   showEmojiPicker = signal(false);
   showToolbar = signal(false);
+
+  showSchedulePicker = signal(false);
+  showTimeDropdown = signal(false);
+  scheduleDate = signal<string>('');
+  scheduleTime = signal<string>('8:00 AM');
+
+  timeSlots: string[] = [
+    '12:00 AM', '12:30 AM', '1:00 AM', '1:30 AM',
+    '8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM',
+    '12:00 PM', '12:30 PM', '1:00 PM', '1:30 PM',
+  ];
+
+  customHour = signal<number>(8);
+  customMinute = signal<number>(0);
+  customMeridiem = signal<'AM' | 'PM'>('AM');
+  todayDateStr = new Date().toLocaleDateString('en-CA');
+  isScheduled = computed(() => !!this.scheduledFor());
+  scheduledLabel = computed(() => {
+    const iso = this.scheduledFor();
+    if (!iso) return '';
+    return new Date(iso).toLocaleString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
+  });
+
+  scheduleError = signal<string | null>(null);
+
+  onHourInput(event: Event): void {
+    const value = +(event.target as HTMLInputElement).value;
+    const clamped = Math.min(12, Math.max(1, value || 1));
+    this.customHour.set(clamped);
+  }
+
+
+  toggleSchedulePicker(): void {
+    this.scheduleError.set(null);
+    this.showSchedulePicker.set(!this.showSchedulePicker());
+  }
+
+
+  onMinuteInput(event: Event): void {
+    const value = +(event.target as HTMLInputElement).value;
+    const clamped = Math.min(59, Math.max(0, value || 0));
+    this.customMinute.set(clamped);
+  }
+
+  setMeridiem(value: 'AM' | 'PM'): void {
+    this.customMeridiem.set(value);
+    this.applyCustomTime(true);
+  }
+
+  applyCustomTime(openDropDown: boolean): void {
+    const hour = this.customHour();
+    const minute = this.customMinute().toString().padStart(2, '0');
+    this.scheduleTime.set(`${hour}:${minute} ${this.customMeridiem()}`);
+    this.showTimeDropdown.set(openDropDown);
+  }
+
+  private syncCustomFieldsFromScheduleTime(): void {
+    const match = this.scheduleTime().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+    if (!match) return;
+
+    const [, hourStr, minuteStr, meridiemStr] = match;
+    this.customHour.set(+hourStr);
+    this.customMinute.set(+minuteStr);
+    this.customMeridiem.set(meridiemStr.toUpperCase() as 'AM' | 'PM');
+  }
+
+  get scheduleDateLabel(): string {
+    if (!this.scheduleDate()) return 'Select a date';
+    const d = new Date(this.scheduleDate());
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+
+
+
+
+
+  get scheduleTimeLabel(): string {
+    return this.scheduleTime();
+  }
+
+  toggleTimeDropdown(): void {
+    const opening = !this.showTimeDropdown();
+    this.showTimeDropdown.set(opening);
+    if (opening) {
+      this.syncCustomFieldsFromScheduleTime();
+    }
+  }
+
+  onDateChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.scheduleDate.set(input.value);
+  }
+
+  selectTime(slot: string, event: Event): void {
+    event.stopPropagation();
+    this.scheduleTime.set(slot);
+    this.syncCustomFieldsFromScheduleTime();
+    this.showTimeDropdown.set(false);
+  }
+
+  clearSchedule(): void {
+    this.scheduledFor.set(null);
+  }
+
+
+  confirmSchedule(): void {
+    const iso = this.buildScheduledIso();
+    if (!iso) return; // scheduleError is already set, popup stays open so user can fix it
+    this.scheduledFor.set(iso);
+    this.scheduleError.set(null);
+    this.showSchedulePicker.set(false);
+    this.showTimeDropdown.set(false);
+  }
+
+  private buildScheduledIso(): string | null {
+    const dateStr = this.scheduleDate();
+    const match = this.scheduleTime().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+
+    if (!dateStr) {
+      this.scheduleError.set('Please pick a date');
+      return null;
+    }
+    if (!match) {
+      this.scheduleError.set('Please pick a valid time');
+      return null;
+    }
+
+    const [, hourStr, minuteStr, meridiem] = match;
+    let hour = +hourStr % 12;
+    if (meridiem.toUpperCase() === 'PM') hour += 12;
+
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const local = new Date(year, month - 1, day, hour, +minuteStr, 0, 0);
+
+    if (local.getTime() <= Date.now()) {
+      this.scheduleError.set('Please choose a time in the future');
+      return null;
+    }
+
+    this.scheduleError.set(null);
+    return local.toISOString();
+  }
+
 
   ngOnInit() {
     setTimeout(() => {
@@ -65,6 +217,7 @@ export class ComposerComponent implements OnInit, OnDestroy {
     });
   }
 
+
   toggleToolbar() {
     this.showToolbar.set(!this.showToolbar());
   }
@@ -81,10 +234,15 @@ export class ComposerComponent implements OnInit, OnDestroy {
 
   send() {
     if (!this.canSend) return;
-    this.onSend.emit({ content: this.content, attachments: [...this.attachments] });
+    this.onSend.emit({
+      content: this.content,
+      attachments: [...this.attachments],
+      scheduledAt: this.scheduledFor() ?? undefined,
+    });
     this.editor.commands.clearContent(true);
     this.content = '';
     this.attachments = [];
+    this.scheduledFor.set(null);
   }
 
   onFileSelected(event: Event) {

@@ -49,6 +49,7 @@ namespace ArielCRM.Infrastructure.Repositories
             return await _context.Projects
                 .Where(p =>
                     p.ProjectLeadId == userId ||
+                    (p.Contact != null && p.Contact.Lead != null && p.Contact.Lead.AssignedToId == userId) ||
                     p.Members.Any(m => m.Id == userId))
                 .Include(p => p.ProjectLead)
                 .Include(p => p.Contact)

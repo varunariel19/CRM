@@ -85,6 +85,16 @@ export const endpoints = {
         editMessage: (conversationId: string, messageId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages/${messageId}`,
         deleteMessage: (conversationId: string, messageId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages/${messageId}`,
         restoreMessage: (conversationId: string, messageId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/messages/${messageId}/restore`,
+        scheduledMessages: (conversationId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/scheduled-messages`,
+        cancelScheduledMessage: (conversationId: string, messageId: string) => `${BASE_URL}/api/teams/conversations/${conversationId}/scheduled-messages/${messageId}`,
+    },
+
+
+    notification: {
+        allNotification: `${BASE_URL}/api/notifications`, // ?take=30
+        singleRead: (notificationId: string) => `${BASE_URL}/api/notifications/${notificationId}/read`,
+        allRead: `${BASE_URL}/api/notifications/read-all`,
+
     },
 
 
@@ -101,9 +111,9 @@ export const endpoints = {
 
 export const appwrite = {
     production: false,
-    appwriteEndpoint: '',
-    appwriteProjectId: '',
-    appwriteBucketId: ''
+    appwriteEndpoint: 'https://sgp.cloud.appwrite.io/v1',
+    appwriteProjectId: '6a256a1900079536dd82',
+    appwriteBucketId: '6a256d420025f0e2a3fc'
 }
 
 

@@ -8,6 +8,10 @@
 
 
 	<ItemGroup>
+	<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\ArielCRM.Infrastructure\ArielCRM.Infrastructure.csproj" />
 		<ProjectReference Include="..\ArielCRM.DataLayer\ArielCRM.DataLayer.csproj" />
 		<ProjectReference Include="..\ArielCRM.Shared\ArielCRM.Shared.csproj" />

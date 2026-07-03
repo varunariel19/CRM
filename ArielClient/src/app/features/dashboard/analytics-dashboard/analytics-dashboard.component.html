@@ -1,5 +1,7 @@
 <div class="dashboard-wrapper">
 
+  
+
   <!-- ── KPI CARDS ROW 1: Core Counts ── -->
   @if(perm.leads.canView()) {
   <div class="kpi-grid kpi-grid--top">
@@ -283,7 +285,7 @@
           <div class="activity-body">
             <h4>{{ log.title }}</h4>
             <div class="activity-meta">
-              <span>By: {{ log.initiatedByName || 'System' }}</span>
+              <span>By: {{ log.commitedBy.name }}</span>
               <span>{{ log.initiatedAt | date:'hh:mm a' }}</span>
             </div>
           </div>

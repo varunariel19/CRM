@@ -6,10 +6,11 @@ import { ConfirmationModalComponent } from "../../../shared/modals/confirmation-
 import { GlobalLoaderComponent } from "../../../shared/global-loader/global-loader.component";
 import { AuditHistoryModalComponent } from "../../../components/history/history.component";
 import { MenuState } from '../../../state/menu.state';
+import { NotificationPanelComponent } from "../../../components/notification-panel/notification-panel.component";
 
 @Component({
   selector: 'app-root',
-  imports: [SidebarComponent, HeaderComponent, DashboardComponent, ConfirmationModalComponent, GlobalLoaderComponent, AuditHistoryModalComponent],
+  imports: [SidebarComponent, HeaderComponent, DashboardComponent, ConfirmationModalComponent, GlobalLoaderComponent, AuditHistoryModalComponent, NotificationPanelComponent],
   templateUrl: './root.component.html',
   styleUrl: './root.component.css',
 })

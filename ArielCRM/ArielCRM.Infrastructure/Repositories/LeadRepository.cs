@@ -85,11 +85,16 @@ namespace ArielCRM.Infrastructure.Repositories
             if (dto.Email is not null) lead.Email = dto.Email;
             if (dto.Phone is not null) lead.Phone = dto.Phone;
             if (dto.Source is not null) lead.Source = dto.Source.Value;
-            if (dto.AssignedToId is not null) lead.AssignedToId = dto.AssignedToId;
+            if (dto.AssignedToId is not null)
+            {
+                lead.AssignedToId = dto.AssignedToId;
+                var leadUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.AssignedToId);
+                lead.AssignedTo!.Name = leadUser!.Name;
+            }
             if (dto.Status is not null) lead.Status = dto.Status.Value;
             if (dto.ProjectTitle is not null) lead.ProjectTitle = dto.ProjectTitle;
             if (dto.ProjectType is not null) lead.ProjectType = dto.ProjectType.Value;
-            if (dto.Budget is not null) lead.Budget = dto.Budget.Value;
+            if (dto.Budget is not null) lead.Budget = decimal.Parse(dto.Budget.Value.ToString("F2"));
             if (dto.DealStartDate is not null) lead.DealStartDate = dto.DealStartDate.Value;
             if (dto.DealCloseDate is not null) lead.DealCloseDate = dto.DealCloseDate.Value;
 

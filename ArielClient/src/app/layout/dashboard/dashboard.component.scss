@@ -225,3 +225,173 @@
     gap: 14px;
   }
 }
+
+
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 20px;
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  box-shadow: 0 1px 2px var(--shadow-color);
+}
+
+.action-bar-left,
+.action-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ab-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.ab-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border-color);
+}
+
+/* Generic icon button */
+.ab-btn {
+  border: 1px solid var(--border-color);
+  background: var(--surface-bg);
+  color: var(--text-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ab-btn-icon {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+  position: relative;
+}
+
+.ab-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-color);
+  color: var(--text-dark);
+}
+
+.ab-btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.ab-btn:active {
+  transform: scale(0.94);
+}
+
+.ab-btn-more {
+  color: var(--placeholder-text);
+}
+
+/* Notification badge */
+.ab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger-text);
+  color: var(--on-primary);
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+/* My Dashboard View toggle */
+.ab-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--surface-bg);
+  color: var(--text-light);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.ab-view-toggle i.fa-user {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.ab-view-toggle:hover:not(.active) {
+  background: var(--surface-hover);
+  border-color: var(--border-color);
+  color: var(--text-dark);
+}
+
+.ab-view-toggle:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.ab-view-toggle.active {
+  background: var(--button-color);
+  border-color: var(--button-color);
+  color: var(--on-primary);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.ab-view-toggle.active:hover {
+  background: var(--button-hover-color);
+  border-color: var(--button-hover-color);
+}
+
+.ab-view-toggle.active i.fa-user {
+  opacity: 1;
+}
+
+.ab-check {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  width: 15px;
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ab-view-toggle:active {
+  transform: scale(0.97);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .action-bar-left,
+  .action-bar-right {
+    justify-content: space-between;
+  }
+}

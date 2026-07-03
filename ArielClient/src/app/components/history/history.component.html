@@ -13,80 +13,84 @@
     </div>
 
     @if (store.loading()) {
-      <div class="state-box">
-        <i class="ti ti-loader-2 spin" aria-hidden="true"></i>
-        <span>Loading history…</span>
-      </div>
+    <div class="state-box">
+      <i class="ti ti-loader-2 spin" aria-hidden="true"></i>
+      <span>Loading history…</span>
+    </div>
     } @else if (store.items().length === 0) {
-      <div class="state-box">
-        <i class="ti ti-database-off" aria-hidden="true"></i>
-        <span>No history records found.</span>
-      </div>
+    <div class="state-box">
+      <i class="ti ti-database-off" aria-hidden="true"></i>
+      <span>No history records found.</span>
+    </div>
     } @else {
-      <div class="timeline">
-        @for (item of store.items(); track item.id) {
-          <div class="timeline-item">
+    <div class="timeline">
+      @for (item of store.items(); track item.id) {
+      <div class="timeline-item">
 
-            <div class="timeline-left">
-              <div class="timeline-dot" [class]="dotClass(item.actionType)"></div>
-              <div class="timeline-line"></div>
+        <div class="timeline-left">
+          <div class="timeline-dot" [class]="dotClass(item.actionType)"></div>
+          <div class="timeline-line"></div>
+        </div>
+
+        <div class="timeline-card">
+
+          <div class="card-header">
+            <div class="card-header-left">
+              <span class="action-badge" [class]="badgeClass(item.actionType)">
+                <i class="ti" [class]="actionIcon(item.actionType)" aria-hidden="true"></i>
+                {{ item.actionType }}
+              </span>
+              @if (item.isReverted) {
+              <span class="reverted-badge">
+                <i class="ti ti-rotate-clockwise" aria-hidden="true"></i>
+                reverted
+              </span>
+              }
             </div>
+            <span class="item-date">
+              <i class="ti ti-clock" aria-hidden="true"></i>
+              {{ item.initiatedAt | date:'dd MMM yyyy, HH:mm' }}
+            </span>
+          </div>
 
-            <div class="timeline-card">
+          <p class="item-title">{{ item.title }}</p>
 
-              <div class="card-header">
-                <div class="card-header-left">
-                  <span class="action-badge" [class]="badgeClass(item.actionType)">
-                    <i class="ti" [class]="actionIcon(item.actionType)" aria-hidden="true"></i>
-                    {{ item.actionType }}
-                  </span>
-                  @if (item.isReverted) {
-                    <span class="reverted-badge">
-                      <i class="ti ti-rotate-clockwise" aria-hidden="true"></i>
-                      reverted
-                    </span>
-                  }
+          @if (item.commitedBy.name) {
+          <div class="item-by">
+            <div class="user-avatar">
+              <span *ngIf="!item.commitedBy.profileImage">{{ getInitials(item.commitedBy.name) }}</span>
+              <img *ngIf="item.commitedBy.profileImage" [src]="item.commitedBy.profileImage"
+                [alt]="item.commitedBy.name"  />
+            </div>
+            <span>{{ item.commitedBy.name }}</span>
+          </div>
+          }
+
+          @if (getDiff(item); as diff) {
+          <div class="diff-section">
+            <p class="diff-label">
+              <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
+              {{ diff.length }} field{{ diff.length > 1 ? 's' : '' }} changed
+            </p>
+            <div class="diff-table">
+              @for (entry of diff; track entry.field) {
+              <div class="diff-row">
+                <span class="diff-field">{{ entry.field }}</span>
+                <div class="diff-values">
+                  <span class="diff-from">{{ entry.from ?? '—' }}</span>
+                  <i class="ti ti-arrow-right diff-arrow" aria-hidden="true"></i>
+                  <span class="diff-to">{{ entry.to ?? '—' }}</span>
                 </div>
-                <span class="item-date">
-                  <i class="ti ti-clock" aria-hidden="true"></i>
-                  {{ item.initiatedAt | date:'dd MMM yyyy, HH:mm' }}
-                </span>
               </div>
-
-              <p class="item-title">{{ item.title }}</p>
-
-              @if (item.initiatedByName) {
-                <div class="item-by">
-                  <div class="user-avatar">{{ getInitials(item.initiatedByName) }}</div>
-                  <span>{{ item.initiatedByName }}</span>
-                </div>
               }
-
-              @if (getDiff(item); as diff) {
-                <div class="diff-section">
-                  <p class="diff-label">
-                    <i class="ti ti-adjustments-horizontal" aria-hidden="true"></i>
-                    {{ diff.length }} field{{ diff.length > 1 ? 's' : '' }} changed
-                  </p>
-                  <div class="diff-table">
-                    @for (entry of diff; track entry.field) {
-                      <div class="diff-row">
-                        <span class="diff-field">{{ entry.field }}</span>
-                        <div class="diff-values">
-                          <span class="diff-from">{{ entry.from ?? '—' }}</span>
-                          <i class="ti ti-arrow-right diff-arrow" aria-hidden="true"></i>
-                          <span class="diff-to">{{ entry.to ?? '—' }}</span>
-                        </div>
-                      </div>
-                    }
-                  </div>
-                </div>
-              }
-
             </div>
           </div>
-        }
+          }
+
+        </div>
       </div>
+      }
+    </div>
     }
 
   </div>

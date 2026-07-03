@@ -858,6 +858,61 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.ToTable("notes");
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Notification", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("EntityId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("link");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("message");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("notifications");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Permission", b =>
                 {
                     b.Property<string>("Id")
@@ -949,6 +1004,134 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.ToTable("projects");
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessage", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("cancelled_at");
+
+                    b.Property<string>("Content")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ConversationId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("failure_reason");
+
+                    b.Property<string>("JobId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("job_id");
+
+                    b.Property<DateTime>("ScheduledAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("scheduled_at");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sender_id");
+
+                    b.Property<string>("SentMessageId")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sent_message_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("scheduled_team_messages");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessageAttachment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("AttachmentType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("attachment_type");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("file_url");
+
+                    b.Property<string>("ScheduledMessageId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("scheduled_message_id");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_bytes");
+
+                    b.Property<string>("UploadId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("upload_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ScheduledMessageId");
+
+                    b.ToTable("scheduled_team_message_attachments");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TeamConversation", b =>
                 {
                     b.Property<string>("Id")
@@ -1024,6 +1207,14 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Property<bool>("IsEdited")
                         .HasColumnType("boolean")
                         .HasColumnName("is_edited");
+
+                    b.Property<bool>("IsScheduled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_scheduled");
+
+                    b.Property<DateTime?>("ScheduledAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("schedule_at");
 
                     b.Property<string[]>("SeenByIds")
                         .IsRequired()
@@ -1555,6 +1746,17 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("Lead");
                 });
 
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.Notification", b =>
+                {
+                    b.HasOne("ArielCRM.DataLayer.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Project", b =>
                 {
                     b.HasOne("ArielCRM.DataLayer.Entities.Contact", "Contact")
@@ -1570,6 +1772,36 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("Contact");
 
                     b.Navigation("ProjectLead");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessage", b =>
+                {
+                    b.HasOne("ArielCRM.DataLayer.Entities.TeamConversation", "Conversation")
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ArielCRM.DataLayer.Entities.User", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessageAttachment", b =>
+                {
+                    b.HasOne("ArielCRM.DataLayer.Entities.ScheduledTeamMessage", "ScheduledMessage")
+                        .WithMany("Attachments")
+                        .HasForeignKey("ScheduledMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ScheduledMessage");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TeamConversation", b =>
@@ -1786,6 +2018,11 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("Documents");
 
                     b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessage", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TeamConversation", b =>

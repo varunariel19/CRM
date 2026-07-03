@@ -457,8 +457,12 @@ namespace ArielCRM.Application.Services
             IpAddress = h.IpAddress,
             CorrelationId = h.CorrelationId,
             InitiatedAt = h.InitiatedAt,
-            InitiatedById = h.InitiatedById,
-            InitiatedByName = h.InitiatedBy?.Name
+            CommitedBy = new UserSummaryDto
+            {
+                Id = h.InitiatedBy.Id,
+                Name = h.InitiatedBy.Name,
+                ProfileImage = h.InitiatedBy.ProfileImage ?? ""
+            }
         };
 
 

@@ -13,6 +13,8 @@ import { MeetingState } from '../../../state/meeting.state';
 import { ThemeService } from '../../../core/services/theme.service';
 import { HistoryState } from '../../../state/history.state';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
+import { AuthState } from '../../../state/auth.state'; // 🆕
+import { GlobalState } from '../../../state/global.state';
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -22,6 +24,7 @@ import { PermissionFacade } from '../../../core/services/permissionFacade.servic
 })
 export class AnalyticsDashboardComponent {
 
+  globalState = inject(GlobalState);
   leadState = inject(LeadState);
   dealState = inject(DealState);
   menuState = inject(MenuState);
@@ -31,8 +34,16 @@ export class AnalyticsDashboardComponent {
   themeService = inject(ThemeService);
   historyState = inject(HistoryState);
   perm = inject(PermissionFacade);
+  authState = inject(AuthState); // 🆕
 
   barChartType: ChartType = 'bar';
+
+  // 🆕 toggle: default true = show only leads assigned to the current user
+  showOnlyMyLeads = true;
+
+  toggleMyLeads(): void {
+    this.showOnlyMyLeads = !this.showOnlyMyLeads;
+  }
 
   private get gridColor(): string {
     return this.themeService.isDark()
@@ -93,7 +104,10 @@ export class AnalyticsDashboardComponent {
   }
 
   get leads() {
-    return this.leadState.leads();
+    const all = this.leadState.leads();
+    if (!this.globalState.myViewOnly()) return all;
+    const userId = this.authState.userId();
+    return all.filter(lead => lead.assignedToId === userId);
   }
 
   get pendingTask() {

@@ -34,45 +34,41 @@ export class TeamMembersComponent implements OnInit {
   selectedMember = signal<TeamMember | null>(null);
   isSubmitting = signal(false);
   formError = signal('');
+  imagePreview = signal<string | null>(null);
 
   newMember: CreateTeamMemberDto = {
     name: '',
     email: '',
+    employeeId: '',
     departmentId: '',
     designationId: '',
     accessLevelId: '',
-    profileImage: '',
-    joinedAt: ''
+    profileImage: null,
   };
 
+filteredMembers = computed(() => {
+  const members = [...this.teamState.teamMembers()].sort((a, b) =>
+    a.name.toLowerCase().trim().localeCompare(b.name.toLowerCase().trim())
+  );
+  
 
-  filteredMembers = computed(() => {
-    const members = this.teamState.teamMembers();
-    const q = this.searchQuery().toLowerCase().trim();
-    const dept = this.filterDepartment();
-    const desig = this.filterDesignation();
+  const q = this.searchQuery().toLowerCase().trim();
+  const dept = this.filterDepartment();
+  const desig = this.filterDesignation();
 
-    return members.filter((m) => {
-      const matchesSearch =
-        !q ||
-        m.name.toLowerCase().includes(q) ||
-        m.email.toLowerCase().includes(q) ||
-        m.designationId.toLowerCase().includes(q);
-      const matchesDept = !dept || m.departmentId === dept;
-      const matchesDesig = !desig || m.designationId === desig;
-      return matchesSearch && matchesDept && matchesDesig;
-    });
+  return members.filter((m) => {
+    const matchesSearch =
+      !q ||
+      m.name.toLowerCase().includes(q) ||
+      m.email.toLowerCase().includes(q) ||
+      m.designationId.toLowerCase().includes(q);
+    const matchesDept = !dept || m.departmentId === dept;
+    const matchesDesig = !desig || m.designationId === desig;
+    return matchesSearch && matchesDept && matchesDesig;
   });
+});
 
-  maxJoinDate: string = this.getTodayDateString();
 
-  private getTodayDateString(): string {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  }
 
   get departments() {
     return this.globalState.departments();
@@ -91,12 +87,9 @@ export class TeamMembersComponent implements OnInit {
     return this.globalState.designations();
   }
 
-
-
   get teamMemberList() {
     return this.filteredMembers();
   }
-
 
   get accessLevels() {
     return this.globalState.accessLevels();
@@ -140,12 +133,13 @@ export class TeamMembersComponent implements OnInit {
     this.newMember = {
       name: '',
       email: '',
-      joinedAt: '',
+      employeeId: '',
       departmentId: '',
       designationId: '',
       accessLevelId: '',
-      profileImage: '',
+      profileImage: null,
     };
+    this.imagePreview.set(null);
     this.formError.set('');
     this.showAddModal.set(true);
   }
@@ -153,6 +147,7 @@ export class TeamMembersComponent implements OnInit {
   closeAddModal(): void {
     this.showAddModal.set(false);
     this.formError.set('');
+    this.imagePreview.set(null);
   }
 
   openProfile(member: TeamMember): void {
@@ -165,6 +160,32 @@ export class TeamMembersComponent implements OnInit {
     this.selectedMember.set(null);
   }
 
+  onProfileImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.formError.set('Please select a valid image file.');
+      return;
+    }
+
+    // Keep the raw File for upload
+    this.newMember.profileImage = file;
+
+    // Generate a preview only (not sent to backend)
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.imagePreview.set(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeProfileImage(): void {
+    this.imagePreview.set(null);
+    this.newMember.profileImage = null;
+  }
+
   validateForm(): boolean {
     if (!this.newMember.name.trim()) {
       this.formError.set('Name is required.');
@@ -172,6 +193,10 @@ export class TeamMembersComponent implements OnInit {
     }
     if (!this.newMember.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.newMember.email)) {
       this.formError.set('A valid email is required.');
+      return false;
+    }
+    if (!this.newMember.employeeId.trim()) {
+      this.formError.set('Employee ID is required.');
       return false;
     }
     if (!this.newMember.departmentId) {
@@ -184,11 +209,6 @@ export class TeamMembersComponent implements OnInit {
     }
     if (!this.newMember.accessLevelId) {
       this.formError.set('Access level is required.');
-      return false;
-    }
-
-    if (!this.newMember.joinedAt) {
-      this.formError.set('Joined At date is required.');
       return false;
     }
     return true;
@@ -241,10 +261,7 @@ export class TeamMembersComponent implements OnInit {
     });
   }
 
-
   canDelete(level: number) {
     return this.permissionService.canManage(level);
   }
-
-
 }

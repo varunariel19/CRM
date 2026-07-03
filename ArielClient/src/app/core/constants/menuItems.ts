@@ -77,3 +77,18 @@ export const menuItems: MenuItem[] = [
     permission: PermissionKey.AuditHistoryView,
   }
 ];
+
+
+export const MenuItemState = {
+  analytics: 0,
+  leads: 1,
+  customers: 2,
+  tasks: 3,
+  tickets: 4,
+  appointments: 5,
+  projects: 6,
+  "team-members": 7,
+  teams: 8,
+  "task-management": 9,
+  "audit-history": 10,
+} as const;

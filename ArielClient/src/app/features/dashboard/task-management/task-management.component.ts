@@ -338,7 +338,6 @@ export class TaskManagementComponent {
   }
 
   updateTicketFromView(ticket: Task): void {
-    debugger;
     const previousTicket = this.allTasks().find((t) => t.taskId === ticket.taskId);
     if (!previousTicket) return;
 

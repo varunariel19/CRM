@@ -26,8 +26,10 @@
 
   <div class="right-section">
 
-    <button class="icon-btn" type="button" aria-label="Notifications" title="Notifications">
+    <button class="icon-btn" type="button" aria-label="Notifications" title="Notifications"
+      (click)="globalState.toggleNotificationPanel()">
       <i class="fa-regular fa-bell"></i>
+      <span class="ab-badge" *ngIf="notificationState.unreadCount() > 0">{{ notificationState.unreadCount() }}</span>
     </button>
 
     <button class="icon-btn" type="button"

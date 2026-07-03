@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { endpoints } from '../constants/endpoints';
+import { UserSummary } from '../types/auth.type';
 
 export interface HistoryResponseDto {
   id: string;
@@ -22,8 +23,7 @@ export interface HistoryResponseDto {
   ipAddress?: string;
   correlationId?: string;
   initiatedAt: string;
-  initiatedById: string;
-  initiatedByName?: string;
+ commitedBy : UserSummary;
 }
 
 export interface PaginatedHistoryDto {

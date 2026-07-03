@@ -5,11 +5,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 
-namespace ArielCRM.API.Hubs
+namespace ArielCRM.Application.Hubs
 {
     [Authorize]
     public class TeamsHub(AppDbContext db) : Hub
     {
+
         private string UserId => Context.User?.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
 
         private static readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _userSockets = new();

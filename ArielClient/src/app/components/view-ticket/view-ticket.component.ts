@@ -23,6 +23,7 @@ import { AuthState } from '../../state/auth.state';
 import { AiService } from '../../core/services/ai-modal.service';
 import { PermissionFacade } from '../../core/services/permissionFacade.service';
 import { AppwriteService } from '../../core/services/appwrite.service';
+import { UserSummary } from '../../core/types/auth.type';
 
 
 export interface TicketHistory {
@@ -38,11 +39,7 @@ export interface TicketHistory {
   createdAt: Date;
 }
 
-export interface UserSummary {
-  id: string;
-  name: string;
-  profileImage: string;
-}
+
 
 
 @Component({
@@ -288,7 +285,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       await this.typePointsEffect(points, 10);
-      debugger;
       this.ticket.aiSummary = [...points];
       const updatedTicket = {
         ...this.ticket,

@@ -4,7 +4,6 @@ using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using System.Security.Claims;
 using System.Text.Json;
 
 namespace ArielCRM.Application.Services
@@ -22,21 +21,21 @@ namespace ArielCRM.Application.Services
 
         public Task<IEnumerable<LeadResponseDto>> GetAllLeadsAsync(HttpContext context)
         {
-            if (context.User.Identity is null || !context.User.Identity.IsAuthenticated)
-                return Task.FromResult(Enumerable.Empty<LeadResponseDto>());
+            // if (context.User.Identity is null || !context.User.Identity.IsAuthenticated)
+            //     return Task.FromResult(Enumerable.Empty<LeadResponseDto>());
 
-            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId is null) return Task.FromResult(Enumerable.Empty<LeadResponseDto>());
+            // var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // if (userId is null) return Task.FromResult(Enumerable.Empty<LeadResponseDto>());
 
-            var adminAccessLvlId = _configuration["Seeding:AdminLevel"];
-            var accessLevelId = context.User.FindFirst("AccessLevelId")?.Value;
+            // var adminAccessLvlId = _configuration["Seeding:AdminLevel"];
+            // var accessLevelId = context.User.FindFirst("AccessLevelId")?.Value;
 
-            if (accessLevelId == adminAccessLvlId)
-            {
+            // if (accessLevelId == adminAccessLvlId)
+            // {
+            // }
+
                 return _leadRepository.GetAllAsync();
-            }
-
-            return _leadRepository.GetAllByAssigneeAsync(userId);
+            // return _leadRepository.GetAllByAssigneeAsync(userId);
         }
 
         public Task<IEnumerable<LeadResponseDto>> SearchLeadsAsync(string query)
@@ -80,6 +79,7 @@ namespace ArielCRM.Application.Services
 
             return created;
         }
+
         public async Task<LeadResponseDto?> UpdateLeadAsync(string id, UpdateLeadDto dto)
         {
             if (string.IsNullOrEmpty(id))
@@ -106,9 +106,11 @@ namespace ArielCRM.Application.Services
                 Source = AuditSourceType.User
             });
 
+            // 🔔 notify connected clients of the lead change
+           
+
             return updated;
         }
-
         public async Task<bool> DeleteLeadAsync(string id)
         {
             if (string.IsNullOrEmpty(id))

@@ -1,16 +1,23 @@
-﻿using ArielCRM.Application.Interfaces;
+﻿using ArielCRM.Application.Hubs;
+using ArielCRM.Application.Interfaces;
+using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 
 namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/leads")]
-    public class LeadsController(ILeadService leadService, ILogger<LeadsController> logger) : ControllerBase
+    public class LeadsController(ILeadService leadService, ILogger<LeadsController> logger, IHubContext<TeamsHub> hubContext, INotificationService notificationService) : ControllerBase
     {
         private readonly ILeadService _leadService = leadService;
         private readonly ILogger<LeadsController> _logger = logger;
+
+        private readonly INotificationService _notificationService = notificationService;
+
+        private readonly IHubContext<TeamsHub> _hub = hubContext;
 
         // GET api/leads
         [HttpGet]
@@ -74,6 +81,20 @@ namespace ArielCRM.API.Controllers
             try
             {
                 var lead = await _leadService.CreateLeadAsync(dto);
+
+                if (!string.IsNullOrEmpty(lead.AssignedToId))
+                {
+                    await _notificationService.CreateAsync(new Notification
+                    {
+                        UserId = lead.AssignedToId,
+                        Title = "New lead assigned to you",
+                        Message = $"\"{lead.Name}\" from {lead.Company} was assigned to you",
+                        EntityType = "Lead",
+                        EntityId = lead.Id,
+                        Link = $"/leads/{lead.Id}"
+                    });
+                }
+
                 return Ok(lead);
             }
             catch (Exception ex)
@@ -90,7 +111,21 @@ namespace ArielCRM.API.Controllers
             if (!ModelState.IsValid || string.IsNullOrWhiteSpace(id)) return BadRequest(ModelState);
             try
             {
+                var existingLead = await _leadService.GetLeadByIdAsync(id);
+                var previousStatus = existingLead?.Status;
+
                 var lead = await _leadService.UpdateLeadAsync(id, dto);
+                if (lead is null) return NotFound();
+
+                if (!string.Equals(previousStatus, lead.Status, StringComparison.OrdinalIgnoreCase))
+                {
+                    await _hub.Clients.All.SendAsync("LeadStatusChanged", id, lead.Status);
+
+                    if (string.Equals(lead.Status, "Converted", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await _hub.Clients.All.SendAsync("LeadConverted", id, lead.Status);
+                    }
+                }
                 return Ok(lead);
             }
             catch (Exception ex)

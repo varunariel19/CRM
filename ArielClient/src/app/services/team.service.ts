@@ -23,8 +23,20 @@ export class TeamService {
   }
 
   handleCreateTeamMember(dto: CreateTeamMemberDto): Observable<TeamMember> {
+    const formData = new FormData();
+    formData.append('name', dto.name);
+    formData.append('email', dto.email);
+    formData.append('employeeId', dto.employeeId);
+    formData.append('departmentId', dto.departmentId);
+    formData.append('designationId', dto.designationId);
+    formData.append('accessLevelId', dto.accessLevelId);
+
+    if (dto.profileImage) {
+      formData.append('profileImage', dto.profileImage, dto.profileImage.name);
+    }
+
     return this.http
-      .post<TeamMember>(`${endpoints.teamMembers}/register`, dto, { withCredentials: true })
+      .post<TeamMember>(`${endpoints.teamMembers}/register`, formData, { withCredentials: true })
       .pipe(
         tap(member =>
           this.teamState.setTeamMembers([...this.teamState.teamMembers(), member])

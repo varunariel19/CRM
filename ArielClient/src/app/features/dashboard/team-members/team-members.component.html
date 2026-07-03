@@ -257,6 +257,42 @@
         {{ formError() }}
       </div>
 
+      <div class="tm-form-group tm-profile-image-group">
+        <label class="tm-label">Profile Image</label>
+
+        <div class="tm-avatar-uploader">
+          <div class="tm-avatar-circle"
+            [style.background]="!imagePreview() ? getAvatarColor(newMember.name || '?') : null">
+            <img *ngIf="imagePreview()" [src]="imagePreview()" alt="Profile preview" class="tm-avatar-img" />
+            <span *ngIf="!imagePreview()" class="tm-avatar-initials">{{ getInitials(newMember.name || '?') }}</span>
+
+            <button *ngIf="imagePreview()" type="button" class="tm-avatar-remove" title="Remove image"
+              (click)="removeProfileImage()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <label class="tm-avatar-upload-overlay" for="profileImageInput">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </label>
+          </div>
+
+          <input id="profileImageInput" type="file" accept="image/*" (change)="onProfileImageSelected($event)" hidden />
+
+          <div class="tm-avatar-meta">
+            <label class="tm-avatar-choose-text" for="profileImageInput">
+              {{ imagePreview() ? 'Change photo' : 'Upload photo' }}
+            </label>
+            <span class="tm-avatar-hint">JPG or PNG, up to 5MB</span>
+          </div>
+        </div>
+      </div>
+
       <div class="tm-form-row">
         <div class="tm-form-group">
           <label class="tm-label">Full Name <span class="tm-required">*</span></label>
@@ -270,13 +306,16 @@
         </div>
       </div>
 
-
-
       <div class="tm-form-row">
+        <div class="tm-form-group">
+          <label class="tm-label">Employee ID <span class="tm-required">*</span></label>
+          <input class="tm-input" type="text" placeholder="e.g. EMP-0042" [(ngModel)]="newMember.employeeId"
+            (focus)="formError.set('')" />
+        </div>
+
         <div class="tm-form-group">
           <label class="tm-label">Department <span class="tm-required">*</span></label>
           <select class="tm-input" [(ngModel)]="newMember.departmentId" (focus)="formError.set('')">
-
             <option value="">Select department</option>
             <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
           </select>
@@ -296,22 +335,11 @@
         <div class="tm-form-group">
           <label class="tm-label">Access Level <span class="tm-required">*</span></label>
           <select class="tm-input" [(ngModel)]="newMember.accessLevelId" (focus)="formError.set('')">
-     F?       <option value="">Select level</option>
+            <option value="">Select level</option>
             <option *ngFor="let level of accessLevels" [value]="level.id">{{ level.name }}</option>
           </select>
         </div>
-
-        <div class="tm-form-group">
-          <label class="tm-label">Joined At <span class="tm-required">*</span></label>
-          <input class="tm-input" type="date" [(ngModel)]="newMember.joinedAt" [max]="maxJoinDate"
-            (focus)="formError.set('')" />
-        </div>
       </div>
-
-
-
-
-
     </div>
 
     <div class="tm-modal__footer">
@@ -391,20 +419,7 @@
               }}</span>
           </div>
         </div>
-        <div class="tm-profile__item">
-          <div class="tm-profile__item-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-          </div>
-          <div>
-            <span class="tm-profile__item-label">Joined On</span>
-            <span class="tm-profile__item-value">{{ formatDate(selectedMember()!.createdAt) }}</span>
-          </div>
-        </div>
+        
         <div class="tm-profile__item">
           <div class="tm-profile__item-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -413,8 +428,8 @@
             </svg>
           </div>
           <div>
-            <span class="tm-profile__item-label">Member ID</span>
-            <span class="tm-profile__item-value tm-mono">#{{ selectedMember()!.employeeId ?? "ARLE-?" }}</span>
+            <span class="tm-profile__item-label">Employee ID</span>
+            <span class="tm-profile__item-value tm-mono">{{ selectedMember()!.employeeId}}</span>
           </div>
         </div>
       </div>

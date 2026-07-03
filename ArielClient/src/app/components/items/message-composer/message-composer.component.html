@@ -1,7 +1,14 @@
 <div class="composer" [class.toolbar-visible]="showToolbar()">
 
-  <div class="composer-toolbar" *ngIf="showToolbar()">
+  <div class="composer-scheduled-badge" *ngIf="isScheduled()">
+    <i class="far fa-clock"></i>
+    <span>Sending on {{ scheduledLabel() }}</span>
+    <button type="button" class="scheduled-badge__clear" (click)="clearSchedule()" title="Cancel scheduled send">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
 
+  <div class="composer-toolbar" *ngIf="showToolbar()">
     <div class="toolbar-group">
       <button type="button" (click)="toggleBold()" [class.active]="isActive('bold')" title="Bold (Ctrl+B)">
         <i class="fas fa-bold"></i>
@@ -16,31 +23,24 @@
         <i class="fas fa-code"></i>
       </button>
     </div>
-
     <div class="toolbar-group">
       <button type="button" (click)="toggleBulletList()" [class.active]="isActive('bulletList')" title="Bullet list">
         <i class="fas fa-list-ul"></i>
       </button>
     </div>
-
   </div>
 
   <div class="composer-attachments" *ngIf="attachments.length > 0">
     <div class="attachment-chip" *ngFor="let a of attachments">
-
       <img *ngIf="a.previewUrl && a.type === 'image'" [src]="a.previewUrl" class="attachment-thumb" [alt]="a.name" />
-
       <i *ngIf="a.type !== 'image'" class="fas fa-paperclip attachment-icon"></i>
-
       <div class="attachment-info">
         <span class="attachment-name">{{ a.name }}</span>
         <span class="attachment-size">{{ formatBytes(a.size) }}</span>
       </div>
-
       <button type="button" class="attachment-remove" (click)="removeAttachment(a.id)" [title]="'Remove ' + a.name">
         <i class="fas fa-times"></i>
       </button>
-
     </div>
   </div>
 
@@ -80,18 +80,95 @@
         <span class="tooltip-text">Attach file</span>
       </div>
 
+      <div class="schedule-picker-wrap">
+        <div class="tooltip-wrap">
+          <button type="button" class="toolbar-btn" [class.active]="showSchedulePicker() || isScheduled()"
+            (click)="toggleSchedulePicker()">
+            <i class="far fa-clock"></i>
+          </button>
+          <span class="tooltip-text">{{ isScheduled() ? 'Edit scheduled time' : 'Schedule message' }}</span>
+        </div>
+
+        <div class="schedule-picker-popup" *ngIf="showSchedulePicker()">
+          <span class="schedule-popup__label">Send this message on</span>
+
+          <div class="schedule-field">
+            <span class="schedule-field__text">{{ scheduleDateLabel }}</span>
+            <i class="far fa-calendar schedule-field__icon"></i>
+            <input type="date" class="schedule-field__input" [value]="scheduleDate()" [min]="todayDateStr"
+              (change)="onDateChange($event)" />
+          </div>
+
+          <div class="schedule-field schedule-field--time" (click)="toggleTimeDropdown()">
+            <span class="schedule-field__text">{{ scheduleTimeLabel }}</span>
+            <i class="fas fa-chevron-down schedule-field__icon"></i>
+
+            <div class="schedule-time-dropdown" *ngIf="showTimeDropdown()" (click)="$event.stopPropagation()">
+
+              <div class="schedule-time-custom">
+                <input type="number" class="schedule-time-input" [value]="customHour()"
+                  (input)="onHourInput($event)" min="1" max="12" placeholder="8" />
+                <span class="schedule-time-colon">:</span>
+                <input type="number" class="schedule-time-input" [value]="customMinute()"
+                  (input)="onMinuteInput($event)" min="0" max="59" placeholder="00" />
+
+                <div class="schedule-meridiem-toggle">
+                  <button type="button" class="schedule-meridiem-btn" [class.active]="customMeridiem() === 'AM'"
+                    (click)="setMeridiem('AM')">
+                    AM
+                  </button>
+                  <button type="button" class="schedule-meridiem-btn" [class.active]="customMeridiem() === 'PM'"
+                    (click)="setMeridiem('PM')">
+                    PM
+                  </button>
+                </div>
+
+                <button type="button" class="schedule-time-apply" (click)="applyCustomTime(false)">
+                  <i class="fas fa-check"></i>
+                </button>
+              </div>
+
+              <div class="schedule-time-divider"></div>
+
+              <div class="schedule-time-list">
+                <div class="schedule-time-option" *ngFor="let slot of timeSlots"
+                  [class.active]="slot === scheduleTime()" (click)="selectTime(slot, $event)">
+                  {{ slot }}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <span class="schedule-popup__error" *ngIf="scheduleError()">
+            <i class="fas fa-circle-exclamation"></i>
+            {{ scheduleError() }}
+          </span>
+
+          <div class="schedule-popup__actions">
+            <button type="button" class="schedule-cancel-btn" *ngIf="isScheduled()" (click)="clearSchedule()">
+              Remove schedule
+            </button>
+            <button type="button" class="schedule-continue-btn" (click)="confirmSchedule()">
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="divider"></div>
 
       <div class="tooltip-wrap">
-        <button type="button" class="send-btn" [disabled]="!canSend" (click)="send()">
-          <i class="fas fa-paper-plane"></i>
+        <button type="button" class="send-btn" [class.scheduled]="isScheduled()" [disabled]="!canSend"
+          (click)="send()">
+          <i class="fas" [class.fa-paper-plane]="!isScheduled()" [class.fa-clock]="isScheduled()"></i>
         </button>
-        <span class="tooltip-text">Send (Enter)</span>
+        <span class="tooltip-text">{{ isScheduled() ? 'Send at scheduled time' : 'Send (Enter)' }}</span>
       </div>
 
-    </div>
+      <input #fileInput type="file" multiple hidden (change)="onFileSelected($event)" />
 
-    <input #fileInput type="file" multiple hidden (change)="onFileSelected($event)" />
+    </div>
 
   </div>
 

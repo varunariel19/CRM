@@ -28,6 +28,8 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Content { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public bool IsScheduled { get; set; }
+        public DateTime? ScheduledAt { get; set; }
         public List<TeamMessageAttachmentDto> Attachments { get; set; } = [];
     }
 
@@ -72,6 +74,7 @@ namespace ArielCRM.Infrastructure.DTOs
     {
         public string? Body { get; set; }
         public List<IFormFile> Attachments { get; set; } = [];
+        public DateTime? ScheduledAt { get; set; }
     }
 
     public class AddGroupMembersDto
@@ -82,5 +85,30 @@ namespace ArielCRM.Infrastructure.DTOs
     public class EditTeamMessageDto
     {
         public string Content { get; set; } = string.Empty;
+    }
+
+
+    public class ScheduledTeamMessageDto
+    {
+        public string Id { get; set; } = string.Empty;
+        public string ConversationId { get; set; } = string.Empty;
+        public string SenderId { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public DateTime ScheduledAt { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string? JobId { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public List<TeamMessageAttachmentDto> Attachments { get; set; } = [];
+    }
+
+
+    public class DelayedMessageWebhookDto
+    {
+        public string MessageId { get; set; } = string.Empty;
+        public string ConversationId { get; set; } = string.Empty;
+        public string SenderId { get; set; } = string.Empty;
+        public DateTime ScheduledAt { get; set; }
+        public string? Content { get; set; }
+        public List<string> RecipientIds { get; set; } = [];
     }
 }

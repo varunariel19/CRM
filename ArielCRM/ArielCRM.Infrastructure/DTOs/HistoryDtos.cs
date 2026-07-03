@@ -53,7 +53,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public AuditStatus? Status { get; set; }
         public string? InitiatedById { get; set; }
         public string? BatchId { get; set; }
-        public string? AffectedField { get; set; }        
+        public string? AffectedField { get; set; }
         public bool? IsReverted { get; set; }
         public DateTime? From { get; set; }
         public DateTime? To { get; set; }
@@ -95,8 +95,8 @@ namespace ArielCRM.Infrastructure.DTOs
         public string? CorrelationId { get; set; }
 
         public DateTime InitiatedAt { get; set; }
-        public string InitiatedById { get; set; } = string.Empty;
-        public string? InitiatedByName { get; set; }
+        public UserSummaryDto CommitedBy { get; set; } = null!;
+
     }
 
     public class RevertHistoryResponseDto

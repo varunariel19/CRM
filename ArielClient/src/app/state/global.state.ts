@@ -40,6 +40,26 @@ export class GlobalState {
     designations = computed(() => this._designations());
     isLoading = computed(() => this._isLoading());
 
+
+    readonly myViewOnly = signal<boolean>(true); // default: on
+    readonly isOpen = signal<boolean>(false);
+
+    open(): void {
+        this.isOpen.set(true);
+    }
+
+    close(): void {
+        this.isOpen.set(false);
+    }
+
+    toggleNotificationPanel(): void {
+        this.isOpen.update(v => !v);
+    }
+
+    toggle(): void {
+        this.myViewOnly.update(v => !v);
+    }
+
     setPermissions(data: PermissionItem[]): void {
         this._permissions.set(data);
     }

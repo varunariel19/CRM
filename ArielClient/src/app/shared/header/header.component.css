@@ -98,7 +98,7 @@
 .icon-btn {
   width: 42px;
   height: 42px;
-
+  position: relative;
   border: none;
   outline: none;
 
@@ -240,4 +240,22 @@
   justify-content: center;
   font-weight: 600;
   text-transform: uppercase;
+}
+
+
+.ab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger-text);
+  color: var(--on-primary);
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
 }

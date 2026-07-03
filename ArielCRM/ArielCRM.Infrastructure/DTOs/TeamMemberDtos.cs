@@ -1,6 +1,7 @@
 ﻿
 
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace ArielCRM.Infrastructure.DTOs
 {
@@ -13,7 +14,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public string? ProfileImage { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-        public int  Access {get; set;} 
+        public int Access { get; set; }
         public string DepartmentId { get; set; } = string.Empty;
         public string DesignationId { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
@@ -30,6 +31,9 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Email { get; set; } = string.Empty;
 
         [Required]
+        public string EmployeeId { get; set; } = string.Empty;
+
+        [Required]
         public string DepartmentId { get; set; } = string.Empty;
 
         [Required]
@@ -38,7 +42,9 @@ namespace ArielCRM.Infrastructure.DTOs
         [Required]
         public string AccessLevelId { get; set; } = string.Empty;
 
+        public IFormFile? ProfileImage { get; set; }
     }
+
 
     public class UpdateTeamDto
     {

@@ -239,12 +239,12 @@
           <div class="deal-footer">
             <div class="owner">
               <div class="avatar">
-                <img *ngIf="task.assignee?.profileImage" [src]="task.assignee.profileImage" alt="">
-                <span *ngIf="!task.assignee?.profileImage">
-                  {{ initials(task.assignee?.name ?? '?') }}
+                <img *ngIf="task.assignee.profileImage" [src]="task.assignee.profileImage" alt="">
+                <span *ngIf="!task.assignee.profileImage">
+                  {{ initials(task.assignee.name ) }}
                 </span>
               </div>
-              {{ task?.assignee?.name ?? '-' }}
+              {{ task.assignee.name  }}
             </div>
 
             <div class="deal-actions">
