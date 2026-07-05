@@ -71,11 +71,21 @@ export const DUMMY_NOTIFICATIONS: AppNotification[] = [
   },
 ];
 
+export interface ToastItem extends AppNotification {
+  toastId: string; // unique per toast instance, so the same notification could theoretically show twice
+}
 
 @Injectable({ providedIn: 'root' })
 export class NotificationState {
   readonly notifications = signal<AppNotification[]>([]);
+  showMessageNotification = signal(true);
   readonly unreadCount = signal<number>(0);
+  readonly toasts = signal<ToastItem[]>([]);
+
+  private notificationAudio = new Audio('/sounds/ariel-notification.mp3');
+  private messageAudio = new Audio('/sounds/message-sound.mp3');
+
+
 
   setAll(list: AppNotification[]): void {
     this.notifications.set(list);
@@ -112,5 +122,49 @@ export class NotificationState {
 
   clear(): void {
     this.notifications.update(list => list.filter(n => !n.isRead));
+  }
+
+  show(notification: AppNotification): void {
+    const toast: ToastItem = {
+      ...notification,
+      toastId: `${notification.id}-${Date.now()}`,
+    };
+    this.toasts.update(list => [...list, toast]);
+    this.playNotificationSound();
+  }
+
+  playNotificationSound(): void {
+    this.notificationAudio.currentTime = 0;
+    this.notificationAudio.play().catch((err) => {
+      console.log("audio error", err);
+    });
+  }
+
+  playMessageReceivedSound() {
+    this.messageAudio.currentTime = 0;
+    this.messageAudio.play().catch((err) => {
+      console.log("audio error", err);
+    });
+  }
+
+  dismiss(toastId: string): void {
+    this.toasts.update(list => list.filter(t => t.toastId !== toastId));
+  }
+
+
+  showMainMessageNotification(senderName: string, messageText: string) {
+    if (Notification.permission === 'granted') {
+      const notification = new Notification(`New message from ${senderName}`, {
+        body: "You have new notification !! ",
+        icon: '/notification.png',
+        tag: 'new-message' 
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        notification.close();
+      };
+    }
+
   }
 }

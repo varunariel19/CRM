@@ -72,7 +72,6 @@ namespace ArielCRM.API.Controllers
             }
         }
 
-        // POST api/leads
         [HttpPost]
         public async Task<IActionResult> CreateLeadAsync([FromBody] CreateLeadDto dto)
         {
@@ -84,9 +83,9 @@ namespace ArielCRM.API.Controllers
 
                 if (!string.IsNullOrEmpty(lead.AssignedToId))
                 {
-                    await _notificationService.CreateAsync(new Notification
+                    await _notificationService.CreateAsync(new CreateNotificationDto
                     {
-                        UserId = lead.AssignedToId,
+                        UserIds = [lead.AssignedToId],
                         Title = "New lead assigned to you",
                         Message = $"\"{lead.Name}\" from {lead.Company} was assigned to you",
                         EntityType = "Lead",

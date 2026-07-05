@@ -8,36 +8,100 @@ namespace ArielCRM.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class NotificationsController(INotificationService notificationService) : ControllerBase
+    public class NotificationsController(
+        INotificationService notificationService,
+        ILogger<NotificationsController> logger) : ControllerBase
     {
+        private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
         [HttpGet]
         public async Task<IActionResult> GetNotifications([FromQuery] int take = 30)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            try
+            {
+                var notifications = await notificationService.GetForUserAsync(UserId, take);
+                return Ok(notifications);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while fetching notifications for user {UserId}", UserId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
 
-            var notifications = await notificationService.GetForUserAsync(userId, take);
-
-            return Ok(notifications);
+        [HttpGet("unread-count")]
+        public async Task<IActionResult> GetUnreadCount()
+        {
+            try
+            {
+                var count = await notificationService.GetUnreadCountAsync(UserId);
+                return Ok(count);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while fetching unread count for user {UserId}", UserId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
         }
 
         [HttpPut("{notificationId}/read")]
         public async Task<IActionResult> MarkAsRead(string notificationId)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
-
-            await notificationService.MarkAsReadAsync(userId, notificationId);
-
-            return NoContent();
+            try
+            {
+                await notificationService.MarkAsReadAsync(UserId, notificationId);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while marking notification {NotificationId} as read for user {UserId}", notificationId, UserId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
         }
 
         [HttpPut("read-all")]
         public async Task<IActionResult> MarkAllAsRead()
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+            try
+            {
+                await notificationService.MarkAllAsReadAsync(UserId);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while marking all notifications as read for user {UserId}", UserId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
 
-            await notificationService.MarkAllAsReadAsync(userId);
+        [HttpDelete("{notificationId}")]
+        public async Task<IActionResult> Remove(string notificationId)
+        {
+            try
+            {
+                await notificationService.RemoveForUserAsync(UserId, notificationId);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while removing notification {NotificationId} for user {UserId}", notificationId, UserId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
+        }
 
-            return NoContent();
+        [HttpDelete("clear-all")]
+        public async Task<IActionResult> ClearRead()
+        {
+            try
+            {
+                await notificationService.ClearReadForUserAsync(UserId);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "An error occurred while clearing read notifications for user {UserId}", UserId);
+                return StatusCode(500, "An error occurred while processing your request.");
+            }
         }
     }
 }

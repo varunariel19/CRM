@@ -4,10 +4,9 @@ import { AppNotification, NotificationState } from '../../state/notification.sta
 import { GlobalState } from '../../state/global.state';
 import { MenuState } from '../../state/menu.state';
 import { MenuItemState } from '../../core/constants/menuItems';
-
+import { NotificationService } from '../../core/services/notification.service';
 
 const SWIPE_DISMISS_THRESHOLD = 90;
-
 
 @Component({
   selector: 'app-notification-panel',
@@ -16,11 +15,11 @@ const SWIPE_DISMISS_THRESHOLD = 90;
   templateUrl: './notification-panel.component.html',
   styleUrls: ['./notification-panel.component.css'],
 })
-
 export class NotificationPanelComponent {
   globalState = inject(GlobalState);
   notificationState = inject(NotificationState);
   menuState = inject(MenuState);
+  private notificationService = inject(NotificationService);
 
   private dragOffsets = signal<Record<string, number>>({});
   private readonly LOCKED_RESISTANCE = 24;
@@ -44,14 +43,22 @@ export class NotificationPanelComponent {
     return this.notificationState.notifications().some(n => n.isRead);
   }
 
+
+
   onNotificationClick(n: AppNotification): void {
     if (this.didDrag) {
       this.didDrag = false;
       return;
     }
+
     if (!n.isRead) {
+      // optimistic local update
       this.notificationState.markRead(n.id);
+      this.notificationService.markAsRead(n.id).subscribe({
+        error: (err) => console.error('Failed to mark notification as read', err),
+      });
     }
+
     if (n.link) {
       const route = n.link;
       const index = MenuItemState[route as keyof typeof MenuItemState];
@@ -62,6 +69,9 @@ export class NotificationPanelComponent {
 
   markAllRead(): void {
     this.notificationState.markAllRead();
+    this.notificationService.markAllAsRead().subscribe({
+      error: (err) => console.error('Failed to mark all notifications as read', err),
+    });
   }
 
   clearAll(): void {
@@ -78,6 +88,10 @@ export class NotificationPanelComponent {
       this.clearingIds.set(new Set());
       this.dragOffsets.set({});
     }, 260 + readIds.length * 30);
+
+    this.notificationService.clearRead().subscribe({
+      error: (err) => console.error('Failed to clear read notifications', err),
+    });
   }
 
   trackById(index: number, item: AppNotification): string {
@@ -116,7 +130,6 @@ export class NotificationPanelComponent {
     return this.dragOffsets()[id] ?? 0;
   }
 
-
   canDismiss(n: AppNotification): boolean {
     return n.isRead;
   }
@@ -131,7 +144,6 @@ export class NotificationPanelComponent {
     this.didDrag = false;
     (event.target as HTMLElement).setPointerCapture(event.pointerId);
   }
-
 
   onPointerMove(event: PointerEvent, n: AppNotification): void {
     if (this.draggingId !== n.id) return;
@@ -169,12 +181,14 @@ export class NotificationPanelComponent {
         this.notificationState.remove(n.id);
         this.clearOffset(n.id);
       }, 180);
+
+      this.notificationService.remove(n.id).subscribe({
+        error: (err) => console.error('Failed to remove notification', err),
+      });
     } else {
       this.setOffset(n.id, 0);
     }
   }
-
-
 
   private setOffset(id: string, value: number): void {
     this.dragOffsets.update(map => ({ ...map, [id]: value }));

@@ -7,6 +7,7 @@ import { TeamAttachmentType, TeamConversation, TeamConversationMember, TeamMessa
 import { ComposerComponent } from "../../../components/items/message-composer/message-composer.component";
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AttachmentViewerComponent } from "../../../components/items/attachment-viewer/attachment-viewer.component";
+import { NotificationState } from '../../../state/notification.state';
 
 
 interface PendingAttachment {
@@ -45,6 +46,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   private teamsService = inject(TeamsService);
   private authState = inject(AuthState);
   private sanitizer = inject(DomSanitizer);
+  private notificationState = inject(NotificationState);
 
   private lastScrolledMessageCount = -1;
   private pendingScrollConversationId: string | null = null;
@@ -137,6 +139,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   });
 
   ngOnInit(): void {
+     this.notificationState.showMessageNotification.set(false);
     this.teamsService.loadUsers().subscribe(users => this.teamsService.users.set(users));
 
     this.teamsService.loadConversations().subscribe(conversations => {
@@ -160,6 +163,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.selectedAttachments().forEach(attachment => this.revokePreview(attachment));
 
     this.selectedConversationId.set(null);
+    this.notificationState.showMessageNotification.set(true);
     this.messages.set([]);
   }
 
@@ -701,6 +705,8 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   private receiveMessage(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
+      this.notificationState.playMessageReceivedSound();
+
       this.messages.update(messages => {
         const withoutPending = messages.filter(existing =>
           !existing.id.startsWith('pending-') || existing.content !== message.content
@@ -716,6 +722,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
         ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
         : c
     ).sort((a, b) => this.sortByRecent(a, b)));
+
   }
 
   private upsertConversation(conversation: TeamConversation): void {

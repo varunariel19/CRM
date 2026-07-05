@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://localhost:7111';
+export const BASE_URL = 'https://bfe2-103-149-154-78.ngrok-free.app';
 export const SignalRUrl = `${BASE_URL}/notificationHub`;
 export const TeamsHubUrl = `${BASE_URL}/teamsHub`;
 
@@ -92,11 +92,12 @@ export const endpoints = {
 
     notification: {
         allNotification: `${BASE_URL}/api/notifications`, // ?take=30
+        unreadCount: `${BASE_URL}/api/notifications/unread-count`,
         singleRead: (notificationId: string) => `${BASE_URL}/api/notifications/${notificationId}/read`,
         allRead: `${BASE_URL}/api/notifications/read-all`,
-
+        remove: (notificationId: string) => `${BASE_URL}/api/notifications/${notificationId}`,
+        clearRead: `${BASE_URL}/api/notifications/clear-all`,
     },
-
 
 
     AIUrl: 'https://api.groq.com/openai/v1/chat/completions',

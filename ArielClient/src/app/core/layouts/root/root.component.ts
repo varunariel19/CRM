@@ -7,10 +7,11 @@ import { GlobalLoaderComponent } from "../../../shared/global-loader/global-load
 import { AuditHistoryModalComponent } from "../../../components/history/history.component";
 import { MenuState } from '../../../state/menu.state';
 import { NotificationPanelComponent } from "../../../components/notification-panel/notification-panel.component";
+import { NotificationToastComponent } from "../../../components/items/notification-toast/notification-toast.component";
 
 @Component({
   selector: 'app-root',
-  imports: [SidebarComponent, HeaderComponent, DashboardComponent, ConfirmationModalComponent, GlobalLoaderComponent, AuditHistoryModalComponent, NotificationPanelComponent],
+  imports: [SidebarComponent, HeaderComponent, DashboardComponent, ConfirmationModalComponent, GlobalLoaderComponent, AuditHistoryModalComponent, NotificationPanelComponent, NotificationToastComponent],
   templateUrl: './root.component.html',
   styleUrl: './root.component.css',
 })

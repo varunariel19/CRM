@@ -42,6 +42,8 @@ namespace ArielCRM.Infrastructure.Data
 
         public DbSet<Notification> Notifications { get; set; } = null!;
 
+        public DbSet<NotificationRecipient> NotificationRecipients { get; set; }
+
 
 
         // ─────────────────────────────────────────────
@@ -234,6 +236,16 @@ namespace ArielCRM.Infrastructure.Data
                 .HasOne(r => r.RevertedBy).WithMany()
                 .HasForeignKey(r => r.RevertedById)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+            modelBuilder.Entity<NotificationRecipient>()
+            .HasOne(r => r.Notification)
+            .WithMany(n => n.Recipients)
+            .HasForeignKey(r => r.NotificationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<NotificationRecipient>()
+                .HasIndex(r => new { r.UserId, r.IsRead });
 
 
 

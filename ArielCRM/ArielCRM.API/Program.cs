@@ -38,10 +38,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(["http://localhost:4200", "http://192.168.4.106:4200", "https://porsche-retrorse-unblenchingly.ngrok-free.dev"])
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy.WithOrigins([
+            "http://localhost:4200",
+            "http://192.168.1.8:4200",
+            "http://192.168.4.106:4200",
+            "https://bfe2-103-149-154-78.ngrok-free.app",
+            "https://porsche-retrorse-unblenchingly.ngrok-free.dev"
+        ])
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
@@ -123,6 +129,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseRouting();
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();

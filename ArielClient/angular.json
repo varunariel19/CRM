@@ -61,7 +61,8 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "allowedHosts": [
-              "porsche-retrorse-unblenchingly.ngrok-free.dev"
+              "porsche-retrorse-unblenchingly.ngrok-free.dev",
+              "6f5b-103-149-154-78.ngrok-free.app"
             ]
           },
           "configurations": {

@@ -1,0 +1,20 @@
+<div class="nt-container">
+  <div class="nt-toast" *ngFor="let toast of toasts; trackBy: trackByToastId" (mouseenter)="pause(toast.toastId)"
+    (mouseleave)="resume(toast.toastId)" (click)="onToastClick(toast)" #toastEl>
+    <div class="nt-icon">
+      <i class="fa-solid" [ngClass]="iconFor(toast.entityType)"></i>
+    </div>
+
+    <div class="nt-body">
+      <p class="nt-title">{{ toast.title }}</p>
+      <p class="nt-message" [innerHTML]="toast.message">
+    </div>
+
+    <button type="button" class="nt-close" aria-label="Dismiss"
+      (click)="dismiss(toast.toastId); $event.stopPropagation()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <div class="nt-progress"></div>
+  </div>
+</div>

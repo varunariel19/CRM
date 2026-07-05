@@ -5,13 +5,15 @@ import { provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { provideRouter } from '@angular/router';
 import Aura from '@primeng/themes/aura';
 import { routes } from './app.routes';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { providePrimeNG } from 'primeng/config';
+import { ngrokInterceptor } from './core/interceptors/interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideCharts(withDefaultRegisterables()),
+    provideHttpClient(withInterceptors([ngrokInterceptor])),
     provideRouter(routes),
     provideHttpClient(),
     providePrimeNG({

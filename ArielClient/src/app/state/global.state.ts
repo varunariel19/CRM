@@ -90,6 +90,7 @@ export class GlobalState {
     }
 
 
+
     clear(): void {
         this._permissions.set([]);
         this._departments.set([]);
