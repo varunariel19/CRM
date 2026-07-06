@@ -1,5 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, effect, inject, signal } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskColumn, TaskManagementState, TaskMember } from '../../../state/task-management.state';
 import { ViewTicketComponent } from '../../../components/view-ticket/view-ticket.component';
@@ -19,11 +19,13 @@ import { AuthState } from '../../../state/auth.state';
 import { LoaderService } from '../../../core/services/loader.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
+import { DeepLinkService } from '../../../core/services/deepLink.service';
+import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
 
 @Component({
   selector: 'app-task-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ViewTicketComponent],
+  imports: [CommonModule, FormsModule, ViewTicketComponent , UserProfileComponent],
   templateUrl: './task-management.component.html',
   styleUrl: './task-management.component.css',
 })
@@ -36,6 +38,8 @@ export class TaskManagementComponent {
   loader = inject(LoaderService);
   toast = inject(ToastService);
   perm = inject(PermissionFacade);
+  private deepLink = inject(DeepLinkService);
+  private location = inject(Location);
 
   readonly currentUserId = this.authState.userId();
 
@@ -70,8 +74,22 @@ export class TaskManagementComponent {
   draggedTask: Task | null = null;
   draggedFrom = '';
 
-  ngOnInit(): void {
-    this.loadTasks();
+  constructor() {
+    effect(() => {
+      const loaded = this.projectState.loaded();
+      if (loaded) {
+        this.loadTasks();
+      }
+    });
+
+    effect(() => {
+      const taskId = this.deepLink.pendingTaskId();
+      const projectsLoaded = this.projectState.loaded();
+
+      if (taskId && projectsLoaded) {
+        this.openTaskFromUrl(taskId);
+      }
+    });
   }
 
 
@@ -92,6 +110,7 @@ export class TaskManagementComponent {
     this.isLoading.set(true);
     const taskList = this.allProjects.flatMap(project => project.tasks);
     this.allTasks.set(taskList);
+    this.isLoading.set(false);
   }
 
   submitTask(): void {
@@ -106,6 +125,7 @@ export class TaskManagementComponent {
       .subscribe({
         next: (res) => {
           if (res.success) {
+            this.taskState.addTask(res.task);
             this.loadTasks();
             this.showCreateModal = false;
             this.newTask = this.resetForm();
@@ -330,11 +350,14 @@ export class TaskManagementComponent {
     this.showEditModal = true;
   }
 
-  viewTicket(task: Task): void {
+  viewTicket(task: Task, updateUrl = true): void {
     this.selectedTicket = { ...task, assignee: { ...task.assignee }, reporter: { ...task.reporter } };
     this.showTicketModal = true;
     const proj = this.allProjects.find((p) => p.id === task.projectId);
     this.assignee = proj ? proj.members : [];
+    if (updateUrl) {
+      this.location.go(`/dashboard/task-management/${task.taskId}`);
+    }
   }
 
   updateTicketFromView(ticket: Task): void {
@@ -385,6 +408,27 @@ export class TaskManagementComponent {
   closeModal(): void {
     this.showTicketModal = false;
     this.selectedTicket = null;
+    if (this.location.path().includes('/task-management/')) {
+      this.location.go('/dashboard/task-management');
+    }
+  }
+
+  private openTaskFromUrl(taskId: string, projects = this.allProjects): void {
+    const projectTasks = projects.flatMap(project => project.tasks);
+    const task = this.allTasks().find(t => t.taskId === taskId) ?? projectTasks.find(t => t.taskId === taskId);
+
+    if (!task) {
+      console.warn(`Deep-linked task ${taskId} not found after projects loaded.`);
+      this.deepLink.pendingTaskId.set(null);
+      return;
+    }
+
+    if (!this.allTasks().some(t => t.taskId === task.taskId)) {
+      this.allTasks.set(projectTasks);
+    }
+
+    this.viewTicket(task, false);
+    this.deepLink.pendingTaskId.set(null);
   }
 
   closeCreateModal(e: MouseEvent): void {

@@ -123,8 +123,16 @@
     <div class="tm-card" *ngFor="let member of teamMemberList" (click)="openProfile(member)">
       <div class="tm-card__top">
         <div class="tm-card__actions">
+          @if(perm.teamMembers.canEdit()) {
+          <button class="tm-card__edit" (click)="$event.stopPropagation(); openEditModal(member)" title="Edit member">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          }
           @if(perm.teamMembers.canDelete() && canDelete(member.access)) {
-          <button class="tm-card__delete" (click)="handleDeleteMember(member.id, $event)" title="Remove member">
+          <button class="tm-card__delete" (click)="openDeleteModal(member, $event)" title="Remove member">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6" />
               <path d="M19 6l-1 14H6L5 6" />
@@ -176,13 +184,13 @@
     <table class="tm-table">
       <thead>
         <tr>
-          <th>Member</th>
+          <th>Member Name</th>
           <th>Email</th>
           <th>Department</th>
           <th>Designation</th>
           <th>Joined</th>
-          @if(perm.teamMembers.canDelete()) {
-          <th></th>
+          @if(perm.teamMembers.canEditOrDel()) {
+          <th>Actions</th>
           }
         </tr>
       </thead>
@@ -202,18 +210,28 @@
           <td><span class="tm-badge tm-badge--designation">{{ globalState.getDesignationName(member.designationId)
               }}</span></td>
           <td class="tm-table__date">{{ formatDate(member.createdAt) }}</td>
-          @if(perm.teamMembers.canDelete() && canDelete(member.access)) {
           <td>
-            <button class="tm-card__delete" (click)="handleDeleteMember(member.id, $event)" title="Remove">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14H6L5 6" />
-                <path d="M10 11v6M14 11v6" />
-                <path d="M9 6V4h6v2" />
-              </svg>
-            </button>
+            <div class="tm-table__actions" (click)="$event.stopPropagation()">
+              @if(perm.teamMembers.canEdit()) {
+              <button class="tm-card__edit" (click)="openEditModal(member)" title="Edit">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+              }
+              @if(perm.teamMembers.canDelete() && canDelete(member.access)) {
+              <button class="tm-card__delete" (click)="openDeleteModal(member, $event)" title="Remove">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14H6L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4h6v2" />
+                </svg>
+              </button>
+              }
+            </div>
           </td>
-          }
         </tr>
       </tbody>
     </table>
@@ -356,6 +374,183 @@
   </div>
 </div>
 
+<!-- EDIT MEMBER MODAL -->
+<div *ngIf="showEditModal() && editMember" class="tm-overlay" (click)="closeEditModal()">
+  <div class="tm-modal" (click)="$event.stopPropagation()">
+    <div class="tm-modal__header">
+      <div class="tm-modal__header-left">
+        <div class="tm-modal__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="tm-modal__title">Edit Team Member</h2>
+          <p class="tm-modal__sub">Update {{ editMember.name }}'s details</p>
+        </div>
+      </div>
+      <button class="tm-modal__close" (click)="closeEditModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="tm-modal__body">
+      <div *ngIf="editFormError()" class="tm-form-error">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        {{ editFormError() }}
+      </div>
+
+      <div class="tm-form-group tm-profile-image-group">
+        <label class="tm-label">Profile Image</label>
+
+        <div class="tm-avatar-uploader">
+          <div class="tm-avatar-circle"
+            [style.background]="!editImagePreview() ? getAvatarColor(editMember.name || '?') : null">
+            <img *ngIf="editImagePreview()" [src]="editImagePreview()" alt="Profile preview" class="tm-avatar-img" />
+            <span *ngIf="!editImagePreview()" class="tm-avatar-initials">{{ getInitials(editMember.name || '?')
+              }}</span>
+
+            <button *ngIf="editImagePreview()" type="button" class="tm-avatar-remove" title="Remove image"
+              (click)="removeEditProfileImage()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+
+            <label class="tm-avatar-upload-overlay" for="editProfileImageInput">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </label>
+          </div>
+
+          <input id="editProfileImageInput" type="file" accept="image/*" (change)="onEditProfileImageSelected($event)"
+            hidden />
+
+          <div class="tm-avatar-meta">
+            <label class="tm-avatar-choose-text" for="editProfileImageInput">
+              {{ editImagePreview() ? 'Change photo' : 'Upload photo' }}
+            </label>
+            <span class="tm-avatar-hint">JPG or PNG, up to 5MB</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tm-form-row">
+        <div class="tm-form-group">
+          <label class="tm-label">Full Name <span class="tm-required">*</span></label>
+          <input class="tm-input" type="text" placeholder="e.g. Aanya Sharma" [(ngModel)]="editMember.name"
+            (focus)="editFormError.set('')" />
+        </div>
+        <div class="tm-form-group">
+          <label class="tm-label">Email Address <span class="tm-required">*</span></label>
+          <input class="tm-input" type="email" placeholder="e.g. aanya@company.com" [(ngModel)]="editMember.email"
+            (focus)="editFormError.set('')" />
+        </div>
+      </div>
+
+      <div class="tm-form-row">
+        <div class="tm-form-group">
+          <label class="tm-label">Employee ID <span class="tm-required">*</span></label>
+          <input class="tm-input" type="text" placeholder="e.g. EMP-0042" [(ngModel)]="editMember.employeeId"
+            (focus)="editFormError.set('')" />
+        </div>
+
+        <div class="tm-form-group">
+          <label class="tm-label">Department <span class="tm-required">*</span></label>
+          <select class="tm-input" [(ngModel)]="editMember.departmentId" (focus)="editFormError.set('')">
+            <option value="">Select department</option>
+            <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+          </select>
+        </div>
+
+        <div class="tm-form-group">
+          <label class="tm-label">Designation <span class="tm-required">*</span></label>
+          <select class="tm-input" [(ngModel)]="editMember.designationId" (focus)="editFormError.set('')"
+            [disabled]="!editMember.departmentId">
+            <option value="">
+              {{ editMember.departmentId ? 'Select designation' : 'Select department first' }}
+            </option>
+            <option *ngFor="let d of editDesignations" [value]="d.id">{{ d.name }}</option>
+          </select>
+        </div>
+
+        <div class="tm-form-group">
+          <label class="tm-label">Access Level <span class="tm-required">*</span></label>
+          <select class="tm-input" [(ngModel)]="editMember.accessLevelId" (focus)="editFormError.set('')">
+            <option value="">Select level</option>
+            <option *ngFor="let level of accessLevels" [value]="level.id">{{ level.name }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="tm-modal__footer">
+      <button class="tm-btn-ghost" (click)="closeEditModal()" [disabled]="isSubmittingEdit()">Cancel</button>
+      <button class="tm-btn-primary" (click)="handleEditMember()" [disabled]="isSubmittingEdit()">
+        <span *ngIf="isSubmittingEdit()" class="tm-btn-spinner"></span>
+        <svg *ngIf="!isSubmittingEdit()" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        {{ isSubmittingEdit() ? 'Saving…' : 'Save Changes' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div *ngIf="showDeleteModal() && memberToDelete()" class="tm-overlay" (click)="closeDeleteModal()">
+  <div class="tm-modal tm-delete-modal" (click)="$event.stopPropagation()">
+    <div class="tm-delete-modal__icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    </div>
+
+    <h2 class="tm-delete-modal__title">Remove {{ memberToDelete()!.name }}?</h2>
+    <p class="tm-delete-modal__sub">
+      This will permanently remove this member and their access. This action cannot be undone.
+    </p>
+
+    <p class="tm-delete-modal__instruction">
+      Type <strong>{{ DELETE_CONFIRM_PHRASE }}</strong> to confirm.
+    </p>
+
+    <input class="tm-input tm-delete-modal__input" type="text" [value]="deleteConfirmText()"
+      (input)="onDeleteConfirmInput($any($event.target).value)" placeholder="{{ DELETE_CONFIRM_PHRASE }}"
+      autocomplete="off" />
+
+    <div class="tm-modal__footer tm-delete-modal__footer">
+      <button class="tm-btn-ghost" (click)="closeDeleteModal()" [disabled]="isDeletingMember()">Cancel</button>
+      <button class="tm-btn-danger" (click)="confirmDeleteMember()"
+        [disabled]="!isDeleteConfirmed || isDeletingMember()">
+        <span *ngIf="isDeletingMember()" class="tm-btn-spinner"></span>
+        <svg *ngIf="!isDeletingMember()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14H6L5 6" />
+          <path d="M10 11v6M14 11v6" />
+          <path d="M9 6V4h6v2" />
+        </svg>
+        {{ isDeletingMember() ? 'Removing…' : 'Remove member' }}
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- PROFILE MODAL -->
 <div *ngIf="showProfileModal() && selectedMember()" class="tm-overlay" (click)="closeProfile()">
   <div class="tm-modal tm-modal--profile" (click)="$event.stopPropagation()">
@@ -419,7 +614,7 @@
               }}</span>
           </div>
         </div>
-        
+
         <div class="tm-profile__item">
           <div class="tm-profile__item-icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -434,17 +629,28 @@
         </div>
       </div>
 
-      <!-- @if(perm.teamMembers.canEdit()) {
-        <div class="tm-profile__footer">
-          <button class="tm-btn-primary" (click)="openEditFromProfile()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-            Edit Member
-          </button>
-        </div>
-      } -->
+      <div class="tm-profile__footer">
+        @if(perm.teamMembers.canEdit()) {
+        <button class="tm-btn-primary" (click)="openEditModal(selectedMember()!)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+          </svg>
+          Edit Member
+        </button>
+        }
+        @if(perm.teamMembers.canDelete() && canDelete(selectedMember()!.access)) {
+        <button class="tm-btn-danger" (click)="openDeleteModal(selectedMember()!, $event)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14H6L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4h6v2" />
+          </svg>
+          Remove Member
+        </button>
+        }
+      </div>
     </div>
   </div>
 </div>

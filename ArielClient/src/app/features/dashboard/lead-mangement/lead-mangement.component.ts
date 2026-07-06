@@ -4,11 +4,12 @@ import {
   ChangeDetectorRef,
   NgZone,
   OnInit,
+  effect,
 } from '@angular/core';
 import { CreateLeadDto, Lead, LeadSource, LeadStatus, UpdateLeadDto, ProjectType } from '../../../core/types/lead.type';
 import { TeamMember } from '../../../core/types/global.type';
 import { LeadService } from '../../../services/lead.service';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MenuState } from '../../../state/menu.state';
 import { LeadState } from '../../../state/lead.state';
@@ -25,6 +26,9 @@ import { DepartmentKey } from '../../../core/constants/global';
 import { HistoryState } from '../../../state/history.state';
 import { AuditHistoryStore } from '../../../state/audit-history.state';
 import { TeamsService } from '../../../services/teams.service';
+import { DeepLinkService } from '../../../core/services/deepLink.service';
+import { ActivatedRoute } from '@angular/router';
+import { ContactState } from '../../../state/contact.state';
 
 
 export interface ProjectDocument {
@@ -82,6 +86,7 @@ export class LeadManagementComponent implements OnInit {
   authState = inject(AuthState);
   globalState = inject(GlobalState);
   toastService = inject(ToastService);
+  contactState = inject(ContactState);
   private loader = inject(LoaderService);
   private cdr = inject(ChangeDetectorRef);
   private zone = inject(NgZone);
@@ -90,6 +95,8 @@ export class LeadManagementComponent implements OnInit {
   perm = inject(PermissionFacade);
   history = inject(AuditHistoryStore);
   teamsService = inject(TeamsService);
+  private deepLink = inject(DeepLinkService);
+  private location = inject(Location);
 
   viewMode: 'list' | 'pipeline' = 'pipeline';
 
@@ -143,18 +150,41 @@ export class LeadManagementComponent implements OnInit {
   constructor(
     private teamState: TeamState,
     private menuState: MenuState,
+    private route: ActivatedRoute,
     private leadService: LeadService,
-  ) { }
+  ) {
+    effect(() => {
+      const id = this.deepLink.pendingLeadId();
+      if (id) {
+        this.openLeadFromUrl(id);
+      }
+    })
+  }
 
 
   showOnlyMyLeads = this.authState.user()?.accessLevel.access != 100 ? true : false;
 
 
   ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      if (id) {
+        this.openLeadFromUrl(id);
+      }
+
+    });
     this.teamsService.connect({
       onLeadStatusChanged: (leadId, status) => this.applyLeadStatusChanged(leadId, status as LeadStatus),
       onLeadConverted: (leadId, status) => this.applyLeadConverted(leadId, status as LeadStatus)
     });
+  }
+
+  openLeadFromUrl(id: string) {
+    const existing = this.leadList.find(l => l.id === id);
+    if (existing) {
+      this.openDetailModal(existing, false);
+      this.deepLink.pendingLeadId.set(null);
+    }
   }
 
   private applyLeadStatusChanged(leadId: string, status: LeadStatus): void {
@@ -349,14 +379,20 @@ export class LeadManagementComponent implements OnInit {
   }
 
 
-  openDetailModal(lead: Lead): void {
+  openDetailModal(lead: Lead, updateUrl = true) {
     this.detailLead = lead;
     this.showDetailModal = true;
+    if (updateUrl) {
+      this.location.go(`/dashboard/lead/${lead.id}`);
+    }
   }
 
-  closeDetailModal(): void {
+  closeDetailModal() {
     this.showDetailModal = false;
     this.detailLead = null;
+    if (this.location.path().includes('/lead/')) {
+      this.location.go('/dashboard');
+    }
   }
 
 
@@ -581,6 +617,7 @@ export class LeadManagementComponent implements OnInit {
     this.contactService.createContact(this.clientForm)
       .pipe(
         switchMap((contact) => {
+          this.contactState.addContact(contact);
           return this.leadService.handleUpdateLead(leadId, {
             status: 'Converted',
             contactId: contact.id

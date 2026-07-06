@@ -27,7 +27,7 @@ namespace ArielCRM.Application.Services
             return task == null ? null : MapToDto(task);
         }
 
-        public async Task<string> CreateAsync(CreateTaskDto dto, string reportedById)
+        public async Task<TaskDetailDto> CreateAsync(CreateTaskDto dto, string reportedById)
         {
             var task = new TicketTask
             {
@@ -45,7 +45,10 @@ namespace ArielCRM.Application.Services
 
             await _repository.CreateAsync(task);
 
-            return task.TaskId;
+            var created = await _repository.GetByIdAsync(task.TaskId)
+                ?? task;
+
+            return MapToDto(created);
         }
 
         private async Task<string> GenerateUniqueTaskIdAsync()

@@ -1,5 +1,5 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, signal, computed, effect, inject, OnInit } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import { ProjectService } from '../../../services/project.service';
@@ -10,6 +10,7 @@ import { Task } from '../../../services/task-management.service';
 import { GlobalState } from '../../../state/global.state';
 import { ProjectMemberDepartment } from '../../../core/constants/global';
 import { AuthState } from '../../../state/auth.state';
+import { DeepLinkService } from '../../../core/services/deepLink.service';
 
 export interface ProjectMember {
   id: string;
@@ -64,6 +65,8 @@ export class ProjectsComponent implements OnInit {
   private readonly teamState = inject(TeamState);
   private readonly authState = inject(AuthState);
   private readonly globalState = inject(GlobalState);
+  private readonly deepLink = inject(DeepLinkService);
+  private readonly location = inject(Location);
   perm = inject(PermissionFacade);
 
   searchQuery = signal('');
@@ -94,6 +97,15 @@ export class ProjectsComponent implements OnInit {
   isCreating = signal(false);
   availableUsers = signal<{ id: string; name: string }[]>([]);
   availableDeals = signal<{ id: string; name: string }[]>([]);
+
+  constructor() {
+    effect(() => {
+      const projectId = this.deepLink.pendingProjectId();
+      if (projectId) {
+        this.openProjectFromUrl(projectId);
+      }
+    });
+  }
 
   ngOnInit(): void {
   }
@@ -164,7 +176,7 @@ export class ProjectsComponent implements OnInit {
     };
   });
 
-  openProject(project: Project) {
+  openProject(project: Project, updateUrl = true) {
     this.selectedProject.set(project);
     this.activeTab.set('overview');
     this.isModalOpen.set(true);
@@ -172,6 +184,9 @@ export class ProjectsComponent implements OnInit {
     this.memberPickerSearch.set('');
     this.pendingMembers.set([]);
     document.body.style.overflow = 'hidden';
+    if (updateUrl) {
+      this.location.go(`/dashboard/projects/${project.id}`);
+    }
   }
 
   closeModal() {
@@ -181,6 +196,17 @@ export class ProjectsComponent implements OnInit {
     this.memberPickerSearch.set('');
     this.pendingMembers.set([]);
     document.body.style.overflow = '';
+    if (this.location.path().includes('/projects/')) {
+      this.location.go('/dashboard/projects');
+    }
+  }
+
+  private openProjectFromUrl(projectId: string): void {
+    const project = this.projects().find(p => p.id === projectId);
+    if (!project) return;
+
+    this.openProject(project, false);
+    this.deepLink.pendingProjectId.set(null);
   }
 
   setTab(tab: 'overview' | 'members' | 'documents') {

@@ -44,7 +44,7 @@ export class TeamService {
       );
   }
 
-  handleUpdateTeamMember(id: string, dto: UpdateTeamMemberDto): Observable<TeamMember> {
+  handleUpdateTeamMember(id: string, dto: Partial<UpdateTeamMemberDto>): Observable<TeamMember> {
     return this.http
       .put<TeamMember>(`${endpoints.teamMembers}/${id}`, dto, { withCredentials: true })
       .pipe(

@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { AppNotification, NotificationState } from '../../state/notification.state';
 import { GlobalState } from '../../state/global.state';
 import { MenuState } from '../../state/menu.state';
-import { MenuItemState } from '../../core/constants/menuItems';
 import { NotificationService } from '../../core/services/notification.service';
+import { Router } from '@angular/router';
 
 const SWIPE_DISMISS_THRESHOLD = 90;
 
@@ -19,6 +19,7 @@ export class NotificationPanelComponent {
   globalState = inject(GlobalState);
   notificationState = inject(NotificationState);
   menuState = inject(MenuState);
+  router = inject(Router);
   private notificationService = inject(NotificationService);
 
   private dragOffsets = signal<Record<string, number>>({});
@@ -60,11 +61,36 @@ export class NotificationPanelComponent {
     }
 
     if (n.link) {
-      const route = n.link;
-      const index = MenuItemState[route as keyof typeof MenuItemState];
-      this.menuState.setActiveMenu(index);
+      this.navigateToNotification(n);
       this.close();
     }
+  }
+
+  private navigateToNotification(notification: AppNotification): void {
+    const route = this.normalizeRoute(notification.link);
+    if (!route) return;
+
+    if (notification.entityId) {
+      if (route === 'leads') {
+        this.router.navigate(['/dashboard/lead', notification.entityId]);
+        return;
+      }
+
+      if (route === 'projects' || route === 'task-management' || route === 'teams') {
+        this.router.navigate(['/dashboard', route, notification.entityId]);
+        return;
+      }
+    }
+
+    this.router.navigate(['/dashboard', route]);
+    this.menuState.setActiveMenuByRoute(route);
+  }
+
+  private normalizeRoute(link: string | undefined): string | null {
+    if (!link) return null;
+    if (link === 'tasks') return 'task-management';
+    if (link === 'messages') return 'teams';
+    return link;
   }
 
   markAllRead(): void {

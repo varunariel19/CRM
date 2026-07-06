@@ -1,0 +1,21 @@
+.header-avatar-img,
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  color: #fff;
+  font-weight: 600;
+  user-select: none;
+}
+
+.square {
+  border-radius: 8px;
+}
+
+.avatar-border {
+  border: 2px solid var(--avatar-border-color, #fff);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06);
+}

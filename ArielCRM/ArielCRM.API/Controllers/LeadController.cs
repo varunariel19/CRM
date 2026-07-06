@@ -1,4 +1,5 @@
-﻿using ArielCRM.Application.Hubs;
+﻿using System.Security.Claims;
+using ArielCRM.Application.Hubs;
 using ArielCRM.Application.Interfaces;
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.DTOs;
@@ -80,18 +81,26 @@ namespace ArielCRM.API.Controllers
             try
             {
                 var lead = await _leadService.CreateLeadAsync(dto);
+                if (lead == null) return BadRequest("Lead Doesn't Exists !");
 
                 if (!string.IsNullOrEmpty(lead.AssignedToId))
                 {
-                    await _notificationService.CreateAsync(new CreateNotificationDto
+                    try
                     {
-                        UserIds = [lead.AssignedToId],
-                        Title = "New lead assigned to you",
-                        Message = $"\"{lead.Name}\" from {lead.Company} was assigned to you",
-                        EntityType = "Lead",
-                        EntityId = lead.Id,
-                        Link = $"/leads/{lead.Id}"
-                    });
+                        await _notificationService.CreateAsync(new CreateNotificationDto
+                        {
+                            UserIds = [lead.AssignedToId],
+                            Title = "New lead assigned to you",
+                            Message = $"\"{lead.Name}\" from {lead.Company} was assigned to you",
+                            EntityType = "Lead",
+                            EntityId = lead.Id,
+                            Link = "leads"
+                        });
+                    }
+                    catch (Exception notifyEx)
+                    {
+                        _logger.LogError(notifyEx, "Failed to send assignment notification for lead {LeadId}", lead.Id);
+                    }
                 }
 
                 return Ok(lead);
@@ -108,21 +117,70 @@ namespace ArielCRM.API.Controllers
         public async Task<IActionResult> UpdateLeadAsync(string id, [FromBody] UpdateLeadDto dto)
         {
             if (!ModelState.IsValid || string.IsNullOrWhiteSpace(id)) return BadRequest(ModelState);
+
             try
             {
                 var existingLead = await _leadService.GetLeadByIdAsync(id);
                 var previousStatus = existingLead?.Status;
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
                 var lead = await _leadService.UpdateLeadAsync(id, dto);
+                bool isStatusUpdated = false;
                 if (lead is null) return NotFound();
 
                 if (!string.Equals(previousStatus, lead.Status, StringComparison.OrdinalIgnoreCase))
                 {
-                    await _hub.Clients.All.SendAsync("LeadStatusChanged", id, lead.Status);
-
-                    if (string.Equals(lead.Status, "Converted", StringComparison.OrdinalIgnoreCase))
+                    try
                     {
-                        await _hub.Clients.All.SendAsync("LeadConverted", id, lead.Status);
+                        await _hub.Clients.All.SendAsync("LeadStatusChanged", id, lead.Status);
+
+                        if (string.Equals(lead.Status, "Converted", StringComparison.OrdinalIgnoreCase))
+                        {
+                            await _hub.Clients.All.SendAsync("LeadConverted", id, lead.Status);
+                        }
+                    }
+                    catch (Exception hubEx)
+                    {
+                        _logger.LogError(hubEx, "Failed to broadcast status change via SignalR for lead {LeadId}", id);
+                    }
+
+                    try
+                    {
+                        isStatusUpdated = true;
+                        await _notificationService.CreateAsync(new CreateNotificationDto
+                        {
+                            UserIds = [userId == lead.AssignedToId ? "fb66c485-4219-4ed8-a443-bf4b5f09276e" : lead.AssignedToId],
+                            Title = "Lead status changed !",
+                            Message = $"\"{lead.Name}\" from {lead.Company} status change from {previousStatus} to {lead.Status} !",
+                            EntityType = "Lead",
+                            EntityId = lead.Id,
+                            Link = "leads"
+                        });
+                    }
+                    catch (Exception notifyEx)
+                    {
+                        _logger.LogError(notifyEx, "Failed to send status-change notification for lead {LeadId}", id);
+                    }
+                }
+
+
+                if (!isStatusUpdated)
+                {
+                    try
+                    {
+                        await _notificationService.CreateAsync(new CreateNotificationDto
+                        {
+                            UserIds = [userId == lead.AssignedToId ? "fb66c485-4219-4ed8-a443-bf4b5f09276e" : lead.AssignedToId],
+                            Title = "Lead Updated !",
+                            Message = $"\"Updated lead {lead.Name}!",
+                            EntityType = "Lead",
+                            EntityId = lead.Id,
+                            Link = "leads"
+                        });
+                    }
+                    catch (Exception notifyEx)
+                    {
+                        _logger.LogError(notifyEx, "Failed to send status-change notification for lead {LeadId}", id);
                     }
                 }
                 return Ok(lead);

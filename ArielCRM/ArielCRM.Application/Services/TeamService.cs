@@ -88,27 +88,59 @@ namespace ArielCRM.Application.Services
             if (user == null)
                 return null;
 
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+                user.Name = dto.Name;
 
-            user.Name = dto.Name;
-            user.Email = dto.Email;
-            user.ProfileImage = dto.ProfileImage;
-            user.DepartmentId = dto.DepartmentId;
-            user.DesignationId = dto.DesignationId;
+            if (!string.IsNullOrWhiteSpace(dto.Email))
+                user.Email = dto.Email;
+
+            if (!string.IsNullOrWhiteSpace(dto.DepartmentId))
+                user.DepartmentId = dto.DepartmentId;
+
+            if (!string.IsNullOrWhiteSpace(dto.DesignationId))
+                user.DesignationId = dto.DesignationId;
+
+            if (!string.IsNullOrWhiteSpace(dto.AccessLevelId))
+                user.AccessLevelId = dto.AccessLevelId;
+
+            if (dto.ProfileImage is not null && dto.ProfileImage.Length > 0)
+            {
+                if (!dto.ProfileImage.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                    throw new Exception("Only image files are allowed.");
+
+                if (!string.IsNullOrWhiteSpace(user.ProfileImage))
+                {
+                    await _storageService.DeleteFileAsync(user.ProfileImage);
+                }
+
+                var upload = await _storageService.UploadFileAsync(dto.ProfileImage);
+                user.ProfileImage = upload.FileUrl;
+            }
+            else if (dto.RemoveProfileImage)
+            {
+                if (!string.IsNullOrWhiteSpace(user.ProfileImage))
+                {
+                    await _storageService.DeleteFileAsync(user.ProfileImage);
+                }
+                user.ProfileImage = "";
+            }
 
             await _repository.UpdateAsync(user);
 
             return new TeamMemberDto
             {
                 Id = user.Id,
+                EmployeeId = user.EmployeeId,
                 ProfileImage = user.ProfileImage,
                 Name = user.Name,
                 Email = user.Email,
-                DepartmentId = dto.DepartmentId,
-                DesignationId = dto.DesignationId,
+                DepartmentId = user.DepartmentId,
+                DesignationId = user.DesignationId,
+                AccessLevelId = user.AccessLevelId,
                 CreatedAt = user.CreatedAt
             };
         }
-
+      
         public async Task<bool> DeleteAsync(string id)
         {
             var user = await _repository.GetByIdAsync(id);
@@ -131,6 +163,7 @@ namespace ArielCRM.Application.Services
                 EmployeeId = x.EmployeeId,
                 ProfileImage = x.ProfileImage,
                 Name = x.Name,
+                AccessLevelId = x.AccessLevelId,
                 Email = x.Email,
                 Access = x.AccessLevel.Access,
                 DepartmentId = x.DepartmentId,

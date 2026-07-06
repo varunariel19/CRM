@@ -1,4 +1,5 @@
-﻿using ArielCRM.Infrastructure.DTOs;
+﻿using ArielCRM.DataLayer.Entities;
+using ArielCRM.Infrastructure.DTOs;
 
 namespace ArielCRM.Application.Interfaces
 {
@@ -8,7 +9,7 @@ namespace ArielCRM.Application.Interfaces
 
         Task<TaskDetailDto?> GetByIdAsync(string taskId);
 
-        Task<string> CreateAsync(CreateTaskDto dto, string reportedById);
+        Task<TaskDetailDto> CreateAsync(CreateTaskDto dto, string reportedById);
 
         Task<bool> UpdateAsync(string taskId, UpdateTaskDto dto);
 

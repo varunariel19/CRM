@@ -15,6 +15,9 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public int Access { get; set; }
+
+        public string AccessLevelId { get; set; } = string.Empty;
+
         public string DepartmentId { get; set; } = string.Empty;
         public string DesignationId { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
@@ -48,19 +51,21 @@ namespace ArielCRM.Infrastructure.DTOs
 
     public class UpdateTeamDto
     {
-        [Required]
-        public string Name { get; set; } = string.Empty;
+        public string? Name { get; set; }
 
-        [Required]
         [EmailAddress]
-        public string Email { get; set; } = string.Empty;
+        public string? Email { get; set; }
 
-        [Required]
-        public string DepartmentId { get; set; } = string.Empty;
+        public string? DepartmentId { get; set; }
 
-        [Required]
-        public string DesignationId { get; set; } = string.Empty;
+        public string? DesignationId { get; set; }
 
-        public string? ProfileImage { get; set; }
+        public string? AccessLevelId { get; set; }
+
+        public IFormFile? ProfileImage { get; set; }
+
+        // Lets the client explicitly signal "remove the existing image"
+        // separately from "no change was made to the image".
+        public bool RemoveProfileImage { get; set; } = false;
     }
 }

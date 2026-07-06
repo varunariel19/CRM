@@ -34,7 +34,6 @@ export class App implements OnInit {
 
           onMessage: (message) => {
             if (this.notificationState.showMessageNotification()) {
-              debugger;
               const createMessageNotification: AppNotification = {
                 id: message.id,
                 userId: message.senderId,

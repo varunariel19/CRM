@@ -48,15 +48,10 @@
     }
     }
 
-    @if(userDetails) {
+    @if(userDetails)
+    {
     <button class="profile-trigger" type="button" (click)="showProfile.set(true)" aria-label="Open profile">
-      @if(userDetails.profileImage) {
-      <img class="header-avatar-img" [src]="userDetails.profileImage" alt="profile" />
-      } @else {
-      <div class="avatar" [style.background]="getProfileColor(userDetails.name)">
-        {{ userDetails.name.charAt(0).toUpperCase() }}
-      </div>
-      }
+      <app-user-profile [name]="userDetails.name" [profileImage]="userDetails.profileImage" size="md" shape="rounded" />
     </button>
     }
 

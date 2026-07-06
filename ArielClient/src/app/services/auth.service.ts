@@ -6,6 +6,7 @@ import { AuthState } from '../state/auth.state';
 import { endpoints, Routes } from '../core/constants/endpoints';
 import { TeamsService } from './teams.service';
 import { LoginPayload, UserPayload } from '../core/types/auth.type';
+import { LoaderService } from '../core/services/loader.service';
 
 interface LoginResponse {
     message: string;
@@ -20,6 +21,7 @@ export class AuthService {
         private http: HttpClient,
         private router: Router,
         private authState: AuthState,
+        private loaderService  : LoaderService,
         private teamsService: TeamsService,
     ) { }
 
@@ -48,7 +50,11 @@ export class AuthService {
         });
     }
 
-    validateUser(): Observable<boolean> {
+    validateUser(force = false): Observable<boolean> {
+        if (!force && this.authState.isLoggedIn()) {
+            return of(true);
+        }
+
         this.authState.setValidating(true);
 
         return this.http.get<UserPayload>(endpoints.authenticate, {
@@ -67,7 +73,9 @@ export class AuthService {
                 this.authState.clear();
                 return of(false);
             }),
-            finalize(() => this.authState.setValidating(false))
+            finalize(() => {
+                 this.authState.setValidating(false); 
+            })
         );
     }
 

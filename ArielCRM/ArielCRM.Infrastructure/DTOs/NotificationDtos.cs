@@ -27,7 +27,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Message { get; set; } = string.Empty;
 
         [MaxLength(100)]
-        public string? EntityType { get; set; } // "Lead" | "Deal" | "Ticket" | "Task" | "Meeting" | "Message"
+        public string? EntityType { get; set; } // "Lead" | "Project" | "Ticket" | "Task" | "Meeting" | "Message"
 
         public string? EntityId { get; set; }
 

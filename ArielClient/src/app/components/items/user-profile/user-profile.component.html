@@ -1,0 +1,24 @@
+@if (showImage) {
+  <img
+    class="header-avatar-img"
+    [class.square]="square"
+    [class.avatar-border]="showBorder"
+    [style.width.px]="resolvedSizePx"
+    [style.height.px]="resolvedSizePx"
+    [src]="profileImage"
+    (error)="onImgError()"
+    alt="{{ resolvedName || 'unknown user' }}"
+  />
+} @else {
+  <div
+    class="avatar"
+    [class.square]="square"
+    [class.avatar-border]="showBorder"
+    [style.width.px]="resolvedSizePx"
+    [style.height.px]="resolvedSizePx"
+    [style.font-size.px]="fontSizePx"
+    [style.background]="avatarColor"
+  >
+    {{ initial }}
+  </div>
+}

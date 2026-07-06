@@ -54,7 +54,7 @@ export interface UpdateTaskRequest {
 
 export interface CreateTaskResponse {
     success: boolean;
-    taskId: string;
+    task: Task;
 }
 
 export interface ApiResponse {

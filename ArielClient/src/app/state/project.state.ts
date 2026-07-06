@@ -7,15 +7,18 @@ export class ProjectState {
     private _projects = signal<Project[]>([]);
     private _selectedProject = signal<Project | null>(null);
     private _loading = signal(false);
+    private _loaded = signal(false); // NEW — true once projects have been fetched at least once
 
     projects = computed(() => this._projects());
     selectedProject = computed(() => this._selectedProject());
     loading = computed(() => this._loading());
+    loaded = computed(() => this._loaded());
 
     projectCount = computed(() => this._projects().length);
 
     setProjects(projects: Project[]): void {
         this._projects.set(projects);
+        this._loaded.set(true); // mark loaded regardless of whether the array is empty
     }
 
     addProject(project: Project): void {
@@ -46,5 +49,6 @@ export class ProjectState {
         this._projects.set([]);
         this._selectedProject.set(null);
         this._loading.set(false);
+        this._loaded.set(false); // reset on logout/clear so a fresh session waits for a real load again
     }
 }

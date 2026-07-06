@@ -24,6 +24,7 @@ import { AiService } from '../../core/services/ai-modal.service';
 import { PermissionFacade } from '../../core/services/permissionFacade.service';
 import { AppwriteService } from '../../core/services/appwrite.service';
 import { UserSummary } from '../../core/types/auth.type';
+import { UserProfileComponent } from '../items/user-profile/user-profile.component';
 
 
 export interface TicketHistory {
@@ -44,7 +45,7 @@ export interface TicketHistory {
 
 @Component({
   selector: 'app-view-ticket',
-  imports: [CommonModule, FormsModule, EditorModule],
+  imports: [CommonModule, FormsModule, EditorModule , UserProfileComponent],
   templateUrl: './view-ticket.component.html',
   styleUrls: ['./view-ticket.component.scss']
 })

@@ -101,8 +101,14 @@ export class DashboardComponent implements OnInit {
   }
 
 
+
+
   ngOnInit(): void {
     this.loadInitialData();
+  }
+
+  selectMenuByKey(key: string) {
+    this.menuState.setActiveMenuByRoute(key);
   }
 
   loadInitialData(): void {
@@ -245,13 +251,13 @@ export class DashboardComponent implements OnInit {
         }
 
         case "projects": {
-          this.projectService.fetchAllProjects().subscribe({
-            next: (res: any) => {
-              this.projectState.setProjects(res.data ?? res);
-              this.projectState.setLoading(false);
-            },
-            error: () => this.projectState.setLoading(false)
-          });
+          this.loadProjects();
+          break;
+
+        }
+
+        case "task-management": {
+          this.loadProjects();
           break;
         }
 
@@ -265,6 +271,17 @@ export class DashboardComponent implements OnInit {
     }, 500);
   }
 
+
+
+  loadProjects() {
+    this.projectService.fetchAllProjects().subscribe({
+      next: (res: any) => {
+        this.projectState.setProjects(res.data ?? res);
+        this.projectState.setLoading(false);
+      },
+      error: () => this.projectState.setLoading(false)
+    });
+  }
 
 
 }

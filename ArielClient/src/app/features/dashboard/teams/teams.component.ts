@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
+import { AfterViewChecked, ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthState } from '../../../state/auth.state';
 import { TeamsService } from '../../../services/teams.service';
@@ -8,6 +8,9 @@ import { ComposerComponent } from "../../../components/items/message-composer/me
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { AttachmentViewerComponent } from "../../../components/items/attachment-viewer/attachment-viewer.component";
 import { NotificationState } from '../../../state/notification.state';
+import { DeepLinkService } from '../../../core/services/deepLink.service';
+import { TeamState } from '../../../state/team.state';
+import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
 
 
 interface PendingAttachment {
@@ -35,7 +38,7 @@ export interface ScheduledTeamMessage {
 @Component({
   selector: 'app-teams',
   standalone: true,
-  imports: [CommonModule, FormsModule, ComposerComponent, AttachmentViewerComponent],
+  imports: [CommonModule, FormsModule, ComposerComponent, AttachmentViewerComponent, UserProfileComponent],
   templateUrl: './teams.component.html',
   styleUrl: './teams.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,9 +47,12 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   private readonly UNDO_WINDOW_MS = 5 * 60 * 1000;
   private teamsService = inject(TeamsService);
+  private teamState = inject(TeamState);
   private authState = inject(AuthState);
   private sanitizer = inject(DomSanitizer);
   private notificationState = inject(NotificationState);
+  private deepLink = inject(DeepLinkService);
+  private location = inject(Location);
 
   private lastScrolledMessageCount = -1;
   private pendingScrollConversationId: string | null = null;
@@ -57,7 +63,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   @ViewChild('messagesScroller') messagesScroller?: ElementRef<HTMLDivElement>;
 
   conversations = this.teamsService.conversations;
-  users = this.teamsService.users;
+  users = this.teamState.teamMembers;
   onlineUserIds = this.teamsService.onlineUserIds;
   typing = this.teamsService.typing;
 
@@ -138,9 +144,20 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     return id ? (this.scheduledMessages()[id] ?? []) : [];
   });
 
+  constructor() {
+    effect(() => {
+      const conversationId = this.deepLink.pendingConversationId();
+      if (conversationId) {
+        this.openConversationFromUrl(conversationId);
+      }
+    });
+  }
+
+
+
   ngOnInit(): void {
-     this.notificationState.showMessageNotification.set(false);
-    this.teamsService.loadUsers().subscribe(users => this.teamsService.users.set(users));
+    this.notificationState.showMessageNotification.set(false);
+    // this.teamsService.loadUsers().subscribe(users => this.teamsService.users.set(users));
 
     this.teamsService.loadConversations().subscribe(conversations => {
       this.teamsService.conversations.set(conversations);
@@ -235,7 +252,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
-  selectConversation(conversation: TeamConversation): void {
+  selectConversation(conversation: TeamConversation, updateUrl = true): void {
     if (conversation.id === this.selectedConversationId() && this.messages().length) return;
     this.selectedConversationId.set(conversation.id);
     this.messages.set([]);
@@ -244,6 +261,9 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.selectedAddMemberIds.set(new Set());
     this.isLoadingMessages.set(true);
     this.teamsService.joinConversation(conversation.id);
+    if (updateUrl) {
+      this.location.go(`/dashboard/teams/${conversation.id}`);
+    }
 
     this.loadScheduledMessages(conversation.id);
 
@@ -475,6 +495,13 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   getConversationTitle(conversation: TeamConversation): string {
     if (conversation.isGroup) return conversation.name ?? 'New group';
     return conversation.members.find(m => m.id !== this.currentUserId())?.name ?? 'Direct chat';
+  }
+
+  getConversationProfileImage(conversation: TeamConversation): string | null {
+    if (conversation.isGroup) {
+      return conversation.name ?? null;
+    }
+    return conversation.members.find(m => m.id !== this.currentUserId())?.profileImage ?? null;
   }
 
   getConversationAvatar(conversation: TeamConversation): string {
@@ -851,5 +878,13 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     const next = new Set(current);
     next.has(value) ? next.delete(value) : next.add(value);
     return next;
+  }
+
+  private openConversationFromUrl(conversationId: string): void {
+    const conversation = this.conversations().find(c => c.id === conversationId);
+    if (!conversation) return;
+
+    this.selectConversation(conversation, false);
+    this.deepLink.pendingConversationId.set(null);
   }
 }

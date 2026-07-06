@@ -15,6 +15,7 @@ import { HistoryState } from '../../../state/history.state';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 import { AuthState } from '../../../state/auth.state'; // 🆕
 import { GlobalState } from '../../../state/global.state';
+import { menuItems } from '../../../core/constants/menuItems';
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -115,7 +116,10 @@ export class AnalyticsDashboardComponent {
   }
 
   navigateMenuOptions(index: number) {
-    this.menuState.setActiveMenu(index);
+    const route = menuItems.find(menu => menu.idx === index)?.route;
+    if (route) {
+      this.menuState.setActiveMenuByRoute(route);
+    }
   }
 
   get upcomingMeetings() {

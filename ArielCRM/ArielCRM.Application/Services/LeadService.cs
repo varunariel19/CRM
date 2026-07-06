@@ -34,7 +34,7 @@ namespace ArielCRM.Application.Services
             // {
             // }
 
-                return _leadRepository.GetAllAsync();
+            return _leadRepository.GetAllAsync();
             // return _leadRepository.GetAllByAssigneeAsync(userId);
         }
 
@@ -64,18 +64,24 @@ namespace ArielCRM.Application.Services
             var created = await _leadRepository.CreateAsync(lead)
                 ?? throw new Exception("Failed to create lead.");
 
-            await _historyService.LogAsync(new LogHistoryRequest
+            try
             {
-                EntityName = "Lead",
-                EntityId = created.Id,
-                EntityDisplayName = created.Name,
-                ActionType = AuditActionType.Create.ToString(),
-                Title = $"Created lead '{created.Name}'",
-                ActionDescription = $"New lead created for '{created.Company}'",
-                PreviousState = null,
-                UpdatedState = JsonSerializer.Serialize(created, _jsonOpts),
-                Source = AuditSourceType.User
-            });
+                await _historyService.LogAsync(new LogHistoryRequest
+                {
+                    EntityName = "Lead",
+                    EntityId = created.Id,
+                    EntityDisplayName = created.Name,
+                    ActionType = AuditActionType.Create.ToString(),
+                    Title = $"Created lead '{created.Name}'",
+                    ActionDescription = $"New lead created for '{created.Company}'",
+                    PreviousState = null,
+                    UpdatedState = JsonSerializer.Serialize(created, _jsonOpts),
+                    Source = AuditSourceType.User
+                });
+            }
+            catch (Exception)
+            {
+            }
 
             return created;
         }
@@ -93,24 +99,29 @@ namespace ArielCRM.Application.Services
             var updated = await _leadRepository.UpdateLeadAsync(id, dto);
             if (updated is null) return null;
 
-            await _historyService.LogAsync(new LogHistoryRequest
+            try
             {
-                EntityName = "Lead",
-                EntityId = id,
-                EntityDisplayName = existing.Name,
-                ActionType = AuditActionType.Update.ToString(),
-                Title = $"Updated lead '{existing.Name}'",
-                ActionDescription = "Lead details modified",
-                PreviousState = previousSnapshot,
-                UpdatedState = JsonSerializer.Serialize(updated, _jsonOpts),
-                Source = AuditSourceType.User
-            });
-
-            // 🔔 notify connected clients of the lead change
-           
+                await _historyService.LogAsync(new LogHistoryRequest
+                {
+                    EntityName = "Lead",
+                    EntityId = id,
+                    EntityDisplayName = existing.Name,
+                    ActionType = AuditActionType.Update.ToString(),
+                    Title = $"Updated lead '{existing.Name}'",
+                    ActionDescription = "Lead details modified",
+                    PreviousState = previousSnapshot,
+                    UpdatedState = JsonSerializer.Serialize(updated, _jsonOpts),
+                    Source = AuditSourceType.User
+                });
+            }
+            catch (Exception )
+            {
+                // swallow — history failure should not block lead update
+            }
 
             return updated;
         }
+
         public async Task<bool> DeleteLeadAsync(string id)
         {
             if (string.IsNullOrEmpty(id))

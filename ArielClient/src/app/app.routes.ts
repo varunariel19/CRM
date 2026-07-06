@@ -21,6 +21,11 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
 
   },
+  { path: 'dashboard/lead/:id', component: RootComponent, canActivate: [AuthGuard] },
+  { path: 'dashboard/projects/:id', component: RootComponent, canActivate: [AuthGuard] },
+  { path: 'dashboard/task-management/:id', component: RootComponent, canActivate: [AuthGuard] },
+  { path: 'dashboard/teams/:id', component: RootComponent, canActivate: [AuthGuard] },
+  { path: 'dashboard/:menu', component: RootComponent, canActivate: [AuthGuard] },
   {
     path: "main",
     redirectTo: 'dashboard',

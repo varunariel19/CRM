@@ -8,9 +8,11 @@ namespace ArielCRM.API.Controllers
     [Route("api/projects")]
     [Authorize]
     [ApiController]
-    public class ProjectController(IProjectService projectService) : ControllerBase
+    public class ProjectController(IProjectService projectService, ILogger<ProjectController> logger, INotificationService notificationService) : ControllerBase
     {
+        private readonly INotificationService _notificationService = notificationService;
         private readonly IProjectService _projectService = projectService;
+        private readonly ILogger<ProjectController> _logger = logger;
 
         [HttpPost]
         [Authorize(Policy = "Permission:Projects.Create")]
@@ -19,6 +21,26 @@ namespace ArielCRM.API.Controllers
             try
             {
                 var projectId = await _projectService.CreateAsync(dto);
+                if (!string.IsNullOrEmpty(projectId))
+                {
+                    try
+                    {
+                        await _notificationService.CreateAsync(new CreateNotificationDto
+                        {
+                            UserIds = [dto.ProjectLeadId],
+                            Title = "New project assigned to you",
+                            Message = $"You've been assigned as project lead for \"{dto.Name}\"",
+                            EntityType = "Lead",
+                            EntityId = projectId,
+                            Link = "projects"
+                        });
+                    }
+                    catch (Exception notifyEx)
+                    {
+                        _logger.LogError(notifyEx, "Failed to send assignment notification for project {projectId}", projectId);
+                    }
+                }
+
                 return Ok(new
                 {
                     Success = true,

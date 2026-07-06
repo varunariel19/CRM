@@ -9,11 +9,8 @@
       <div class="ticket-header">
 
         <div class="header-left">
-
-          <div class="avatar">
-            <img *ngIf="ticket.assignee.profileImage" [src]="ticket.assignee.profileImage" alt="">
-            <span *ngIf="!ticket.assignee.profileImage">{{ initials(ticket.assignee.name) }}</span>
-          </div>
+          <app-user-profile [name]="ticket.assignee.name" [profileImage]="ticket.assignee.profileImage" size="lg"
+            shape="rounded" />
 
           <div>
             <h2>{{ ticket.title }}</h2>
@@ -71,8 +68,7 @@
 
         <div class="summary-header">
           <h4>AI Summary</h4>
-          <button *ngIf="perm.taskManagement.canEdit()" (click)="generateSummary()"
-            [disabled]="isGeneratingSummary">
+          <button *ngIf="perm.taskManagement.canEdit()" (click)="generateSummary()" [disabled]="isGeneratingSummary">
             <span *ngIf="!isGeneratingSummary">Generate</span>
             <span *ngIf="isGeneratingSummary" class="generating-text">
               <span class="dot-1">.</span><span class="dot-2">.</span><span class="dot-3">.</span>
@@ -132,10 +128,9 @@
 
             <div class="comment-list" *ngIf="comments().length; else noComments">
               <div class="comment-item" *ngFor="let comment of comments()">
-                <div class="comment-avatar">
-                  <img *ngIf="comment.author?.profileImage" [src]="comment.author?.profileImage" alt="">
-                  <span *ngIf="!comment.author?.profileImage">{{ initials(comment.author?.name ?? '?') }}</span>
-                </div>
+                <app-user-profile [name]="comment.author?.name ?? '?'" [profileImage]="comment.author?.profileImage"
+                  size="sm" shape="rounded">
+                </app-user-profile>
                 <div class="comment-body">
                   <ng-container *ngIf="editingCommentId !== comment.id">
                     <div class="comment-top">
@@ -213,10 +208,9 @@
         <!-- COMMENTS ONLY TAB -->
         <div class="comment-list" *ngIf="activeTab === 'comments'">
           <div class="comment-item" *ngFor="let comment of comments()">
-            <div class="comment-avatar">
-              <img *ngIf="comment.author?.profileImage" [src]="comment.author?.profileImage" alt="">
-              <span *ngIf="!comment.author?.profileImage">{{ initials(comment.author?.name ?? '?') }}</span>
-            </div>
+            <app-user-profile [name]="comment.author?.name ?? '?'" [profileImage]="comment.author?.profileImage"
+              size="sm" shape="rounded">
+            </app-user-profile>
             <div class="comment-body">
               <ng-container *ngIf="editingCommentId !== comment.id">
                 <div class="comment-top">
@@ -271,20 +265,17 @@
         <label>Assigned To</label>
         <div class="custom-select" [class.disabled]="!perm.taskManagement.canEdit()">
           <div class="custom-select__trigger" (click)="perm.taskManagement.canEdit() && toggleAssigneeDropdown()">
-            <div class="avatar avatar--small">
-              <img *ngIf="selectedAssignee()?.profileImage" [src]="selectedAssignee()?.profileImage" alt="">
-              <span *ngIf="!selectedAssignee()?.profileImage">{{ initials(selectedAssignee()?.name ?? '?') }}</span>
-            </div>
+            <app-user-profile [name]="selectedAssignee()?.name ?? '?'" [profileImage]="selectedAssignee()?.profileImage"
+              size="sm" shape="rounded">
+            </app-user-profile>
             <span>{{ selectedAssignee()?.name ?? 'Select Assignee' }}</span>
             <i class="fas fa-chevron-down"></i>
           </div>
 
           <div class="custom-select__dropdown" *ngIf="assigneeDropdownOpen">
             <div class="custom-select__option" *ngFor="let m of projectMembers" (click)="selectAssignee(m)">
-              <div class="avatar avatar--small">
-                <img *ngIf="m.profileImage" [src]="m.profileImage" alt="">
-                <span *ngIf="!m.profileImage">{{ initials(m.name) }}</span>
-              </div>
+              <app-user-profile [name]="m.name" [profileImage]="m.profileImage" size="sm" shape="rounded">
+              </app-user-profile>
               <span>{{ m.name }}</span>
             </div>
           </div>
@@ -294,10 +285,9 @@
       <div class="detail-card">
         <label>Reported By</label>
         <div class="user-row">
-          <div class="comment-avatar">
-            <img *ngIf="ticket.reporter.profileImage" [src]="ticket.reporter.profileImage" alt="">
-            <span *ngIf="!ticket.reporter.profileImage">{{ initials(ticket.reporter.name) }}</span>
-          </div>
+          <app-user-profile [name]="ticket.reporter.name" [profileImage]="ticket.reporter.profileImage" size="sm"
+            shape="rounded">
+          </app-user-profile>
           <span>{{ ticket.reporter.name }}</span>
         </div>
       </div>

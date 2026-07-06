@@ -42,9 +42,7 @@ export class TeamsService {
   private leadConvertedHandlers: Array<(leadId: string, status: string) => void> = [];
   private notificationHandlers: Array<(notification: AppNotification) => void> = [];
 
-  loadUsers() {
-    return this.http.get<TeamUser[]>(endpoints.teams.users, { withCredentials: true });
-  }
+
 
   loadConversations() {
     return this.http.get<TeamConversation[]>(endpoints.teams.conversations, { withCredentials: true });

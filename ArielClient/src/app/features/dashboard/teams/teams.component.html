@@ -28,7 +28,8 @@
             [disabled]="openingUserId() !== null" [class.loading]="openingUserId() === user.id"
             (click)="startDirect(user); peopleSearch.set('')">
             <span class="presence-wrap">
-                <span class="avatar avatar--small">{{ getInitials(user.name) }}</span>
+                <app-user-profile [name]="user.name" [profileImage]="user.profileImage" size="sm" shape="rounded">
+                </app-user-profile>
                 <span class="presence" [class.online]="onlineUserIds().has(user.id)"
                     [class.offline]="!onlineUserIds().has(user.id)"></span>
             </span>
@@ -113,7 +114,9 @@
                     [class.has-unread]="hasUnread(conversation)" (click)="selectConversation(conversation)">
 
                     <span class="presence-wrap">
-                        <span class="avatar avatar--small">{{ getConversationAvatar(conversation) }}</span>
+                        <app-user-profile [name]="getConversationTitle(conversation)"
+                            [profileImage]="getConversationProfileImage(conversation)" size="sm">
+                        </app-user-profile>
                         <span class="presence" [class.online]="isUserOnline(conversation)"
                             [class.offline]="!isUserOnline(conversation)" *ngIf="!conversation.isGroup"></span>
                     </span>
@@ -144,7 +147,9 @@
                     </button>
 
                     <span class="presence-wrap">
-                        <span class="avatar">{{ getConversationAvatar(conversation) }}</span>
+                        <app-user-profile [name]="getConversationTitle(conversation)"
+                            [profileImage]="getConversationProfileImage(conversation)" size="sm" shape="rounded">
+                        </app-user-profile>
                         <span class="presence header-presence" [class.online]="isUserOnline(conversation)"
                             [class.offline]="!isUserOnline(conversation)" *ngIf="!conversation.isGroup"></span>
                     </span>
@@ -273,11 +278,10 @@
                                         </div>
 
                                         <div class="msg-row">
-                                            <span class="avatar avatar--small"
-                                                *ngIf="message.senderId !== currentUserId()"
-                                                [class.avatar--hidden]="!isFirstInRun(i)">
-                                                {{ getInitials(message.senderName) }}
-                                            </span>
+                                            <app-user-profile *ngIf="message.senderId !== currentUserId()"
+                                                [class.avatar--hidden]="!isFirstInRun(i)" [name]="message.senderName"
+                                                [profileImage]="message.senderProfileImage" size="sm" shape="rounded">
+                                            </app-user-profile>
 
                                             <div class="bubble">
                                                 <ng-container *ngIf="editingMessageId() === message.id; else viewMode">
@@ -473,7 +477,9 @@
                 </div>
 
                 <div class="info-panel__identity">
-                    <span class="avatar avatar--lg">{{ getConversationAvatar(conversation) }}</span>
+                    <app-user-profile [name]="getConversationTitle(conversation)"
+                        [profileImage]="getConversationProfileImage(conversation)" size="sm" shape="rounded">
+                    </app-user-profile>
                     <strong>{{ getConversationTitle(conversation) }}</strong>
                     <span *ngIf="!conversation.isGroup" class="info-status"
                         [class.status-online]="isUserOnline(conversation)"
@@ -493,7 +499,9 @@
                     <ul class="members-list">
                         <li *ngFor="let member of conversation.members; trackBy: trackByMember" class="member-item">
                             <span class="presence-wrap">
-                                <span class="avatar avatar--small">{{ getInitials(member.name) }}</span>
+                                <app-user-profile [name]="member.name" [profileImage]="member.profileImage" size="sm"
+                                    shape="rounded">
+                                </app-user-profile>
                                 <span class="presence" [class.online]="onlineUserIds().has(member.id)"
                                     [class.offline]="!onlineUserIds().has(member.id)"></span>
                             </span>
@@ -516,7 +524,8 @@
                     <div class="member-picker">
                         <button type="button" *ngFor="let user of addableGroupMembers(); trackBy: trackByUser"
                             [class.selected]="selectedAddMemberIds().has(user.id)" (click)="toggleAddMember(user.id)">
-                            <span class="avatar avatar--small">{{ getInitials(user.name) }}</span>
+                            <app-user-profile [name]="user.name" [profileImage]="user.profileImage" size="sm">
+                            </app-user-profile>
                             <span>{{ user.name }}</span>
                         </button>
                     </div>

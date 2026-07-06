@@ -11,7 +11,7 @@
 
   <nav class="menu-list">
     <a *ngFor="let item of sidebarMenus; let i = index" class="menu-item" [class.active]="activeIndex() === i"
-      (click)="setActiveMenu(i)">
+      (click)="setActiveMenu(item)">
 
       <i [class]="item.icon"></i>
 

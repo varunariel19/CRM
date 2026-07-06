@@ -3,7 +3,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GlobalState } from '../../../state/global.state';
 import { TeamState } from '../../../state/team.state';
-import { CreateTeamMemberDto, TeamMember } from '../../../core/types/global.type';
+import { CreateTeamMemberDto, TeamMember, UpdateTeamMemberDto } from '../../../core/types/global.type';
 import { TeamService } from '../../../services/team.service';
 import { getAvatarColor } from '../../../utils';
 import { PermissionService } from '../../../core/services/permission.service';
@@ -46,27 +46,53 @@ export class TeamMembersComponent implements OnInit {
     profileImage: null,
   };
 
-filteredMembers = computed(() => {
-  const members = [...this.teamState.teamMembers()].sort((a, b) =>
-    a.name.toLowerCase().trim().localeCompare(b.name.toLowerCase().trim())
-  );
-  
+  filteredMembers = computed(() => {
+    const members = [...this.teamState.teamMembers()].sort((a, b) =>
+      a.name.toLowerCase().trim().localeCompare(b.name.toLowerCase().trim())
+    );
 
-  const q = this.searchQuery().toLowerCase().trim();
-  const dept = this.filterDepartment();
-  const desig = this.filterDesignation();
 
-  return members.filter((m) => {
-    const matchesSearch =
-      !q ||
-      m.name.toLowerCase().includes(q) ||
-      m.email.toLowerCase().includes(q) ||
-      m.designationId.toLowerCase().includes(q);
-    const matchesDept = !dept || m.departmentId === dept;
-    const matchesDesig = !desig || m.designationId === desig;
-    return matchesSearch && matchesDept && matchesDesig;
+    const q = this.searchQuery().toLowerCase().trim();
+    const dept = this.filterDepartment();
+    const desig = this.filterDesignation();
+
+    return members.filter((m) => {
+      const matchesSearch =
+        !q ||
+        m.name.toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q) ||
+        m.designationId.toLowerCase().includes(q);
+      const matchesDept = !dept || m.departmentId === dept;
+      const matchesDesig = !desig || m.designationId === desig;
+      return matchesSearch && matchesDept && matchesDesig;
+    });
   });
-});
+
+
+  showEditModal = signal(false);
+  editMember: (UpdateTeamMemberDto) | null = null;
+  originalEditMember: (TeamMember & { accessLevel?: string }) | null = null; // ADD THIS
+  editImagePreview = signal<string | null>(null);
+  isSubmittingEdit = signal(false);
+  editFormError = signal('');
+
+  showDeleteModal = signal(false);
+  memberToDelete = signal<TeamMember | null>(null);
+  deleteConfirmText = signal('');
+  isDeletingMember = signal(false);
+
+  readonly DELETE_CONFIRM_PHRASE = 'DELETE MEMBER';
+
+  get isDeleteConfirmed(): boolean {
+    return this.deleteConfirmText().trim().toUpperCase() === this.DELETE_CONFIRM_PHRASE;
+  }
+
+  get editDesignations() {
+    if (!this.editMember?.departmentId) return [];
+    return this.globalState.designations().filter(
+      d => d.departmentId === this.editMember!.departmentId
+    );
+  }
 
 
 
@@ -102,6 +128,162 @@ filteredMembers = computed(() => {
   ngOnInit(): void {
     this.teamService.handleGetList().subscribe();
   }
+
+
+
+  openEditModal(member: TeamMember): void {
+    this.editMember = { ...member };
+    this.originalEditMember = { ...member };
+    this.editImagePreview.set(member.profileImage ?? null);
+    this.editFormError.set('');
+    this.showEditModal.set(true);
+    this.showProfileModal.set(false);
+  }
+
+  closeEditModal(): void {
+    this.showEditModal.set(false);
+    this.editMember = null;
+    this.originalEditMember = null; // ADD THIS
+    this.editImagePreview.set(null);
+    this.editFormError.set('');
+  }
+
+  onEditProfileImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.editMember) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.editFormError.set('Please select a valid image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => this.editImagePreview.set(reader.result as string);
+    reader.readAsDataURL(file);
+    // this.editMember!.profileImage = file;
+
+  }
+
+  removeEditProfileImage(): void {
+    if (!this.editMember) return;
+    this.editMember.profileImage = "null";
+    this.editImagePreview.set(null);
+  }
+
+  validateEditForm(): boolean {
+    if (!this.editMember) return false;
+    if (!this.editMember.name.trim()) {
+      this.editFormError.set('Name is required.');
+      return false;
+    }
+    if (!this.editMember.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.editMember.email)) {
+      this.editFormError.set('A valid email is required.');
+      return false;
+    }
+    if (!this.editMember.departmentId) {
+      this.editFormError.set('Department is required.');
+      return false;
+    }
+    if (!this.editMember.designationId) {
+      this.editFormError.set('Designation is required.');
+      return false;
+    }
+    if (!this.editMember.accessLevelId) {
+      this.editFormError.set('Access level is required.');
+      return false;
+    }
+    return true;
+  }
+
+  handleEditMember(): void {
+    this.editFormError.set('');
+    if (!this.validateEditForm() || !this.editMember || !this.originalEditMember) return;
+
+    const current = this.editMember;
+    const original = this.originalEditMember;
+
+    const payload: Partial<UpdateTeamMemberDto> = {};
+
+    if (current.name !== original.name) payload.name = current.name;
+    if (current.email !== original.email) payload.email = current.email;
+    if (current.employeeId !== original.employeeId) payload.employeeId = current.employeeId;
+    if (current.departmentId !== original.departmentId) payload.departmentId = current.departmentId;
+    if (current.designationId !== original.designationId) payload.designationId = current.designationId;
+    if (current.accessLevelId !== original.accessLevelId) payload.accessLevelId = current.accessLevelId;
+    if (current.profileImage !== original.profileImage) {
+      payload.profileImage = current.profileImage ?? undefined;
+    }
+
+    if (Object.keys(payload).length === 0) {
+      this.closeEditModal();
+      return;
+    }
+
+    this.isSubmittingEdit.set(true);
+    this.teamService.handleUpdateTeamMember(this.editMember.id!, payload).subscribe({
+      next: () => {
+        this.isSubmittingEdit.set(false);
+        this.toast.success(`${this.editMember!.name}'s details updated successfully!`);
+        this.closeEditModal();
+      },
+      error: () => {
+        this.isSubmittingEdit.set(false);
+        this.toast.error('Failed to update team member!');
+        this.editFormError.set('Failed to update member. Please try again.');
+      },
+    });
+  }
+
+  // --- DELETE MEMBER ---
+
+  openDeleteModal(member: TeamMember, event: Event): void {
+    event.stopPropagation();
+    this.showProfileModal.set(false);
+    this.memberToDelete.set(member);
+    this.deleteConfirmText.set('');
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal(): void {
+    this.showDeleteModal.set(false);
+    this.memberToDelete.set(null);
+    this.deleteConfirmText.set('');
+  }
+
+  onDeleteConfirmInput(value: string): void {
+    this.deleteConfirmText.set(value);
+  }
+
+  confirmDeleteMember(): void {
+    const member = this.memberToDelete();
+    if (!member || !this.isDeleteConfirmed) return;
+
+    this.isDeletingMember.set(true);
+    this.teamService.handleDeleteTeamMember(member.id).subscribe({
+      next: () => {
+        this.isDeletingMember.set(false);
+        this.toast.success(`${member.name} has been removed.`);
+        this.closeDeleteModal();
+        this.showProfileModal.set(false); // in case delete was triggered from profile modal
+      },
+      error: () => {
+        this.isDeletingMember.set(false);
+        this.toast.error('Failed to remove team member!');
+      },
+    });
+  }
+
+
+
+
+
+
+
+
+
+
+
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);

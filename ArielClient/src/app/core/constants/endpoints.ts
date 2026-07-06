@@ -1,4 +1,4 @@
-export const BASE_URL = 'https://bfe2-103-149-154-78.ngrok-free.app';
+export const BASE_URL = 'https://localhost:7111';
 export const SignalRUrl = `${BASE_URL}/notificationHub`;
 export const TeamsHubUrl = `${BASE_URL}/teamsHub`;
 

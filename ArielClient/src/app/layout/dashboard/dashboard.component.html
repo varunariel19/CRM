@@ -16,12 +16,8 @@
         </div>
 
         <div class="action-bar-right">
-          <button
-            class="ab-view-toggle"
-            [class.active]="this.globalState.myViewOnly()"
-            (click)="this.globalState.toggle()"
-            title="Toggle between your items and everyone's"
-          >
+          <button class="ab-view-toggle" [class.active]="this.globalState.myViewOnly()"
+            (click)="this.globalState.toggle()" title="Toggle between your items and everyone's">
             <i class="fas fa-user"></i>
             <span>My Dashboard View</span>
             <i class="fas fa-check ab-check" *ngIf="this.globalState.myViewOnly()"></i>
@@ -33,9 +29,9 @@
             <i class="fas fa-sync-alt"></i>
           </button>
 
-          
 
-          <button class="ab-btn ab-btn-icon ab-btn-more"  title="More">
+
+          <button class="ab-btn ab-btn-icon ab-btn-more" title="More">
             <i class="fas fa-ellipsis-v"></i>
           </button>
         </div>

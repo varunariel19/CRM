@@ -35,6 +35,14 @@ export class MenuState {
     this.activeIndex.set(index);
   }
 
+  setActiveMenuByRoute(route: string): boolean {
+    const index = this.menus().findIndex(menu => menu.route === route);
+    if (index < 0) return false;
+
+    this.setActiveMenu(index);
+    return true;
+  }
+
   setMenuHistory(index: number) {
     this.menuHistory.update(prev => [...prev, index]);
   }

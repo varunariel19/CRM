@@ -23,20 +23,21 @@ export interface ActivityLog {
 // global.type.ts
 export interface TeamMember {
   id: string;
-  employeeId  : string;
+  employeeId: string;
   profileImage?: string;
   name: string;
   email: string;
   departmentId: string;
   designationId: string;
   access: number;
+  accessLevelId : string;
   createdAt: string;
 }
 
 export interface UserDetails {
-    id: string;
-    name: string;
-    profileImage?: string;
+  id: string;
+  name: string;
+  profileImage?: string;
 }
 
 export interface CreateTeamMemberDto {
@@ -50,12 +51,14 @@ export interface CreateTeamMemberDto {
 }
 
 export interface UpdateTeamMemberDto {
+  id?: string;
+  employeeId: string;
   name: string;
   email: string;
   departmentId: string;
   designationId: string;
-  accessLevel: string;
-  profileImage?: string;
+  accessLevelId: string;
+  profileImage?: string | File | null;
 }
 
 

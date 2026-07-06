@@ -2,7 +2,7 @@ import { Component, inject, ElementRef, viewChild, AfterViewInit, effect } from 
 import { CommonModule } from '@angular/common';
 import { NotificationState, ToastItem } from '../../../state/notification.state';
 import { MenuState } from '../../../state/menu.state';
-import { MenuItemState } from '../../../core/constants/menuItems';
+import { Router } from '@angular/router';
 
 const AUTO_DISMISS_MS = 6000;
 
@@ -16,6 +16,7 @@ const AUTO_DISMISS_MS = 6000;
 export class NotificationToastComponent {
   toastState = inject(NotificationState);
   private menuState = inject(MenuState);
+  private router = inject(Router);
 
   private timers = new Map<string, any>();
 
@@ -56,10 +57,36 @@ export class NotificationToastComponent {
 
   onToastClick(toast: ToastItem): void {
     if (toast.link) {
-      const index = MenuItemState[toast.link as keyof typeof MenuItemState];
-      this.menuState.setActiveMenu(index);
+      this.navigateToToast(toast);
     }
     this.dismiss(toast.toastId);
+  }
+
+  private navigateToToast(toast: ToastItem): void {
+    const route = this.normalizeRoute(toast.link);
+    if (!route) return;
+
+    if (toast.entityId) {
+      if (route === 'leads') {
+        this.router.navigate(['/dashboard/lead', toast.entityId]);
+        return;
+      }
+
+      if (route === 'projects' || route === 'task-management' || route === 'teams') {
+        this.router.navigate(['/dashboard', route, toast.entityId]);
+        return;
+      }
+    }
+
+    this.router.navigate(['/dashboard', route]);
+    this.menuState.setActiveMenuByRoute(route);
+  }
+
+  private normalizeRoute(link: string | undefined): string | null {
+    if (!link) return null;
+    if (link === 'tasks') return 'task-management';
+    if (link === 'messages') return 'teams';
+    return link;
   }
 
   trackByToastId(index: number, item: ToastItem): string {

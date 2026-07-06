@@ -5,17 +5,17 @@ import { SettingsComponent } from "../../components/settings/settings.component"
 import { ProfileSectionComponent } from '../../components/profile-section/profile-section.component';
 import { AuthState } from '../../state/auth.state';
 import { CommonModule } from '@angular/common';
-import { getAvatarColor } from '../../utils';
 import { PermissionFacade } from '../../core/services/permissionFacade.service';
 import { GlobalState } from '../../state/global.state';
-import { DUMMY_NOTIFICATIONS, NotificationState } from '../../state/notification.state';
+import {  NotificationState } from '../../state/notification.state';
+import { UserProfileComponent } from "../../components/items/user-profile/user-profile.component";
 @Component({
   selector: 'app-header',
-  imports: [CommonModule, SettingsComponent, ProfileSectionComponent],
+  imports: [CommonModule, SettingsComponent, ProfileSectionComponent, UserProfileComponent],
   templateUrl: './header.component.html',
   styleUrl: './header.component.css',
 })
-export class HeaderComponent implements OnInit {
+export class HeaderComponent  {
   @Input() isSidebarCollapsed = false;
   @Output() toggleSidebar = new EventEmitter<void>();
 
@@ -31,9 +31,7 @@ export class HeaderComponent implements OnInit {
   private authService = inject(AuthService);
 
 
-  ngOnInit(): void {
-    // this.notificationState.setAll(DUMMY_NOTIFICATIONS);
-  }
+
 
   get LogoUrl() {
     return this.authState.logoUrl();
@@ -44,13 +42,10 @@ export class HeaderComponent implements OnInit {
   }
 
   get userDetails() {
-    return this.authState.user() ?? null;
+    return this.authState.user();
   }
 
 
-  getProfileColor(name: string) {
-    return getAvatarColor(name);
-  }
 
 
 
