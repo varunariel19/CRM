@@ -6,16 +6,10 @@ using System.Text.Json;
 
 namespace ArielCRM.Application.Services
 {
-    public class MeetingService : IMeetingService
+    public class MeetingService(IMeetingRepository repository, IHistoryService historyService) : IMeetingService
     {
-        private readonly IMeetingRepository _repository;
-        private readonly IHistoryService _historyService;
-
-        public MeetingService(IMeetingRepository repository, IHistoryService historyService)
-        {
-            _repository = repository;
-            _historyService = historyService;
-        }
+        private readonly IMeetingRepository _repository = repository;
+        private readonly IHistoryService _historyService = historyService;
 
         public async Task<IEnumerable<MeetingResDto>> GetAllMeetingsAsync()
         {

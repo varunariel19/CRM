@@ -3,7 +3,6 @@ using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
 
 namespace ArielCRM.Infrastructure.Repositories
 {
@@ -53,7 +52,6 @@ namespace ArielCRM.Infrastructure.Repositories
             if (filter.To.HasValue)
                 query = query.Where(h => h.InitiatedAt <= filter.To.Value);
 
-            // Filter by a specific affected field — e.g. "email"
             if (!string.IsNullOrWhiteSpace(filter.AffectedField))
                 query = query.Where(h => h.AffectedFields != null &&
                                          h.AffectedFields.Contains(filter.AffectedField));
@@ -102,9 +100,7 @@ namespace ArielCRM.Infrastructure.Repositories
         public async Task DeleteAllAsync()
             => await _db.AuditLogs.ExecuteDeleteAsync();
 
-        // ─────────────────────────────────────────────
-        // AuditRevertHistory
-        // ─────────────────────────────────────────────
+
 
         public async Task<IEnumerable<AuditRevertHistory>> GetRevertHistoryAsync(string auditLogId)
             => await _db.AuditRevertHistories
@@ -116,9 +112,6 @@ namespace ArielCRM.Infrastructure.Repositories
         public async Task AddRevertHistoryAsync(AuditRevertHistory revertHistory)
             => await _db.AuditRevertHistories.AddAsync(revertHistory);
 
-        // ─────────────────────────────────────────────
-        // Save
-        // ─────────────────────────────────────────────
 
         public async Task SaveChangesAsync()
             => await _db.SaveChangesAsync();

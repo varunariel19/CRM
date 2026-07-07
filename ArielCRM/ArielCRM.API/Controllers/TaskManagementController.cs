@@ -1,7 +1,9 @@
-﻿using ArielCRM.Application.Interfaces;
+﻿using ArielCRM.Application.Hubs;
+using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
 namespace ArielCRM.API.Controllers
@@ -9,11 +11,16 @@ namespace ArielCRM.API.Controllers
     [ApiController]
     [Route("api/tasks")]
     [Authorize]
-    public class TaskManagementController(ITaskManagementService service, ILogger<ProjectController> logger, INotificationService notificationService) : ControllerBase
+    public class TaskManagementController(ITaskManagementService service, ILogger<ProjectController> logger,
+    INotificationService notificationService, IHubContext<TeamsHub> hubContext) : ControllerBase
     {
         private readonly INotificationService _notificationService = notificationService;
         private readonly ILogger<ProjectController> _logger = logger;
         private readonly ITaskManagementService _service = service;
+        private readonly IHubContext<TeamsHub> _hub = hubContext;
+
+        private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
 
         [HttpGet]
         public async Task<IActionResult> GetAllTasksAsync()
@@ -97,9 +104,15 @@ namespace ArielCRM.API.Controllers
                 var existing = await _service.GetByIdAsync(taskId);
                 if (existing == null) return BadRequest("No ticket exists with this task Id");
 
+
+                var recipientId = UserId == dto.AssignToId ? existing.Reporter.Id : existing.Assignee.Id;
+
                 var changes = new List<string>();
                 if (dto.Status.HasValue && dto.Status.ToString() != existing.Status)
+                {
+                    await _hub.Clients.User(recipientId).SendAsync("TaskConverted", taskId, dto.Status.ToString());
                     changes.Add($"status to {dto.Status}");
+                }
                 if (dto.Priority.HasValue && dto.Priority.ToString() != existing.Priority)
                     changes.Add($"priority to {dto.Priority}");
                 if (dto.AssignToId is not null && dto.AssignToId != existing.Assignee.Id)
@@ -114,8 +127,6 @@ namespace ArielCRM.API.Controllers
 
                 if (changes.Count > 0)
                 {
-                    var recipientId = dto.AssignToId ?? existing.Assignee.Id;
-
                     if (!string.IsNullOrWhiteSpace(recipientId))
                     {
                         try

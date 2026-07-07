@@ -12,11 +12,11 @@ namespace ArielCRM.API.Controllers
         private readonly ILogger<MeetingsController> _logger = logger;
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAllMeetings()
         {
             try
             {
-                var meetings = await _service.GetAllMeetingsAsync();
+                var meetings = await _service.GetAllMeetingsAsync(); 
                 return Ok(meetings);
             }
             catch (Exception ex)
@@ -27,14 +27,14 @@ namespace ArielCRM.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateMeetingDto dto)
+        public async Task<IActionResult> CreateMeeting([FromBody] CreateMeetingDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             try
             {
                 var created = await _service.ScheduleMeetingAsync(dto);
-                return CreatedAtAction(nameof(GetAll), new { id = created.Id }, created);
+                return CreatedAtAction(nameof(GetAllMeetings), new { id = created.Id }, created);
             }
             catch (Exception ex)
             {
@@ -44,7 +44,7 @@ namespace ArielCRM.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> DeleteMeeting(string id)
         {
             try
             {

@@ -15,6 +15,8 @@ namespace ArielCRM.Application.Services
 
         public async Task<IEnumerable<TaskDetailDto>> GetAllAsync()
         {
+
+            // need since timestamps & 
             var tasks = await _repository.GetAllAsync();
 
             return tasks.Select(MapToDto);

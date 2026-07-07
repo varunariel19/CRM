@@ -12,6 +12,8 @@ namespace ArielCRM.Application.Interfaces
         Task<string> CreateAsync(CreateProjectDto dto);
         Task<IEnumerable<ProjectDetailDto>> GetAllAsync(HttpContext context);
         Task RemoveMemberFromProjectAsync(string projectId, string memberId);
+
+        Task<IEnumerable<TaskDetailDto>> GetUpdatedTasksAsync(HttpContext context, DateTime since);
         Task DeleteAsync(string projectId);
     }
 

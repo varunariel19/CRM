@@ -13,7 +13,7 @@ namespace ArielCRM.Infrastructure.Services
         {
             var message = new MimeMessage();
 
-            message.From.Add(new MailboxAddress("ArielCRM", _configuration["Email:From"]));
+            message.From.Add(new MailboxAddress("ArielCRM", _configuration["Email:From"]!));
             message.To.Add(new MailboxAddress(name, toEmail));
             message.Subject = "Your ArielCRM Account Credentials";
 
@@ -47,14 +47,14 @@ namespace ArielCRM.Infrastructure.Services
             using var client = new SmtpClient();
 
             await client.ConnectAsync(
-                _configuration["Email:Host"],
+                _configuration["Email:Host"]!,
                 int.Parse(_configuration["Email:Port"]!),
                 bool.Parse(_configuration["Email:UseSsl"]!)
             );
 
             await client.AuthenticateAsync(
-                _configuration["Email:Username"],
-                _configuration["Email:Password"]
+                _configuration["Email:Username"]!,
+                _configuration["Email:Password"]!
             );
 
             await client.SendAsync(message);

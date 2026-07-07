@@ -18,7 +18,7 @@ namespace ArielCRM.Infrastructure.DTOs
       public class CreateNotificationDto
     {
         [Required, MinLength(1)]
-        public List<string> UserIds { get; set; } = new();
+        public List<string> UserIds { get; set; } =[];
 
         [Required, MaxLength(200)]
         public string Title { get; set; } = string.Empty;

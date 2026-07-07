@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
 using ArielCRM.Application.Hubs;
 using ArielCRM.Application.Interfaces;
-using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +12,9 @@ namespace ArielCRM.API.Controllers
     [Route("api/leads")]
     public class LeadsController(ILeadService leadService, ILogger<LeadsController> logger, IHubContext<TeamsHub> hubContext, INotificationService notificationService) : ControllerBase
     {
-        private readonly ILeadService _leadService = leadService;
-        private readonly ILogger<LeadsController> _logger = logger;
-
         private readonly INotificationService _notificationService = notificationService;
-
+        private readonly ILogger<LeadsController> _logger = logger;
+        private readonly ILeadService _leadService = leadService;
         private readonly IHubContext<TeamsHub> _hub = hubContext;
 
         // GET api/leads

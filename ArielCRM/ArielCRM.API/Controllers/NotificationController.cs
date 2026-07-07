@@ -1,4 +1,5 @@
 using ArielCRM.Application.Interfaces;
+using ArielCRM.Infrastructure.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -13,6 +14,21 @@ namespace ArielCRM.API.Controllers
         ILogger<NotificationsController> logger) : ControllerBase
     {
         private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+
+        [HttpPost("create-notification")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> HandleCreateNotification([FromBody] CreateNotificationDto dto)
+        {
+            if (dto.UserIds is null || dto.UserIds.Count == 0)
+            {
+                return BadRequest("At least one recipient (UserIds) is required.");
+            }
+
+            await notificationService.CreateAsync(dto);
+            return Created();
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetNotifications([FromQuery] int take = 30)

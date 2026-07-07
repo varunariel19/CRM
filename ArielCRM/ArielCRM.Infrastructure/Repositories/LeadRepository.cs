@@ -98,6 +98,8 @@ namespace ArielCRM.Infrastructure.Repositories
             if (dto.DealStartDate is not null) lead.DealStartDate = dto.DealStartDate.Value;
             if (dto.DealCloseDate is not null) lead.DealCloseDate = dto.DealCloseDate.Value;
 
+
+            lead.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             return MapToDto(lead);
@@ -126,6 +128,7 @@ namespace ArielCRM.Infrastructure.Repositories
             AssignedToId = lead.AssignedToId,
             AssignedToName = lead.AssignedTo?.Name ?? string.Empty,
             CreatedAt = lead.CreatedAt,
+            UpdatedAt = lead.UpdatedAt,
             ProjectTitle = lead.ProjectTitle,
             ProjectType = lead.ProjectType.ToString(),
             Budget = lead.Budget,

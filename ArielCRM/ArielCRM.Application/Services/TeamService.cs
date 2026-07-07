@@ -140,7 +140,7 @@ namespace ArielCRM.Application.Services
                 CreatedAt = user.CreatedAt
             };
         }
-      
+
         public async Task<bool> DeleteAsync(string id)
         {
             var user = await _repository.GetByIdAsync(id);

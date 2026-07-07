@@ -88,6 +88,9 @@ namespace ArielCRM.Infrastructure.DTOs
         public string AssignedToId { get; set; } = string.Empty;
         public string AssignedToName { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+
+
 
         // ── Project / Deal Info ──
 

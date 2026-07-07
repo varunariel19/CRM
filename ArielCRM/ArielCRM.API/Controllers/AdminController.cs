@@ -1,7 +1,7 @@
-﻿using ArielCRM.Application.Interfaces;
-using ArielCRM.DataLayer.Entities;
+﻿using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +9,10 @@ namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AdminController(IAdminService adminService, AppDbContext db, IConfiguration configuration) : Controller
+    [Authorize]
+    public class AdminController(AppDbContext db, IConfiguration configuration) : Controller
     {
 
-        private readonly IAdminService _adminService = adminService;
         private readonly IConfiguration _configuration = configuration;
 
         private readonly AppDbContext _db = db;

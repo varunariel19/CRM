@@ -35,7 +35,7 @@ namespace ArielCRM.DataLayer.Entities
 
         [Required]
         [Column("source")]
-        public LeadSource Source { get; set; } 
+        public LeadSource Source { get; set; }
 
         [Required]
         [Column("status")]
@@ -52,6 +52,9 @@ namespace ArielCRM.DataLayer.Entities
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("updated_at")]
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         // ── Project / Deal Info ──
 

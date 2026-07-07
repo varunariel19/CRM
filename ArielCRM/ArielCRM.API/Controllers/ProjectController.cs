@@ -5,27 +5,62 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ArielCRM.API.Controllers
 {
+    [ApiController]
     [Route("api/projects")]
     [Authorize]
-    [ApiController]
-    public class ProjectController(IProjectService projectService, ILogger<ProjectController> logger, INotificationService notificationService) : ControllerBase
+    public class ProjectController(
+        IProjectService projectService,
+        ILogger<ProjectController> logger,
+        INotificationService notificationService) : ControllerBase
     {
-        private readonly INotificationService _notificationService = notificationService;
-        private readonly IProjectService _projectService = projectService;
-        private readonly ILogger<ProjectController> _logger = logger;
-
-        [HttpPost]
-        [Authorize(Policy = "Permission:Projects.Create")]
-        public async Task<IActionResult> Create([FromForm] CreateProjectDto dto)
+        // GET: api/projects
+        [HttpGet]
+        [Authorize(Policy = "Permission:Projects.View")]
+        public async Task<IActionResult> GetProjects()
         {
             try
             {
-                var projectId = await _projectService.CreateAsync(dto);
+                var projects = await projectService.GetAllAsync(HttpContext);
+                return Ok(new { Success = true, Data = projects });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
+        }
+
+        // GET: api/projects/{projectId}
+        [HttpGet("{projectId}")]
+        [Authorize(Policy = "Permission:Projects.View")]
+        public async Task<IActionResult> GetProjectById(string projectId)
+        {
+            try
+            {
+                var project = await projectService.GetByIdAsync(projectId);
+                if (project == null)
+                    return NotFound(new { Success = false, Message = "Project not found" });
+
+                return Ok(new { Success = true, Data = project });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Success = false, Message = ex.Message });
+            }
+        }
+
+        // POST: api/projects
+        [HttpPost]
+        [Authorize(Policy = "Permission:Projects.Create")]
+        public async Task<IActionResult> CreateProject([FromForm] CreateProjectDto dto)
+        {
+            try
+            {
+                var projectId = await projectService.CreateAsync(dto);
                 if (!string.IsNullOrEmpty(projectId))
                 {
                     try
                     {
-                        await _notificationService.CreateAsync(new CreateNotificationDto
+                        await notificationService.CreateAsync(new CreateNotificationDto
                         {
                             UserIds = [dto.ProjectLeadId],
                             Title = "New project assigned to you",
@@ -37,7 +72,7 @@ namespace ArielCRM.API.Controllers
                     }
                     catch (Exception notifyEx)
                     {
-                        _logger.LogError(notifyEx, "Failed to send assignment notification for project {projectId}", projectId);
+                        logger.LogError(notifyEx, "Failed to send assignment notification for project {projectId}", projectId);
                     }
                 }
 
@@ -58,13 +93,14 @@ namespace ArielCRM.API.Controllers
             }
         }
 
+        // PUT: api/projects/{projectId}
         [HttpPut("{projectId}")]
         [Authorize(Policy = "Permission:Projects.Edit")]
-        public async Task<IActionResult> Update(string projectId, [FromForm] UpdateProjectDto dto)
+        public async Task<IActionResult> UpdateProject(string projectId, [FromForm] UpdateProjectDto dto)
         {
             try
             {
-                await _projectService.UpdateAsync(projectId, dto);
+                await projectService.UpdateAsync(projectId, dto);
 
                 return Ok(new
                 {
@@ -90,13 +126,14 @@ namespace ArielCRM.API.Controllers
             }
         }
 
+        // DELETE: api/projects/{projectId}
         [HttpDelete("{projectId}")]
         [Authorize(Policy = "Permission:Projects.Delete")]
-        public async Task<IActionResult> Delete(string projectId)
+        public async Task<IActionResult> DeleteProject(string projectId)
         {
             try
             {
-                await _projectService.DeleteAsync(projectId);
+                await projectService.DeleteAsync(projectId);
 
                 return Ok(new
                 {
@@ -122,47 +159,14 @@ namespace ArielCRM.API.Controllers
             }
         }
 
-        [HttpGet]
-        [Authorize(Policy = "Permission:Projects.View")]
-        public async Task<IActionResult> GetAllProjects()
-        {
-            try
-            {
-
-                var projects = await _projectService.GetAllAsync(HttpContext);
-                return Ok(new { Success = true, Data = projects });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Success = false, Message = ex.Message });
-            }
-        }
-
-        [HttpGet("{projectId}")]
-        [Authorize(Policy = "Permission:Projects.View")]
-        public async Task<IActionResult> GetProjectById(string projectId)
-        {
-            try
-            {
-                var project = await _projectService.GetByIdAsync(projectId);
-                if (project == null)
-                    return NotFound(new { Success = false, Message = "Project not found" });
-
-                return Ok(new { Success = true, Data = project });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Success = false, Message = ex.Message });
-            }
-        }
-
+        // PATCH: api/projects/add-member
         [HttpPatch("add-member")]
         [Authorize(Policy = "Permission:Projects.Edit")]
         public async Task<IActionResult> AddMemberToProject([FromQuery] string projectId, [FromQuery] string memberId)
         {
             try
             {
-                var result = await _projectService.AddMemberToProjectAsync(projectId, memberId);
+                await projectService.AddMemberToProjectAsync(projectId, memberId);
                 return Ok(new
                 {
                     Message = "Member added successfully."
@@ -174,26 +178,34 @@ namespace ArielCRM.API.Controllers
             }
         }
 
-
+        // PATCH: api/projects/remove-member
         [HttpPatch("remove-member")]
         [Authorize(Policy = "Permission:Projects.Edit")]
         public async Task<IActionResult> RemoveMemberFromProject([FromQuery] string projectId, [FromQuery] string memberId)
         {
-
             try
             {
-                await _projectService.RemoveMemberFromProjectAsync(projectId, memberId);
+                await projectService.RemoveMemberFromProjectAsync(projectId, memberId);
 
                 return Ok(new
                 {
                     Message = "Member removed successfully."
                 });
-
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { Success = false, Message = ex.Message });
             }
         }
+
+
+        [HttpGet("changes")]
+        public async Task<IActionResult> GetChanges([FromQuery] DateTime since)
+        {
+            var result = await projectService.GetUpdatedTasksAsync(HttpContext, since);
+            return Ok(result);
+        }
+
+
     }
 }

@@ -41,7 +41,7 @@ builder.Services.AddCors(options =>
         policy.WithOrigins([
             "http://localhost:4200",
             "http://192.168.1.8:4200",
-            "http://192.168.4.106:4200",
+            "http://192.168.4.104:4200",
             "https://bfe2-103-149-154-78.ngrok-free.app",
             "https://porsche-retrorse-unblenchingly.ngrok-free.dev"
         ])

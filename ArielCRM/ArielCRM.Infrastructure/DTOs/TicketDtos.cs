@@ -51,7 +51,6 @@ namespace ArielCRM.Infrastructure.DTOs
         public string AssignedToId { get; set; } = string.Empty;
     }
 
-
     public class TicketDto
     {
         public string Id { get; set; } = string.Empty;
@@ -75,4 +74,22 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Email { get; set; } = string.Empty;
     }
 
+    public class TaskChangeDto
+    {
+        public string Id { get; set; } = string.Empty;
+
+        public string ProjectId { get; set; } = string.Empty;
+
+        public string Title { get; set; } = string.Empty;
+
+        public string Status { get; set; } = string.Empty;
+
+        public string Priority { get; set; } = string.Empty;
+
+        public string? ReporterId { get; set; }
+
+        public string? AssignedUserId { get; set; }
+
+        public DateTime UpdatedAt { get; set; }
+    }
 }

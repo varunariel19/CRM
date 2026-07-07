@@ -114,6 +114,35 @@ namespace ArielCRM.Infrastructure.Repositories
         }
 
 
+        public async Task<List<TicketTask>> GetUpdatedTasksAsync(string userId, DateTime since)
+        {
+            return await _context.TicketTasks
+                .Where(t => t.UpdatedAt > since && (
+                        t.Project.ProjectLeadId == userId ||
+                        t.Project.Members.Any(m => m.Id == userId) ||
+                        (t.Project.Contact != null &&
+                         t.Project.Contact.Lead != null &&
+                         t.Project.Contact.Lead.AssignedToId == userId)
+                    )
+                )
+
+                .Include(t => t.AssignedUser)
+                .Include(t => t.ReportedUser)
+
+                .ToListAsync();
+        }
+
+
+        public async Task<List<TicketTask>> GetAllUpdatedTasksAsync(DateTime since)
+        {
+            return await _context.TicketTasks
+                .Where(x => x.UpdatedAt > since)
+                .Include(x => x.AssignedUser)
+                .Include(x => x.ReportedUser)
+                .ToListAsync();
+        }
+
+
 
 
     }

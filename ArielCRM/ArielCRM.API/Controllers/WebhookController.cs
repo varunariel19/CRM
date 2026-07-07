@@ -1,5 +1,4 @@
 using ArielCRM.Infrastructure.Data;
-using ArielCRM.API.Hubs;
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.DTOs;
 using Microsoft.AspNetCore.Mvc;
@@ -16,89 +15,98 @@ namespace ArielCRM.API.Controllers
         [HttpPost("delayed/send")]
         public async Task<IActionResult> SendDelayedMessage([FromBody] DelayedMessageWebhookDto dto)
         {
-            if (!IsAuthorized(Request))
-                return Unauthorized(new { message = "Invalid or missing webhook credentials." });
-
-            var scheduled = await db.ScheduledTeamMessages
-                .Include(s => s.Attachments)
-                .FirstOrDefaultAsync(s => s.Id == dto.MessageId);
-
-            if (scheduled is null)
+            try
             {
-                return Ok(new { status = "ignored", reason = "Scheduled message not found." });
-            }
+                if (!IsAuthorized(Request))
+                    return Unauthorized(new { message = "Invalid or missing webhook credentials." });
 
-            if (scheduled.Status == "Sent")
-            {
-                return Ok(new { status = "already_sent", sentMessageId = scheduled.SentMessageId });
-            }
+                var scheduled = await db.ScheduledTeamMessages
+                    .Include(s => s.Attachments)
+                    .FirstOrDefaultAsync(s => s.Id == dto.MessageId);
 
-            if (scheduled.Status == "Cancelled")
-            {
-                return Ok(new { status = "cancelled", reason = "Message was cancelled before it could be sent." });
-            }
-
-            var conversation = await db.TeamConversations.FirstOrDefaultAsync(c => c.Id == scheduled.ConversationId);
-            if (conversation is null)
-            {
-                scheduled.Status = "Failed";
-                scheduled.FailureReason = "Conversation no longer exists.";
-                scheduled.UpdatedAt = DateTime.UtcNow;
-                await db.SaveChangesAsync();
-                return Ok(new { status = "failed", reason = scheduled.FailureReason });
-            }
-
-            var now = DateTime.UtcNow;
-            var message = new TeamMessage
-            {
-                ConversationId = scheduled.ConversationId,
-                SenderId = scheduled.SenderId,
-                SeenByIds = [scheduled.SenderId],
-                Content = scheduled.Content ?? string.Empty,
-                CreatedAt = now,
-                UpdatedAt = now
-            };
-
-            foreach (var attachment in scheduled.Attachments)
-            {
-                message.Attachments.Add(new TeamMessageAttachment
+                if (scheduled is null)
                 {
-                    FileName = attachment.FileName,
-                    FileUrl = attachment.FileUrl,
-                    UploadId = attachment.UploadId,
-                    ContentType = attachment.ContentType,
-                    AttachmentType = attachment.AttachmentType,
-                    SizeBytes = attachment.SizeBytes,
-                    CreatedAt = now
-                });
+                    return Ok(new { status = "ignored", reason = "Scheduled message not found." });
+                }
+
+                if (scheduled.Status == "Sent")
+                {
+                    return Ok(new { status = "already_sent", sentMessageId = scheduled.SentMessageId });
+                }
+
+                if (scheduled.Status == "Cancelled")
+                {
+                    return Ok(new { status = "cancelled", reason = "Message was cancelled before it could be sent." });
+                }
+
+                var conversation = await db.TeamConversations.FirstOrDefaultAsync(c => c.Id == scheduled.ConversationId);
+                if (conversation is null)
+                {
+                    scheduled.Status = "Failed";
+                    scheduled.FailureReason = "Conversation no longer exists.";
+                    scheduled.UpdatedAt = DateTime.UtcNow;
+                    await db.SaveChangesAsync();
+                    return Ok(new { status = "failed", reason = scheduled.FailureReason });
+                }
+
+                var now = DateTime.UtcNow;
+                var message = new TeamMessage
+                {
+                    ConversationId = scheduled.ConversationId,
+                    SenderId = scheduled.SenderId,
+                    SeenByIds = [scheduled.SenderId],
+                    Content = scheduled.Content ?? string.Empty,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                };
+
+                foreach (var attachment in scheduled.Attachments)
+                {
+                    message.Attachments.Add(new TeamMessageAttachment
+                    {
+                        FileName = attachment.FileName,
+                        FileUrl = attachment.FileUrl,
+                        UploadId = attachment.UploadId,
+                        ContentType = attachment.ContentType,
+                        AttachmentType = attachment.AttachmentType,
+                        SizeBytes = attachment.SizeBytes,
+                        CreatedAt = now
+                    });
+                }
+
+                conversation.LastMessageAt = now;
+                db.TeamMessages.Add(message);
+
+                scheduled.Status = "Sent";
+                scheduled.SentMessageId = message.Id;
+                scheduled.UpdatedAt = now;
+
+                await db.SaveChangesAsync();
+
+                var saved = await db.TeamMessages
+                    .AsNoTracking()
+                    .Include(m => m.Sender)
+                    .Include(m => m.Attachments)
+                    .FirstAsync(m => m.Id == message.Id);
+
+                var mapped = MapMessage(saved);
+
+                await hubContext.Clients.Users(conversation.Members).SendAsync("MessageReceived", mapped);
+                await hubContext.Clients.Users(conversation.Members).SendAsync(
+                    "ScheduledMessageDelivered",
+                    conversation.Id,
+                    scheduled.Id
+                );
+
+                return Ok(new { status = "sent", messageId = message.Id });
             }
-
-            conversation.LastMessageAt = now;
-            db.TeamMessages.Add(message);
-
-            scheduled.Status = "Sent";
-            scheduled.SentMessageId = message.Id;
-            scheduled.UpdatedAt = now;
-
-            await db.SaveChangesAsync();
-
-            var saved = await db.TeamMessages
-                .AsNoTracking()
-                .Include(m => m.Sender)
-                .Include(m => m.Attachments)
-                .FirstAsync(m => m.Id == message.Id);
-
-            var mapped = MapMessage(saved);
-
-            await hubContext.Clients.Users(conversation.Members).SendAsync("MessageReceived", mapped);
-            await hubContext.Clients.Users(conversation.Members).SendAsync(
-                "ScheduledMessageDelivered",
-                conversation.Id,
-                scheduled.Id
-            );
-
-            return Ok(new { status = "sent", messageId = message.Id });
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An unexpected error occurred.", details = ex.Message });
+            }
         }
+
+
         private static TeamMessageDto MapMessage(TeamMessage message) => new()
         {
             Id = message.Id,
@@ -126,7 +134,6 @@ namespace ArielCRM.API.Controllers
             CreatedAt = a.CreatedAt
         })]
         };
-
         private bool IsAuthorized(HttpRequest request)
         {
             var headerName = configuration["SchedulerWebhookAuthHeader"];

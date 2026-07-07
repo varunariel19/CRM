@@ -11,9 +11,7 @@ using Microsoft.Extensions.Configuration;
 namespace ArielCRM.Application.Services
 {
 
-    public class ProjectService(
-        IProjectRepository projectRepository,
-        IAppwriteStorageService storageService, IConfiguration configuration) : IProjectService
+    public class ProjectService(IProjectRepository projectRepository, IAppwriteStorageService storageService, IConfiguration configuration) : IProjectService
     {
         private readonly IProjectRepository _projectRepository = projectRepository;
         private readonly IAppwriteStorageService _storageService = storageService;
@@ -92,7 +90,6 @@ namespace ArielCRM.Application.Services
             await _projectRepository.DeleteAsync(project);
         }
 
-
         public async Task<ProjectDetailDto?> GetByIdAsync(string projectId)
         {
             var project = await _projectRepository.GetByIdWithDetailsAsync(projectId);
@@ -123,6 +120,41 @@ namespace ArielCRM.Application.Services
 
             return projects.Select(MapToDetailDto);
         }
+
+        public async Task<bool> AddMemberToProjectAsync(string projectId, string memberId)
+        {
+            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(memberId)) throw new Exception("project Id or user Id is missing !!");
+
+            return await _projectRepository.AddMemberToProjectAsync(projectId, memberId);
+        }
+
+        public async Task RemoveMemberFromProjectAsync(string projectId, string memberId)
+        {
+            await _projectRepository.RemoveMemberFromProjectAsync(
+                projectId,
+                memberId);
+        }
+
+
+        public async Task<IEnumerable<TaskDetailDto>> GetUpdatedTasksAsync(HttpContext context, DateTime since)
+        {
+            if (context.User.Identity is null || !context.User.Identity.IsAuthenticated)
+                return [];
+
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+                return [];
+
+            var adminLevel = _configuration["Seeding:AdminLevel"];
+            var accessLevel = context.User.FindFirst("AccessLevelId")?.Value;
+
+            var tasks = accessLevel == adminLevel
+                ? await _projectRepository.GetAllUpdatedTasksAsync(since)
+                : await _projectRepository.GetUpdatedTasksAsync(userId, since);
+
+            return tasks.Select(MapToDto);
+        }
+
 
         private static ProjectDetailDto MapToDetailDto(Project p) => new()
         {
@@ -167,7 +199,6 @@ namespace ArielCRM.Application.Services
             TasksCompleted = p.Tasks.Count(t => t.Status == TasksStatus.DONE.ToString())
         };
 
-
         private static TaskDetailDto MapToDto(TicketTask task)
         {
             return new TaskDetailDto
@@ -196,21 +227,6 @@ namespace ArielCRM.Application.Services
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt
             };
-        }
-
-        public async Task<bool> AddMemberToProjectAsync(string projectId, string memberId)
-        {
-            if (string.IsNullOrEmpty(projectId) || string.IsNullOrEmpty(memberId)) throw new Exception("project Id or user Id is missing !!");
-
-            return await _projectRepository.AddMemberToProjectAsync(projectId, memberId);
-        }
-
-
-        public async Task RemoveMemberFromProjectAsync(string projectId, string memberId)
-        {
-            await _projectRepository.RemoveMemberFromProjectAsync(
-                projectId,
-                memberId);
         }
 
     }
