@@ -45,8 +45,17 @@ export class TeamService {
   }
 
   handleUpdateTeamMember(id: string, dto: Partial<UpdateTeamMemberDto>): Observable<TeamMember> {
-    return this.http
-      .put<TeamMember>(`${endpoints.teamMembers}/${id}`, dto, { withCredentials: true })
+    const formData = new FormData();
+
+    if (dto.name != null) formData.append('Name', dto.name);
+    if (dto.email != null) formData.append('Email', dto.email);
+    if (dto.departmentId != null) formData.append('DepartmentId', dto.departmentId);
+    if (dto.designationId != null) formData.append('DesignationId', dto.designationId);
+    if (dto.accessLevelId != null) formData.append('AccessLevelId', dto.accessLevelId);
+    if (dto.profileImage instanceof File) formData.append('ProfileImage', dto.profileImage);
+    // if (dto.removeProfileImage != null) formData.append('RemoveProfileImage', String(dto.removeProfileImage));
+
+    return this.http.put<TeamMember>(`${endpoints.teamMembers}/${id}`, formData, { withCredentials: true })
       .pipe(
         tap(updatedMember => {
           const updated = this.teamState

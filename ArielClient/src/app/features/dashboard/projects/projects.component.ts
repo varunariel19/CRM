@@ -11,6 +11,7 @@ import { GlobalState } from '../../../state/global.state';
 import { ProjectMemberDepartment } from '../../../core/constants/global';
 import { AuthState } from '../../../state/auth.state';
 import { DeepLinkService } from '../../../core/services/deepLink.service';
+import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
 
 export interface ProjectMember {
   id: string;
@@ -54,7 +55,7 @@ export interface Project {
 @Component({
   selector: 'app-projects',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UserProfileComponent],
   templateUrl: './projects.component.html',
   styleUrls: ['./projects.component.css']
 })

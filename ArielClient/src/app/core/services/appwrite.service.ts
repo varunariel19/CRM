@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Client, Storage, ID } from 'appwrite';
+import { Client, Storage, ID, UploadProgress } from 'appwrite';
 import { appwrite } from '../constants/endpoints';
 
 @Injectable({ providedIn: 'root' })
@@ -15,11 +15,15 @@ export class AppwriteService {
         this.storage = new Storage(this.client);
     }
 
-    async uploadFile(file: File): Promise<string> {
+    async uploadFile(file: File, onProgress?: (progress: number) => void): Promise<string> {
         const response = await this.storage.createFile(
             appwrite.appwriteBucketId,
             ID.unique(),
-            file
+            file,
+            undefined,
+            (progress: UploadProgress) => {
+                onProgress?.(progress.progress);
+            }
         );
         const url = `${appwrite.appwriteEndpoint}/storage/buckets/${appwrite.appwriteBucketId}/files/${response.$id}/view?project=${appwrite.appwriteProjectId}`;
         return url;

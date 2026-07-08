@@ -61,7 +61,7 @@ namespace ArielCRM.Infrastructure.DTOs
     {
         public string UserId { get; set; } = string.Empty;
         public string? FirstMessage { get; set; }
-        public List<IFormFile>? Attachments { get; set; }
+        public List<AttachmentPayloadDto> Attachments { get; set; } = [];
     }
 
     public class CreateGroupConversationDto
@@ -73,7 +73,7 @@ namespace ArielCRM.Infrastructure.DTOs
     public class SendTeamMessageDto
     {
         public string? Body { get; set; }
-        public List<IFormFile> Attachments { get; set; } = [];
+        public List<AttachmentPayloadDto> Attachments { get; set; } = [];
         public DateTime? ScheduledAt { get; set; }
     }
 
@@ -110,5 +110,15 @@ namespace ArielCRM.Infrastructure.DTOs
         public DateTime ScheduledAt { get; set; }
         public string? Content { get; set; }
         public List<string> RecipientIds { get; set; } = [];
+    }
+
+
+    public class AttachmentPayloadDto
+    {
+        public string FileUrl { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public string AttachmentType { get; set; } = "file";
+        public long SizeBytes { get; set; }
     }
 }

@@ -9,11 +9,12 @@ import { MenuState } from '../../../state/menu.state';
 import { LeadState } from '../../../state/lead.state';
 import { MeetingState } from '../../../state/meeting.state';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
+import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
 
 
 @Component({
   selector: 'app-appointment-scheduler',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule , UserProfileComponent],
 
   templateUrl: './appointment-scheduler.component.html',
   styleUrl: './appointment-scheduler.component.css',

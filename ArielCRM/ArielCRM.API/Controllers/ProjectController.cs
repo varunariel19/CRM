@@ -50,19 +50,20 @@ namespace ArielCRM.API.Controllers
 
         // POST: api/projects
         [HttpPost]
+        [Consumes("multipart/form-data")]
         [Authorize(Policy = "Permission:Projects.Create")]
         public async Task<IActionResult> CreateProject([FromForm] CreateProjectDto dto)
         {
             try
             {
-                var projectId = await projectService.CreateAsync(dto);
+                var projectId = await projectService.FinalizeCreateAsync(dto);
                 if (!string.IsNullOrEmpty(projectId))
                 {
                     try
                     {
                         await notificationService.CreateAsync(new CreateNotificationDto
                         {
-                            UserIds = [dto.ProjectLeadId],
+                            UserIds = [dto.ProjectLeadId!],
                             Title = "New project assigned to you",
                             Message = $"You've been assigned as project lead for \"{dto.Name}\"",
                             EntityType = "Lead",

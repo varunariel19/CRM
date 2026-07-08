@@ -22,7 +22,7 @@
 
     namespace ArielCRM.DataLayer.Enums
     {
-        public enum ProjectType
+        public enum  ProjectType
         {
             Hourly,
             FixedPrice,

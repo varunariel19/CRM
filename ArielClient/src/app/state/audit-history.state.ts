@@ -1,5 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { AuditHistoryService, HistoryResponseDto } from '../core/services/audit-history.service';
+import { AuditHistoryService } from '../core/services/audit-history.service';
+import { HistoryResponseDto } from '../interface/history.type';
 
 export interface AuditHistoryState {
   visible: boolean;

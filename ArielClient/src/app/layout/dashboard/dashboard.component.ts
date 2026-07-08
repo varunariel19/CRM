@@ -44,6 +44,7 @@ import { ProjectService } from '../../services/project.service';
 import { ProjectState } from '../../state/project.state';
 import { NotificationState } from '../../state/notification.state';
 import { NotificationService } from '../../core/services/notification.service';
+import { TaskManagementState } from '../../state/task-management.state';
 
 @Component({
   selector: 'app-dashboard',
@@ -78,6 +79,7 @@ export class DashboardComponent implements OnInit {
   leadState = inject(LeadState);
   dealState = inject(DealState);
   ticketState = inject(TicketState);
+  taskMangementState = inject(TaskManagementState);
   taskState = inject(TaskState);
   historyState = inject(HistoryState);
   teamState = inject(TeamState);
@@ -136,13 +138,7 @@ export class DashboardComponent implements OnInit {
       }
     });
 
-    this.projectService.fetchAllProjects().subscribe({
-      next: (res: any) => {
-        this.projectState.setProjects(res.data ?? res);
-        this.projectState.setLoading(false);
-      },
-      error: () => this.projectState.setLoading(false)
-    });
+    this.loadProjects();
 
     this.contactService.getAllContacts().subscribe({
       next: (contacts) => {
@@ -276,6 +272,7 @@ export class DashboardComponent implements OnInit {
   loadProjects() {
     this.projectService.fetchAllProjects().subscribe({
       next: (res: any) => {
+        this.taskMangementState.setSinceTime(new Date());
         this.projectState.setProjects(res.data ?? res);
         this.projectState.setLoading(false);
       },

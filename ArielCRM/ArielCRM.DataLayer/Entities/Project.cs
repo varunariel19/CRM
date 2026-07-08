@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ArielCRM.DataLayer.Enums.ArielCRM.DataLayer.Enums;
+using Microsoft.EntityFrameworkCore;
 
 namespace ArielCRM.DataLayer.Entities
 {
@@ -25,11 +27,22 @@ namespace ArielCRM.DataLayer.Entities
         [MaxLength(50)]
         public string? ProjectLeadId { get; set; }
 
+        [Column("lead_id")]
+        [MaxLength(50)]
+        public string? LeadId { get; set; }
+
         [Column("description")]
         public string? Description { get; set; }
 
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
+
+        [Column("project_type")]
+        public ProjectType? ProjectType { get; set; }
+
+        [Column("budget")]
+        [Precision(18, 2)]
+        public decimal? Budget { get; set; }
 
         [Column("start_date")]
         public DateTime? StartDate { get; set; }
@@ -50,13 +63,14 @@ namespace ArielCRM.DataLayer.Entities
         [ForeignKey(nameof(ProjectLeadId))]
         public User? ProjectLead { get; set; }
 
+        [ForeignKey(nameof(LeadId))]
+        public Lead? Lead { get; set; }
+
         [ForeignKey(nameof(ContactId))]
         public Contact? Contact { get; set; } = null!;
 
         public ICollection<User> Members { get; set; } = [];
-
         public ICollection<TicketTask> Tasks { get; set; } = [];
-
         public ICollection<Documents> Documents { get; set; } = [];
     }
 }

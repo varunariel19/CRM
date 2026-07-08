@@ -1,11 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild, input, output, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, input, output, signal, computed, NgZone, ChangeDetectorRef } from '@angular/core';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import { TeamAttachmentType } from '../../../core/types/teams.type';
 import { PickerComponent } from "@ctrl/ngx-emoji-mart";
 import { FormsModule } from '@angular/forms';
+import { AppwriteService } from '../../../core/services/appwrite.service';
+
+
 export interface PendingAttachment {
   id: string;
   file: File;
@@ -14,6 +17,10 @@ export interface PendingAttachment {
   type: TeamAttachmentType;
   contentType: string;
   previewUrl?: string;
+  uploading?: boolean;
+  uploadProgress?: number;
+  uploadedUrl?: string;
+  uploadFailed?: boolean;
 }
 
 @Component({
@@ -65,6 +72,14 @@ export class ComposerComponent implements OnInit, OnDestroy {
   });
 
   scheduleError = signal<string | null>(null);
+
+
+  constructor(
+    private appwriteService: AppwriteService,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef
+
+  ) { }
 
   onHourInput(event: Event): void {
     const value = +(event.target as HTMLInputElement).value;
@@ -152,7 +167,7 @@ export class ComposerComponent implements OnInit, OnDestroy {
 
   confirmSchedule(): void {
     const iso = this.buildScheduledIso();
-    if (!iso) return; // scheduleError is already set, popup stays open so user can fix it
+    if (!iso) return;
     this.scheduledFor.set(iso);
     this.scheduleError.set(null);
     this.showSchedulePicker.set(false);
@@ -223,7 +238,9 @@ export class ComposerComponent implements OnInit, OnDestroy {
   }
 
   get canSend(): boolean {
-    return !this.disabled() && (this.content.trim().length > 0 || this.attachments.length > 0);
+    return !this.disabled()
+      && (this.content.trim().length > 0 || this.attachments.length > 0)
+      && !this.attachments.some(a => a.uploading || a.uploadFailed);
   }
 
 
@@ -248,17 +265,61 @@ export class ComposerComponent implements OnInit, OnDestroy {
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
-    const next = [...this.attachments, ...files.map(f => this.toPendingAttachment(f))].slice(0, 8);
+    const newOnes = files.map(f => this.toPendingAttachment(f));
+    const next = [...this.attachments, ...newOnes].slice(0, 8);
+
     this.attachments.forEach(a => { if (!next.some(n => n.id === a.id)) this.revokePreview(a); });
     this.attachments = next;
     input.value = '';
+
+    newOnes.forEach(a => this.uploadAttachment(a));
+  }
+  trackByAttachment = (_: number, a: PendingAttachment) => a.id;
+
+  private uploadAttachment(attachment: PendingAttachment) {
+    this.patchAttachment(attachment.id, { uploading: true, uploadFailed: false, uploadProgress: 0 });
+
+    this.appwriteService.uploadFile(attachment.file, percent => {
+      this.zone.run(() => {
+        this.patchAttachment(attachment.id, { uploadProgress: percent });
+      });
+    })
+      .then(url => {
+        this.zone.run(() => {
+          this.patchAttachment(attachment.id, { uploadedUrl: url, uploading: false, uploadProgress: 100 });
+        });
+      })
+      .catch(() => {
+        this.zone.run(() => {
+          this.patchAttachment(attachment.id, { uploading: false, uploadFailed: true });
+        });
+      });
+  }
+
+  private patchAttachment(id: string, patch: Partial<PendingAttachment>) {
+    this.attachments = this.attachments.map(a => a.id === id ? { ...a, ...patch } : a);
+    this.cdr.markForCheck();
+  }
+
+  retryUpload(id: string) {
+    const target = this.attachments.find(a => a.id === id);
+    if (target) this.uploadAttachment(target);
   }
 
   removeAttachment(id: string) {
     const removed = this.attachments.find(a => a.id === id);
-    if (removed) this.revokePreview(removed);
+    if (removed) {
+      this.revokePreview(removed);
+      if (removed.uploadedUrl) this.appwriteService.deleteFile(this.extractFileId(removed.uploadedUrl));
+    }
     this.attachments = this.attachments.filter(a => a.id !== id);
   }
+
+  private extractFileId(url: string): string {
+    const match = url.match(/\/files\/([^/]+)\/view/);
+    return match ? match[1] : '';
+  }
+
 
   toggleBold() { this.editor.chain().focus().toggleBold().run(); }
   toggleItalic() { this.editor.chain().focus().toggleItalic().run(); }
@@ -297,6 +358,9 @@ export class ComposerComponent implements OnInit, OnDestroy {
       type,
       contentType: file.type || 'application/octet-stream',
       previewUrl: ['image', 'audio', 'video'].includes(type) ? URL.createObjectURL(file) : undefined,
+      uploading: false,
+      uploadedUrl: undefined,
+      uploadFailed: false,
     };
   }
 

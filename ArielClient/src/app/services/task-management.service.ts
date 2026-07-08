@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { endpoints } from '../core/constants/endpoints';
 import { Observable } from 'rxjs';
@@ -48,7 +48,7 @@ export interface UpdateTaskRequest {
     priority: TaskPriority;
     type: TaskType;
     status: TaskStatus;
-    aiSummary? : string[];
+    aiSummary?: string[];
     assignToId: string;
 }
 
@@ -80,6 +80,11 @@ export class TaskManageService {
 
     getTaskById(taskId: string): Observable<Task> {
         return this.http.get<Task>(`${this.baseUrl}/${taskId}`, { withCredentials: true });
+    }
+
+    getChanges(since: Date): Observable<Task[]> {
+        const params = new HttpParams().set('since', since.toISOString());
+        return this.http.get<Task[]>(`${endpoints.projects}/changes`, { params, withCredentials: true });
     }
 
     createTask(

@@ -52,7 +52,9 @@
     color: #a6b1ff;
     cursor: pointer;
     font-size: 11px;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
 
     &:hover {
       background: rgba(255, 255, 255, 0.12);
@@ -91,7 +93,9 @@
     color: #9ea1a6;
     cursor: pointer;
     font-size: 13px;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
 
     &:hover {
       background: rgba(255, 255, 255, 0.06);
@@ -242,7 +246,9 @@
   color: #9ea1a6;
   cursor: pointer;
   font-size: 15px;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.06);
@@ -275,7 +281,10 @@
   color: #fff;
   cursor: pointer;
   font-size: 14px;
-  transition: background 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease,
+    opacity 0.15s ease;
 
   &:hover:not(:disabled) {
     background: #4752c4;
@@ -525,4 +534,41 @@
     background: rgba(255, 255, 255, 0.06);
     color: #fff;
   }
+}
+
+.attachment-chip {
+  position: relative;
+  overflow: hidden;
+  &.upload-failed {
+    border-color: #e0554f;
+  }
+}
+
+.attachment-progress-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+
+  &__fill {
+    height: 100%;
+    background: var(--accent-color, #4f8cff);
+    transition: width 120ms linear;
+  }
+}
+.attachment-upload-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  border-radius: inherit;
+}
+.attachment-error a {
+  cursor: pointer;
+  text-decoration: underline;
 }

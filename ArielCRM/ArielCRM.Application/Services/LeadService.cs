@@ -8,10 +8,11 @@ using System.Text.Json;
 
 namespace ArielCRM.Application.Services
 {
-    public class LeadService(ILeadRepository leadRepository, IHistoryService historyService, IConfiguration configuration) : ILeadService
+    public class LeadService(ILeadRepository leadRepository, IHistoryService historyService, IConfiguration configuration, IProjectService projectService) : ILeadService
     {
         private readonly ILeadRepository _leadRepository = leadRepository;
         private readonly IHistoryService _historyService = historyService;
+        private readonly IProjectService _projectService = projectService;
         private static readonly JsonSerializerOptions _jsonOpts = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -21,21 +22,7 @@ namespace ArielCRM.Application.Services
 
         public Task<IEnumerable<LeadResponseDto>> GetAllLeadsAsync(HttpContext context)
         {
-            // if (context.User.Identity is null || !context.User.Identity.IsAuthenticated)
-            //     return Task.FromResult(Enumerable.Empty<LeadResponseDto>());
-
-            // var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            // if (userId is null) return Task.FromResult(Enumerable.Empty<LeadResponseDto>());
-
-            // var adminAccessLvlId = _configuration["Seeding:AdminLevel"];
-            // var accessLevelId = context.User.FindFirst("AccessLevelId")?.Value;
-
-            // if (accessLevelId == adminAccessLvlId)
-            // {
-            // }
-
             return _leadRepository.GetAllAsync();
-            // return _leadRepository.GetAllByAssigneeAsync(userId);
         }
 
         public Task<IEnumerable<LeadResponseDto>> SearchLeadsAsync(string query)
@@ -54,15 +41,24 @@ namespace ArielCRM.Application.Services
                 Phone = dto.Phone,
                 Source = dto.Source,
                 AssignedToId = dto.AssignedToId,
-                ProjectTitle = dto.ProjectTitle,
-                ProjectType = dto.ProjectType,
-                Budget = dto.Budget,
-                DealStartDate = dto.DealStartDate,
-                DealCloseDate = dto.DealCloseDate ?? null,
             };
 
-            var created = await _leadRepository.CreateAsync(lead)
-                ?? throw new Exception("Failed to create lead.");
+            var created = await _leadRepository.CreateAsync(lead) ?? throw new Exception("Failed to create lead.");
+
+            if (!string.IsNullOrWhiteSpace(dto.ProjectTitle))
+            {
+                await _projectService.CreateProjectForLeadAsync(new CreateProjectForLeadDto
+                {
+                    LeadId = created.Id,
+                    ProjectTitle = dto.ProjectTitle,
+                    ProjectType = dto.ProjectType,
+                    Budget = dto.Budget,
+                    DealStartDate = dto.DealStartDate,
+                    DealCloseDate = dto.DealCloseDate,
+                });
+
+                created = await _leadRepository.GetByIdAsync(created.Id) ?? created;
+            }
 
             try
             {
@@ -99,6 +95,10 @@ namespace ArielCRM.Application.Services
             var updated = await _leadRepository.UpdateLeadAsync(id, dto);
             if (updated is null) return null;
 
+            // await _projectService.SyncLeadProjectAsync(existing, dto);
+
+            updated = await _leadRepository.GetByIdAsync(id) ?? updated;
+
             try
             {
                 await _historyService.LogAsync(new LogHistoryRequest
@@ -114,7 +114,7 @@ namespace ArielCRM.Application.Services
                     Source = AuditSourceType.User
                 });
             }
-            catch (Exception )
+            catch (Exception)
             {
                 // swallow — history failure should not block lead update
             }
@@ -145,14 +145,12 @@ namespace ArielCRM.Application.Services
                     Title = $"Deleted lead '{existing.Name}'",
                     ActionDescription = "Lead permanently removed",
                     PreviousState = previousSnapshot,
-                    UpdatedState = null,                  // nothing exists after delete
+                    UpdatedState = null,
                     Source = AuditSourceType.User
                 });
             }
 
             return result;
         }
-
-
     }
 }

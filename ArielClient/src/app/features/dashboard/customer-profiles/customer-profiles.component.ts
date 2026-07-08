@@ -7,11 +7,12 @@ import { ContactState } from '../../../state/contact.state';
 import { AuthState } from '../../../state/auth.state';
 import { NoteService, NoteDto, CreateNoteRequest } from '../../../services/notes.service';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
+import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
 
 @Component({
   selector: 'app-customer-profiles',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule , UserProfileComponent],
   templateUrl: './customer-profiles.component.html',
   styleUrl: './customer-profiles.component.scss',
 })

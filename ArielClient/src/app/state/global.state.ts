@@ -41,7 +41,7 @@ export class GlobalState {
     isLoading = computed(() => this._isLoading());
 
 
-    readonly myViewOnly = signal<boolean>(true); // default: on
+    readonly myViewOnly = signal<boolean>(true);
     readonly isOpen = signal<boolean>(false);
 
     open(): void {

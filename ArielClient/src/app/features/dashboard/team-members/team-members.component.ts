@@ -9,16 +9,19 @@ import { getAvatarColor } from '../../../utils';
 import { PermissionService } from '../../../core/services/permission.service';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
+import { AuthState } from '../../../state/auth.state';
 
 @Component({
   selector: 'app-team-members',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UserProfileComponent],
   templateUrl: './team-members.component.html',
   styleUrl: './team-members.component.css',
 })
 export class TeamMembersComponent implements OnInit {
   teamState = inject(TeamState);
+  authState = inject(AuthState);
   globalState = inject(GlobalState);
   teamService = inject(TeamService);
   permissionService = inject(PermissionService);
@@ -118,7 +121,10 @@ export class TeamMembersComponent implements OnInit {
   }
 
   get accessLevels() {
-    return this.globalState.accessLevels();
+    if (this.authState.user()?.accessLevel.access == 100) {
+      return this.globalState.accessLevels();
+    }
+    return this.globalState.accessLevels().filter(each => each.access != 100);
   }
 
   get loading() {
@@ -161,9 +167,19 @@ export class TeamMembersComponent implements OnInit {
     const reader = new FileReader();
     reader.onload = () => this.editImagePreview.set(reader.result as string);
     reader.readAsDataURL(file);
-    // this.editMember!.profileImage = file;
+    this.editMember!.profileImage = file;
 
   }
+
+
+  onEditDepartmentChange(): void {
+    if (this.editMember) {
+      this.editMember.designationId = '';
+    }
+  }
+
+
+
 
   removeEditProfileImage(): void {
     if (!this.editMember) return;
@@ -197,6 +213,7 @@ export class TeamMembersComponent implements OnInit {
   }
 
   handleEditMember(): void {
+    debugger;
     this.editFormError.set('');
     if (!this.validateEditForm() || !this.editMember || !this.originalEditMember) return;
 
@@ -255,6 +272,12 @@ export class TeamMembersComponent implements OnInit {
     this.deleteConfirmText.set(value);
   }
 
+
+  checkEditPermission(currentAccess: number) {
+    if (!this.authState.user()) return false;
+    return this.perm.teamMembers.canEdit() && this.authState.user()!.accessLevel.access > currentAccess;
+  }
+
   confirmDeleteMember(): void {
     const member = this.memberToDelete();
     if (!member || !this.isDeleteConfirmed) return;
@@ -265,7 +288,7 @@ export class TeamMembersComponent implements OnInit {
         this.isDeletingMember.set(false);
         this.toast.success(`${member.name} has been removed.`);
         this.closeDeleteModal();
-        this.showProfileModal.set(false); // in case delete was triggered from profile modal
+        this.showProfileModal.set(false); 
       },
       error: () => {
         this.isDeletingMember.set(false);

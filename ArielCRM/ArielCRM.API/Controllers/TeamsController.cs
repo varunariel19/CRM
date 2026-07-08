@@ -21,6 +21,22 @@ namespace ArielCRM.API.Controllers
         private const int MaxAttachmentCount = 8;
         private const long MaxAttachmentBytes = 50 * 1024 * 1024;
 
+        private readonly string[] _allowedAttachmentHosts =
+    (configuration["Appwrite:Endpoint"] is string ep && Uri.TryCreate(ep, UriKind.Absolute, out var u))
+        ? [u.Host]
+        : [];
+
+        private bool IsValidAttachmentUrl(string fileUrl)
+        {
+            if (!Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri)) return false;
+            if (uri.Scheme != Uri.UriSchemeHttps) return false;
+            return _allowedAttachmentHosts.Contains(uri.Host);
+        }
+
+        private static string SafeAttachmentType(string type) =>
+            type is "image" or "audio" or "video" or "document" ? type : "file";
+
+
         private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
         [HttpGet("conversations")]
@@ -159,8 +175,7 @@ namespace ArielCRM.API.Controllers
 
 
         [HttpPost("conversations/direct")]
-        [RequestSizeLimit(420_000_000)]
-        public async Task<ActionResult<TeamConversationDto>> CreateDirectConversation([FromForm] CreateDirectConversationDto dto)
+        public async Task<ActionResult<TeamConversationDto>> CreateDirectConversation(CreateDirectConversationDto dto)
         {
             try
             {
@@ -168,16 +183,18 @@ namespace ArielCRM.API.Controllers
                     return BadRequest(new { message = "Select another employee to start a direct chat." });
 
                 var content = (dto.FirstMessage ?? string.Empty).Trim();
-                var files = (dto.Attachments ?? []).Where(f => f.Length > 0).ToList();
+                var attachments = dto.Attachments ?? [];
 
-                if (content.Length == 0 && files.Count == 0)
+                if (content.Length == 0 && attachments.Count == 0)
                     return BadRequest(new { message = "A message is required to start a conversation." });
                 if (content.Length > 4000)
                     return BadRequest(new { message = "Message is too long." });
-                if (files.Count > MaxAttachmentCount)
+                if (attachments.Count > MaxAttachmentCount)
                     return BadRequest(new { message = $"Attach up to {MaxAttachmentCount} files per message." });
-                if (files.Any(f => f.Length > MaxAttachmentBytes))
+                if (attachments.Any(a => a.SizeBytes > MaxAttachmentBytes))
                     return BadRequest(new { message = "Each attachment must be 50 MB or smaller." });
+                if (attachments.Any(a => !IsValidAttachmentUrl(a.FileUrl)))
+                    return BadRequest(new { message = "One or more attachment URLs are invalid." });
 
                 var targetExists = await db.Users.AnyAsync(u => u.Id == dto.UserId);
                 if (!targetExists) return NotFound(new { message = "Employee not found." });
@@ -214,17 +231,16 @@ namespace ArielCRM.API.Controllers
                     CreatedAt = now
                 };
 
-                foreach (var file in files)
+                foreach (var a in attachments)
                 {
-                    var uploaded = await storageService.UploadFileAsync(file);
                     message.Attachments.Add(new TeamMessageAttachment
                     {
-                        FileName = Path.GetFileName(file.FileName),
-                        FileUrl = uploaded.FileUrl,
-                        UploadId = uploaded.FileId,
-                        ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
-                        AttachmentType = GetAttachmentType(file.ContentType, file.FileName),
-                        SizeBytes = file.Length,
+                        FileName = a.FileName,
+                        FileUrl = a.FileUrl,
+                        UploadId = string.Empty,
+                        ContentType = string.IsNullOrWhiteSpace(a.ContentType) ? "application/octet-stream" : a.ContentType,
+                        AttachmentType = SafeAttachmentType(a.AttachmentType),
+                        SizeBytes = a.SizeBytes,
                         CreatedAt = now
                     });
                 }
@@ -327,8 +343,7 @@ namespace ArielCRM.API.Controllers
 
 
         [HttpPost("conversations/{conversationId}/messages")]
-        [RequestSizeLimit(420_000_000)]
-        public async Task<ActionResult<TeamMessageDto>> SendMessage(string conversationId, [FromForm] SendTeamMessageDto dto)
+        public async Task<ActionResult<TeamMessageDto>> SendMessage(string conversationId, SendTeamMessageDto dto)
         {
             try
             {
@@ -336,11 +351,12 @@ namespace ArielCRM.API.Controllers
                 if (conversation is null || !conversation.Members.Contains(UserId)) return Forbid();
 
                 var content = (dto.Body ?? string.Empty).Trim();
-                var files = (dto.Attachments ?? []).Where(f => f.Length > 0).ToList();
-                if (content.Length == 0 && files.Count == 0) return BadRequest(new { message = "Message cannot be empty." });
+                var attachments = dto.Attachments ?? [];
+                if (content.Length == 0 && attachments.Count == 0) return BadRequest(new { message = "Message cannot be empty." });
                 if (content.Length > 4000) return BadRequest(new { message = "Message is too long." });
-                if (files.Count > MaxAttachmentCount) return BadRequest(new { message = $"Attach up to {MaxAttachmentCount} files per message." });
-                if (files.Any(f => f.Length > MaxAttachmentBytes)) return BadRequest(new { message = "Each attachment must be 50 MB or smaller." });
+                if (attachments.Count > MaxAttachmentCount) return BadRequest(new { message = $"Attach up to {MaxAttachmentCount} files per message." });
+                if (attachments.Any(a => a.SizeBytes > MaxAttachmentBytes)) return BadRequest(new { message = "Each attachment must be 50 MB or smaller." });
+                if (attachments.Any(a => !IsValidAttachmentUrl(a.FileUrl))) return BadRequest(new { message = "One or more attachment URLs are invalid." });
 
                 var now = DateTime.UtcNow;
                 var isScheduled = dto.ScheduledAt is not null && dto.ScheduledAt > now;
@@ -357,17 +373,16 @@ namespace ArielCRM.API.Controllers
                         CreatedAt = now
                     };
 
-                    foreach (var file in files)
+                    foreach (var a in attachments)
                     {
-                        var uploaded = await storageService.UploadFileAsync(file);
                         scheduled.Attachments.Add(new ScheduledTeamMessageAttachment
                         {
-                            FileName = Path.GetFileName(file.FileName),
-                            FileUrl = uploaded.FileUrl,
-                            UploadId = uploaded.FileId,
-                            ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
-                            AttachmentType = GetAttachmentType(file.ContentType, file.FileName),
-                            SizeBytes = file.Length,
+                            FileName = a.FileName,
+                            FileUrl = a.FileUrl,
+                            UploadId = string.Empty,
+                            ContentType = string.IsNullOrWhiteSpace(a.ContentType) ? "application/octet-stream" : a.ContentType,
+                            AttachmentType = SafeAttachmentType(a.AttachmentType),
+                            SizeBytes = a.SizeBytes,
                             CreatedAt = now
                         });
                     }
@@ -393,17 +408,16 @@ namespace ArielCRM.API.Controllers
                     UpdatedAt = now
                 };
 
-                foreach (var file in files)
+                foreach (var a in attachments)
                 {
-                    var uploaded = await storageService.UploadFileAsync(file);
                     message.Attachments.Add(new TeamMessageAttachment
                     {
-                        FileName = Path.GetFileName(file.FileName),
-                        FileUrl = uploaded.FileUrl,
-                        UploadId = uploaded.FileId,
-                        ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
-                        AttachmentType = GetAttachmentType(file.ContentType, file.FileName),
-                        SizeBytes = file.Length,
+                        FileName = a.FileName,
+                        FileUrl = a.FileUrl,
+                        UploadId = string.Empty,
+                        ContentType = string.IsNullOrWhiteSpace(a.ContentType) ? "application/octet-stream" : a.ContentType,
+                        AttachmentType = SafeAttachmentType(a.AttachmentType),
+                        SizeBytes = a.SizeBytes,
                         CreatedAt = now
                     });
                 }
@@ -421,18 +435,17 @@ namespace ArielCRM.API.Controllers
                 var mapped = MapMessage(saved);
                 await hubContext.Clients.Users(conversation.Members).SendAsync("MessageReceived", mapped);
 
-                // Notify all other conversation members
                 var recipientIds = conversation.Members.Where(id => id != UserId).ToList();
                 if (recipientIds.Count > 0)
                 {
                     var senderName = saved.Sender?.Name ?? "Someone";
                     var preview = content.Length > 0
                         ? (content.Length > 80 ? content[..80] + "..." : content)
-                        : $"Sent {files.Count} attachment(s)";
+                        : $"Sent {attachments.Count} attachment(s)";
 
                     await notificationService.CreateAsync(new CreateNotificationDto
                     {
-                        Title = $"You have new message from ${senderName}",
+                        Title = $"You have new message from {senderName}",
                         Message = preview,
                         EntityType = "Message",
                         EntityId = message.Id,

@@ -60,7 +60,8 @@
             <div class="member-picker member-picker--modal">
                 <button type="button" *ngFor="let user of availableUsers(); trackBy: trackByUser"
                     [class.selected]="selectedMemberIds().has(user.id)" (click)="toggleMember(user.id)">
-                    <span class="avatar avatar--small">{{ getInitials(user.name) }}</span>
+                    <app-user-profile [name]="user.name" [profileImage]="user.profileImage" size="sm" shape="rounded">
+                    </app-user-profile>
                     <span>{{ user.name }}</span>
                     <i class="fas fa-check member-picker-check" *ngIf="selectedMemberIds().has(user.id)"></i>
                 </button>
@@ -107,33 +108,90 @@
         </div>
 
         <div class="sidebar-section">
+
+            <div class="sidebar-section-label">Favorites</div>
             <div class="conversation-list">
+                <button type="button" class="conversation conversation--self"
+                    [class.active]="selfConversation()?.id === selectedConversationId()"
+                    (click)="openSelfChat()">
+                    <span class="avatar avatar--self"><i class="fas fa-bookmark"></i></span>
+                    <span class="conversation__content">
+                        <span class="conversation__title">You (Note to Self)</span>
+                    </span>
+                </button>
+
                 <button type="button" class="conversation"
-                    *ngFor="let conversation of filteredConversations(); trackBy: trackByConversation"
+                    *ngFor="let conversation of favoriteConversations(); trackBy: trackByConversation"
                     [class.active]="conversation.id === selectedConversationId()"
                     [class.has-unread]="hasUnread(conversation)" (click)="selectConversation(conversation)">
+                    <app-user-profile [name]="getConversationTitle(conversation)"
+                        [profileImage]="getConversationProfileImage(conversation)" size="sm">
+                    </app-user-profile>
+                    <span class="conversation__content">
+                        <span class="conversation__title">{{ getConversationTitle(conversation) }}</span>
+                    </span>
+                    <button type="button" class="conversation__favorite-star active" title="Unfavorite"
+                        (click)="toggleFavorite(conversation.id, $event)">
+                        <i class="fas fa-star"></i>
+                    </button>
+                    <span class="unread-dot" *ngIf="hasUnread(conversation)"></span>
+                </button>
 
+                <p class="sidebar-section-empty" *ngIf="!favoriteConversations().length">No favorites yet</p>
+            </div>
+
+            <div class="sidebar-section-label">Direct Messages</div>
+            <div class="conversation-list">
+                <button type="button" class="conversation"
+                    *ngFor="let conversation of directConversations(); trackBy: trackByConversation"
+                    [class.active]="conversation.id === selectedConversationId()"
+                    [class.has-unread]="hasUnread(conversation)" (click)="selectConversation(conversation)">
                     <span class="presence-wrap">
                         <app-user-profile [name]="getConversationTitle(conversation)"
                             [profileImage]="getConversationProfileImage(conversation)" size="sm">
                         </app-user-profile>
                         <span class="presence" [class.online]="isUserOnline(conversation)"
-                            [class.offline]="!isUserOnline(conversation)" *ngIf="!conversation.isGroup"></span>
+                            [class.offline]="!isUserOnline(conversation)"></span>
                     </span>
-
                     <span class="conversation__content">
                         <span class="conversation__title">{{ getConversationTitle(conversation) }}</span>
-                        <!-- <span class="conversation__preview">{{ getMessagePreview(conversation) }}</span> -->
                     </span>
-
+                    <button type="button" class="conversation__favorite-star" title="Favorite"
+                        (click)="toggleFavorite(conversation.id, $event)">
+                        <i class="far fa-star"></i>
+                    </button>
                     <span class="unread-dot" *ngIf="hasUnread(conversation)"></span>
                 </button>
 
-                <div class="conversation-list-empty" *ngIf="!filteredConversations().length">
-                    <i class="fas fa-inbox"></i>
-                    <p>No recent chats</p>
-                </div>
+                <p class="sidebar-section-empty" *ngIf="!directConversations().length">No direct chats</p>
             </div>
+
+            <div class="sidebar-section-label">Groups</div>
+            <div class="conversation-list">
+                <button type="button" class="conversation"
+                    *ngFor="let conversation of groupConversations(); trackBy: trackByConversation"
+                    [class.active]="conversation.id === selectedConversationId()"
+                    [class.has-unread]="hasUnread(conversation)" (click)="selectConversation(conversation)">
+                    <app-user-profile [name]="getConversationTitle(conversation)"
+                        [profileImage]="getConversationProfileImage(conversation)" size="sm">
+                    </app-user-profile>
+                    <span class="conversation__content">
+                        <span class="conversation__title">{{ getConversationTitle(conversation) }}</span>
+                    </span>
+                    <button type="button" class="conversation__favorite-star" title="Favorite"
+                        (click)="toggleFavorite(conversation.id, $event)">
+                        <i class="far fa-star"></i>
+                    </button>
+                    <span class="unread-dot" *ngIf="hasUnread(conversation)"></span>
+                </button>
+
+                <p class="sidebar-section-empty" *ngIf="!groupConversations().length">No group chats</p>
+            </div>
+
+            <p class="conversation-list-empty" *ngIf="!filteredConversations().length && !search()">
+                <i class="fas fa-inbox"></i>
+                No recent chats
+            </p>
         </div>
     </aside>
 

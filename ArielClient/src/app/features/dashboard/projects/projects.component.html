@@ -14,7 +14,7 @@
       </div>
     </div>
 
-      <button class="btn-new-project" *ngIf="perm.projects.canCreate()" (click)="openCreateModal()">
+    <button class="btn-new-project" *ngIf="perm.projects.canCreate()" (click)="openCreateModal()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
         stroke-linecap="round" stroke-linejoin="round">
         <line x1="12" y1="5" x2="12" y2="19" />
@@ -110,8 +110,7 @@
             <div class="members-stack">
               <div class="member-avatar" *ngFor="let m of project.members.slice(0, 4); let i = index"
                 [style.z-index]="10 - i" [title]="m.name">
-                <img *ngIf="m.profileImage; else memberInitials" [src]="m.profileImage" [alt]="m.name" />
-                <ng-template #memberInitials>{{ getInitials(m.name) }}</ng-template>
+                <app-user-profile [name]="m.name" [profileImage]="m.profileImage" size="sm" />
               </div>
               <div class="member-avatar extra" *ngIf="project.members.length > 4">
                 +{{ project.members.length - 4 }}
@@ -266,8 +265,8 @@
       </button>
 
       <!-- canView guards Members tab visibility -->
-      <button class="tab-btn" *ngIf="perm.projects.canView()"
-        [class.tab-active]="activeTab() === 'members'" (click)="setTab('members')">
+      <button class="tab-btn" *ngIf="perm.projects.canView()" [class.tab-active]="activeTab() === 'members'"
+        (click)="setTab('members')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
@@ -381,11 +380,7 @@
         <div class="overview-description" *ngIf="proj.projectLead">
           <h4 class="section-label">Project Lead</h4>
           <div class="member-row">
-            <div class="member-avatar-lg">
-              <img *ngIf="proj.projectLead.profileImage; else projectLeadInitials" [src]="proj.projectLead.profileImage"
-                [alt]="proj.projectLead.name" />
-              <ng-template #projectLeadInitials>{{ getInitials(proj.projectLead.name) }}</ng-template>
-            </div>
+            <app-user-profile [name]="proj.projectLead.name" [profileImage]="proj.projectLead.profileImage" size="lg" />
             <div class="member-info">
               <span class="member-name">{{ proj.projectLead.name }}</span>
             </div>
@@ -394,7 +389,7 @@
 
         <!-- canDelete: Delete project button in overview -->
         <div class="overview-danger" *ngIf="perm.projects.canDelete()">
-          <button class="btn-delete-project" >
+          <button class="btn-delete-project">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6" />
@@ -440,16 +435,14 @@
           <ng-container *ngIf="selectedProject()!.members.length > 0">
             <div class="members-list">
               <div class="member-row" *ngFor="let member of selectedProject()!.members">
-                <div class="member-avatar-lg">
-                  <img *ngIf="member.profileImage; else memberListInitials" [src]="member.profileImage" [alt]="member.name" />
-                  <ng-template #memberListInitials>{{ getInitials(member.name) }}</ng-template>
-                </div>
+                <app-user-profile [name]="member.name" [profileImage]="member.profileImage" size="md" />
+
                 <div class="member-info">
                   <span class="member-name">{{ member.name }}</span>
                 </div>
                 <!-- canEditOrDel guards Remove Member button -->
-                <button class="btn-remove-member" *ngIf="perm.projects.canEditOrDel()"
-                  (click)="removeMember(member.id)" title="Remove member">
+                <button class="btn-remove-member" *ngIf="perm.projects.canEditOrDel()" (click)="removeMember(member.id)"
+                  title="Remove member">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18" />
@@ -507,10 +500,7 @@
             <span class="tray-label">Selected</span>
             <div class="tray-chips">
               <div class="tray-chip" *ngFor="let m of pendingMembers()">
-                <div class="tray-chip-avatar">
-                  <img *ngIf="m.profileImage; else trayInitials" [src]="m.profileImage" [alt]="m.name" />
-                  <ng-template #trayInitials>{{ getInitials(m.name) }}</ng-template>
-                </div>
+                <app-user-profile [name]="m.name" [profileImage]="m.profileImage" size="xs" />
                 <span class="tray-chip-name">{{ m.name }}</span>
                 <button class="tray-chip-remove" (click)="togglePendingMember(m)" title="Deselect">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
@@ -526,10 +516,7 @@
           <div class="picker-list-wrap">
             <div class="picker-list" *ngIf="availableToAdd().length > 0; else pickerEmpty">
               <button class="picker-item" *ngFor="let m of availableToAdd()" (click)="togglePendingMember(m)">
-                <div class="picker-item-avatar">
-                  <img *ngIf="m.profileImage; else pickerInitials" [src]="m.profileImage" [alt]="m.name" />
-                  <ng-template #pickerInitials>{{ getInitials(m.name) }}</ng-template>
-                </div>
+                <app-user-profile [name]="m.name" [profileImage]="m.profileImage" size="md" />
                 <span class="picker-item-name">{{ m.name }}</span>
                 <div class="picker-item-check">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
@@ -593,8 +580,7 @@
               </a>
             </div>
             <!-- canDelete guards document delete -->
-            <button class="btn-remove-member" *ngIf="perm.projects.canDelete()"
-               title="Delete document">
+            <button class="btn-remove-member" *ngIf="perm.projects.canDelete()" title="Delete document">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                 stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" />
@@ -638,8 +624,8 @@
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Project Name <span class="required">*</span></label>
-            <input type="text" class="form-input" placeholder="e.g. CRM Platform Redesign"
-              [ngModel]="newProject().name" (ngModelChange)="updateNewProject('name', $event)" />
+            <input type="text" class="form-input" placeholder="e.g. CRM Platform Redesign" [ngModel]="newProject().name"
+              (ngModelChange)="updateNewProject('name', $event)" />
           </div>
         </div>
 
@@ -647,8 +633,7 @@
           <div class="form-group">
             <label class="form-label">Description</label>
             <textarea class="form-input form-textarea" placeholder="Brief description of the project…" rows="3"
-              [ngModel]="newProject().description"
-              (ngModelChange)="updateNewProject('description', $event)"></textarea>
+              [ngModel]="newProject().description" (ngModelChange)="updateNewProject('description', $event)"></textarea>
           </div>
         </div>
 
@@ -692,8 +677,8 @@
         <div class="form-actions">
           <button class="btn-cancel" (click)="closeCreateModal()">Cancel</button>
           <!-- canCreate also guards the submit button -->
-          <button class="btn-submit" *ngIf="perm.projects.canCreate()"
-            (click)="submitCreateProject()" [disabled]="isCreating()">
+          <button class="btn-submit" *ngIf="perm.projects.canCreate()" (click)="submitCreateProject()"
+            [disabled]="isCreating()">
             <span *ngIf="!isCreating()">
               <i class="fa-solid fa-plus"></i>
               Create Project

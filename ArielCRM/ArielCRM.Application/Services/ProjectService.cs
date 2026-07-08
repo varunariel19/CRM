@@ -11,27 +11,61 @@ using Microsoft.Extensions.Configuration;
 namespace ArielCRM.Application.Services
 {
 
-    public class ProjectService(IProjectRepository projectRepository, IAppwriteStorageService storageService, IConfiguration configuration) : IProjectService
+    public class ProjectService(IProjectRepository projectRepository, IAppwriteStorageService storageService, ILeadRepository leadRepository, IConfiguration configuration) : IProjectService
     {
         private readonly IProjectRepository _projectRepository = projectRepository;
+
+        private readonly ILeadRepository _leadRepository = leadRepository;
+
         private readonly IAppwriteStorageService _storageService = storageService;
 
         private readonly IConfiguration _configuration = configuration;
 
-        public async Task<string> CreateAsync(CreateProjectDto dto)
+        public async Task<string> FinalizeCreateAsync(CreateProjectDto dto)
         {
-            var project = new Project
+            var leadProjects = await _leadRepository.GetLeadFullByIdAsync(dto.LeadId);
+
+            // BUGFIX: drafts from CreateProjectForLeadAsync are IsActive = false,
+            // so we must look for the most recent INACTIVE draft, not an active one.
+            var draftProject = leadProjects!.Projects
+                .Where(p => !p.IsActive)
+                .OrderByDescending(p => p.CreatedAt)
+                .FirstOrDefault();
+
+            Project project;
+
+            if (draftProject is not null)
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = dto.Name,
-                ProjectLeadId = dto.ProjectLeadId,
-                Description = dto.Description,
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
-                ContactId = dto.ContactId,
-                ProjectKey = Guid.NewGuid().ToString(),
-                Documents = []
-            };
+                draftProject.Name = dto.Name;
+                draftProject.ProjectLeadId = dto.ProjectLeadId;
+                draftProject.Description = dto.Description;
+                draftProject.StartDate = dto.StartDate;
+                draftProject.EndDate = dto.EndDate;
+                draftProject.ContactId = dto.ContactId;
+                draftProject.IsActive = true; // finalize the draft
+                draftProject.UpdatedAt = DateTime.UtcNow;
+
+                project = draftProject;
+            }
+            else
+            {
+                project = new Project
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Name = dto.Name,
+                    ProjectKey = Guid.NewGuid().ToString(),
+                    LeadId = dto.LeadId,
+                    ProjectLeadId = dto.ProjectLeadId,
+                    Description = dto.Description,
+                    StartDate = dto.StartDate,
+                    EndDate = dto.EndDate,
+                    ContactId = dto.ContactId,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Documents = []
+                };
+            }
 
             foreach (var file in dto.Documents)
             {
@@ -47,21 +81,47 @@ namespace ArielCRM.Application.Services
                 });
             }
 
-            await _projectRepository.AddAsync(project);
+            if (draftProject is not null)
+                await _projectRepository.UpdateAsync(project);
+            else
+                await _projectRepository.AddAsync(project);
 
             return project.Id;
+        }
+
+        public async Task<Project?> CreateProjectForLeadAsync(CreateProjectForLeadDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.ProjectTitle)) return null;
+
+            var project = new Project
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = dto.ProjectTitle,
+                ProjectKey = Guid.NewGuid().ToString(),
+                LeadId = dto.LeadId,
+                ProjectType = dto.ProjectType,
+                Budget = dto.Budget,
+                StartDate = dto.DealStartDate?.ToDateTime(TimeOnly.MinValue),
+                EndDate = dto.DealCloseDate?.ToDateTime(TimeOnly.MinValue) ?? null,
+                IsActive = false,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            await _projectRepository.AddAsync(project);
+            return project;
         }
 
         public async Task UpdateAsync(string projectId, UpdateProjectDto dto)
         {
             var project = await _projectRepository.GetByIdAsync(projectId) ?? throw new Exception("Project not found");
 
-            project.Name = dto.Name;
-            project.ProjectLeadId = dto.ProjectLeadId;
-            project.Description = dto.Description;
-            project.StartDate = dto.StartDate;
-            project.EndDate = dto.EndDate;
-            project.IsActive = dto.IsActive;
+            if (dto.Name is not null) project.Name = dto.Name;
+            if (dto.ProjectLeadId is not null) project.ProjectLeadId = dto.ProjectLeadId;
+            if (dto.Description is not null) project.Description = dto.Description;
+            if (dto.StartDate.HasValue) project.StartDate = dto.StartDate;
+            if (dto.EndDate.HasValue) project.EndDate = dto.EndDate;
+            if (dto.IsActive.HasValue) project.IsActive = dto.IsActive.Value;
             project.UpdatedAt = DateTime.UtcNow;
 
             if (dto.NewDocuments?.Any() == true)
@@ -69,7 +129,6 @@ namespace ArielCRM.Application.Services
                 foreach (var file in dto.NewDocuments)
                 {
                     var uploadRes = await _storageService.UploadFileAsync(file);
-
                     project.Documents.Add(new Documents
                     {
                         Id = Guid.NewGuid().ToString(),

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { endpoints } from '../constants/endpoints';
-import { AppNotification } from '../../state/notification.state';
+import { AppNotification, CreateNotificationDto } from '../../state/notification.state';
 
 @Injectable({
   providedIn: 'root'
@@ -19,6 +19,19 @@ export class NotificationService {
 
   getUnreadCount(): Observable<number> {
     return this.http.get<number>(endpoints.notification.unreadCount, { withCredentials: true });
+  }
+
+
+  createNotification(payload: AppNotification  , userId : string) {
+    const createdPayload: CreateNotificationDto = {
+      userIds: [userId],
+      title: payload.title,
+      message: payload.message,
+      entityId: payload.entityId!,    
+      link: payload.link,
+      entityType: payload.entityType!
+    }
+    return this.http.post<any>(endpoints.notification.createNotification, createdPayload, { withCredentials: true });
   }
 
   markAsRead(notificationId: string): Observable<void> {

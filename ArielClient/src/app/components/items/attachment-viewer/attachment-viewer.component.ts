@@ -22,7 +22,7 @@ export class AttachmentViewerComponent implements OnChanges {
   textContent = signal<string | null>(null);
   safeUrl = signal<SafeResourceUrl | null>(null);
 
-  constructor(private sanitizer: DomSanitizer) {}
+  constructor(private sanitizer: DomSanitizer) { }
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['attachment'] && this.attachment()) {
@@ -36,10 +36,10 @@ export class AttachmentViewerComponent implements OnChanges {
 
   current = computed(() => this.allAttachments()[this.currentIndex()] ?? this.attachment() ?? null);
 
-currentUrl = computed(() => this.current()?.fileUrl ?? '');
-currentFileName = computed(() => this.current()?.fileName ?? '');
-currentSize = computed(() => this.current()?.sizeBytes ?? 0);
-currentType = computed(() => this.current()?.attachmentType ?? '');
+  currentUrl = computed(() => this.current()?.fileUrl ?? '');
+  currentFileName = computed(() => this.current()?.fileName ?? '');
+  currentSize = computed(() => this.current()?.sizeBytes ?? 0);
+  currentType = computed(() => this.current()?.attachmentType ?? '');
 
   hasPrev = computed(() => this.currentIndex() > 0);
   hasNext = computed(() => this.currentIndex() < this.allAttachments().length - 1);
@@ -106,7 +106,6 @@ currentType = computed(() => this.current()?.attachmentType ?? '');
       return;
     }
 
-    // 'other' — show download card immediately
     this.state.set('ready');
   }
 
@@ -164,13 +163,13 @@ currentType = computed(() => this.current()?.attachmentType ?? '');
 
 
   copyText() {
-  const text = this.textContent();
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    this.copyLabel.set('Copied!');
-    setTimeout(() => this.copyLabel.set('Copy'), 2000);
-  });
-}
+    const text = this.textContent();
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+      this.copyLabel.set('Copied!');
+      setTimeout(() => this.copyLabel.set('Copy'), 2000);
+    });
+  }
 
-copyLabel = signal('Copy');
+  copyLabel = signal('Copy');
 }

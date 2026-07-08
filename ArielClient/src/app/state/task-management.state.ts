@@ -31,7 +31,10 @@ export class TaskManagementState {
     private _tasks = signal<Task[]>([]);
     private _selectedTask = signal<Task | null>(null);
     private _loading = signal(false);
+    private _sinceTime = signal<Date | null>(null);
 
+
+    readonly sinceTime = computed(() => this._sinceTime());
     readonly tasks = computed(() => this._tasks());
     readonly selectedTask = computed(() => this._selectedTask());
     readonly loading = computed(() => this._loading());
@@ -64,6 +67,14 @@ export class TaskManagementState {
         return map;
     });
 
+
+    setSinceTime(date: Date) {
+        this._sinceTime.set(date);
+    }
+
+    getSinceTime() {
+        return this.sinceTime();
+    }
 
     setTasks(tasks: Task[]): void {
         this._tasks.set(tasks);

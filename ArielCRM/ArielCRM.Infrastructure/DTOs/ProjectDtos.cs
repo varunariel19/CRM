@@ -1,45 +1,32 @@
 using System.ComponentModel.DataAnnotations;
 using ArielCRM.DataLayer.Entities;
+using ArielCRM.DataLayer.Enums.ArielCRM.DataLayer.Enums;
 using Microsoft.AspNetCore.Http;
 
 namespace ArielCRM.Infrastructure.DTOs
 {
     public class CreateProjectDto
     {
-        [Required]
-        public string Name { get; set; } = string.Empty;
-
-        [Required]
-        public string ProjectLeadId { get; set; } = string.Empty;
-
+        public string LeadId { get; set; } = default!;
+        public string Name { get; set; } = default!;
+        public string? ProjectLeadId { get; set; }
         public string? Description { get; set; }
-
         public DateTime? StartDate { get; set; }
-
         public DateTime? EndDate { get; set; }
-
         public string? ContactId { get; set; }
-
         public List<IFormFile> Documents { get; set; } = [];
     }
 
     public class UpdateProjectDto
     {
-        public string Name { get; set; } = string.Empty;
-
+        public string? Name { get; set; }
         public string? ProjectLeadId { get; set; }
-
         public string? Description { get; set; }
-
         public DateTime? StartDate { get; set; }
-
         public DateTime? EndDate { get; set; }
-
-        public bool IsActive { get; set; }
-
+        public bool? IsActive { get; set; }
         public List<IFormFile>? NewDocuments { get; set; }
     }
-
 
     public class ProjectDetailDto
     {
@@ -62,7 +49,6 @@ namespace ArielCRM.Infrastructure.DTOs
         public int TasksTotal { get; set; }
         public int TasksCompleted { get; set; } = 0;
     }
-
 
     public class ClientDto
     {
@@ -87,6 +73,14 @@ namespace ArielCRM.Infrastructure.DTOs
         public string UploadId { get; set; } = string.Empty;
         public DateTime UploadedAt { get; set; }
     }
-
+    public class CreateProjectForLeadDto
+    {
+        public string LeadId { get; set; } = default!;
+        public string ProjectTitle { get; set; } = default!;
+        public ProjectType? ProjectType { get; set; }
+        public decimal? Budget { get; set; }
+        public DateOnly? DealStartDate { get; set; }
+        public DateOnly? DealCloseDate { get; set; }
+    }
 
 }

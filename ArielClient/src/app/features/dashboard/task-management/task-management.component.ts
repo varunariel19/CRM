@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskColumn, TaskManagementState, TaskMember } from '../../../state/task-management.state';
@@ -21,15 +21,16 @@ import { ToastService } from '../../../core/services/toast.service';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 import { DeepLinkService } from '../../../core/services/deepLink.service';
 import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
+import { TeamsService } from '../../../services/teams.service';
 
 @Component({
   selector: 'app-task-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ViewTicketComponent , UserProfileComponent],
+  imports: [CommonModule, FormsModule, ViewTicketComponent, UserProfileComponent],
   templateUrl: './task-management.component.html',
   styleUrl: './task-management.component.css',
 })
-export class TaskManagementComponent {
+export class TaskManagementComponent implements OnInit {
 
   taskState = inject(TaskManagementState);
   projectState = inject(ProjectState);
@@ -40,6 +41,7 @@ export class TaskManagementComponent {
   perm = inject(PermissionFacade);
   private deepLink = inject(DeepLinkService);
   private location = inject(Location);
+  teamsService = inject(TeamsService);
 
   readonly currentUserId = this.authState.userId();
 
@@ -90,6 +92,46 @@ export class TaskManagementComponent {
         this.openTaskFromUrl(taskId);
       }
     });
+  }
+
+
+  ngOnInit(): void {
+    this.teamsService.connect({
+      onTaskStatusChanged: (taskId: string, status: TaskStatus) => this.applyTaskStatusChange(taskId, status)
+    });
+    const since = this.taskState.getSinceTime();
+    if (since != null) {
+      this.taskService.getChanges(since).subscribe({
+        next: (tasks) => this.applyTaskChanges(tasks),
+        error: (err) => console.error('Failed to fetch task changes', err),
+      });
+    }
+  }
+
+  private applyTaskChanges(tasks: Task[]): void {
+    if (!tasks?.length) return;
+
+    this.allTasks.update((list) => {
+      const byId = new Map(list.map((t) => [t.taskId, t]));
+      for (const updated of tasks) {
+        byId.set(updated.taskId, updated);
+      }
+      return Array.from(byId.values());
+    });
+
+    const maxUpdatedAt = tasks.reduce(
+      (max, t) => (new Date(t.updatedAt) > max ? new Date(t.updatedAt) : max),
+      new Date(0)
+    );
+    this.taskState.setSinceTime(maxUpdatedAt);
+  }
+
+
+  private applyTaskStatusChange(taskId: string, newStatus: TaskStatus) {
+    debugger;
+    this.allTasks.update((list) =>
+      list.map((t) => (t.taskId === taskId ? { ...t, status: newStatus } : t))
+    );
   }
 
 

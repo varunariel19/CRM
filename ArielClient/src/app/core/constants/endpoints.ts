@@ -91,6 +91,7 @@ export const endpoints = {
 
 
     notification: {
+        createNotification : `${BASE_URL}/api/notifications/create-notification`,
         allNotification: `${BASE_URL}/api/notifications`, // ?take=30
         unreadCount: `${BASE_URL}/api/notifications/unread-count`,
         singleRead: (notificationId: string) => `${BASE_URL}/api/notifications/${notificationId}/read`,

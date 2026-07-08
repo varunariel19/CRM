@@ -5,8 +5,9 @@ import {
   NgZone,
   OnInit,
   effect,
+  signal,
 } from '@angular/core';
-import { CreateLeadDto, Lead, LeadSource, LeadStatus, UpdateLeadDto, ProjectType } from '../../../core/types/lead.type';
+import { CreateLeadDto, Lead, LeadSource, LeadStatus, UpdateLeadDto, ProjectType, LeadProject } from '../../../core/types/lead.type';
 import { TeamMember } from '../../../core/types/global.type';
 import { LeadService } from '../../../services/lead.service';
 import { CommonModule, Location } from '@angular/common';
@@ -23,12 +24,12 @@ import { map, switchMap } from 'rxjs';
 import { AuthState } from '../../../state/auth.state';
 import { DepartmentItem, GlobalState } from '../../../state/global.state';
 import { DepartmentKey } from '../../../core/constants/global';
-import { HistoryState } from '../../../state/history.state';
 import { AuditHistoryStore } from '../../../state/audit-history.state';
 import { TeamsService } from '../../../services/teams.service';
 import { DeepLinkService } from '../../../core/services/deepLink.service';
 import { ActivatedRoute } from '@angular/router';
 import { ContactState } from '../../../state/contact.state';
+import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
 
 
 export interface ProjectDocument {
@@ -63,6 +64,15 @@ export interface LeadPipelineColumn {
   leads: Lead[];
 }
 
+export interface CreateProjectForLeadPayload {
+  name: string;
+  projectType: ProjectType | '';
+  budget: number | null;
+  startDate: string;
+  endDate: string | null;
+  leadId: string;
+}
+
 export const leadSourceOptions: { value: LeadSource; label: string }[] = [
   { value: 'MarketingPlatform', label: 'Marketing Platform' },
   { value: 'Website', label: 'Website' },
@@ -76,9 +86,9 @@ export const leadSourceOptions: { value: LeadSource; label: string }[] = [
 
 @Component({
   selector: 'app-lead-management',
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, UserProfileComponent],
   templateUrl: './lead-mangement.component.html',
-  styleUrls: ['./lead-mangement.component.css', '../deals-pipeline/deals-pipeline.component.css'],
+  styleUrls: ['./lead-mangement.component.scss', '../deals-pipeline/deals-pipeline.component.css'],
 })
 export class LeadManagementComponent implements OnInit {
 
@@ -129,6 +139,7 @@ export class LeadManagementComponent implements OnInit {
   leadSourceOptions = leadSourceOptions;
 
   newLead: CreateLeadDto = this.resetNewLead();
+  showOnlyMyLeads = this.authState.user()?.accessLevel.access != 100 ? true : false;
 
   readonly projectTypeOptions: ProjectType[] = ['Hourly', 'FixedPrice', 'ManMonth'];
 
@@ -162,7 +173,88 @@ export class LeadManagementComponent implements OnInit {
   }
 
 
-  showOnlyMyLeads = this.authState.user()?.accessLevel.access != 100 ? true : false;
+  selectedProjects: LeadProject[] = [];
+
+  editingProject: LeadProject | null = null;
+  editingProjectNewDocs: ProjectDocument[] = [];
+  isEditorDragOver = false;
+
+  openProjectEditor(project: LeadProject): void {
+    debugger;
+    this.editingProject = {
+      ...project,
+      projectLeadId: "",
+      projectType: "",
+      startDate: project.startDate?.split('T')[0] ?? '',
+      endDate: project.endDate?.split('T')[0] ?? '', documents: [...(project.documents ?? [])]
+    };
+    this.editingProjectNewDocs = [];
+  }
+
+  closeProjectEditor(): void {
+    this.editingProject = null;
+    this.editingProjectNewDocs = [];
+  }
+
+  onEditorFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files) { this.addEditorFiles(Array.from(input.files)); input.value = ''; }
+  }
+
+  onEditorDragOver(event: DragEvent): void {
+    event.preventDefault(); event.stopPropagation(); this.isEditorDragOver = true;
+  }
+
+  onEditorDragLeave(event: DragEvent): void {
+    event.preventDefault(); event.stopPropagation(); this.isEditorDragOver = false;
+  }
+
+  onEditorDrop(event: DragEvent): void {
+    event.preventDefault(); event.stopPropagation(); this.isEditorDragOver = false;
+    const files = event.dataTransfer?.files;
+    if (files) this.addEditorFiles(Array.from(files));
+  }
+
+  private addEditorFiles(files: File[]): void {
+    const MAX = 20 * 1024 * 1024;
+    for (const file of files) {
+      if (file.size > MAX) {
+        this.toastService.error(`"${file.name}" exceeds 20 MB limit.`);
+        continue;
+      }
+      if (!this.editingProjectNewDocs.some(d => d.name === file.name)) {
+        this.editingProjectNewDocs.push({ name: file.name, size: file.size, file });
+      }
+    }
+  }
+
+  removeEditorNewDoc(index: number): void {
+    this.editingProjectNewDocs.splice(index, 1);
+  }
+
+  removeEditorExistingDoc(docId: string): void {
+    if (!this.editingProject) return;
+    this.editingProject.documents = this.editingProject.documents.filter(d => d.id !== docId);
+    // NOTE: this only removes it from the local editing copy — actual deletion
+    // needs to be sent to the backend in saveProjectEdit(), see note below
+  }
+
+
+  saveProjectEdit() {
+    debugger;
+    if (!this.editingProject || !this.convertingLead) {
+      return;
+    }
+
+    this.convertingLead.projects = this.convertingLead.projects.map(project =>
+      project.id === this.editingProject!.id
+        ? { ...this.editingProject! }
+        : project
+    );
+
+    this.editingProject = null;
+  }
+
 
 
   ngOnInit(): void {
@@ -287,40 +379,9 @@ export class LeadManagementComponent implements OnInit {
   }
 
 
-  getBudgetLabel(projectType: ProjectType | '' | undefined): string {
-    switch (projectType) {
-      case 'Hourly': return 'Hourly Rate ($/hr)';
-      case 'ManMonth': return 'Monthly Rate ($/month)';
-      case 'FixedPrice':
-      default: return 'Budget ($)';
-    }
-  }
 
-  getBudgetPlaceholder(projectType: ProjectType | '' | undefined): string {
-    switch (projectType) {
-      case 'Hourly': return 'e.g. 75';
-      case 'ManMonth': return 'e.g. 5000';
-      default: return 'e.g. 10000';
-    }
-  }
-  formatBudgetDisplay(lead: Lead): string {
-    if (!lead.budget) return '—';
-    const formatted = `$${Number(lead.budget).toLocaleString()}`;
-    switch (lead.projectType) {
-      case 'Hourly': return `${formatted}/hr`;
-      case 'ManMonth': return `${formatted}/mo`;
-      default: return formatted;
-    }
-  }
 
-  getProjectTypeClass(type: ProjectType | '' | undefined): string {
-    switch (type) {
-      case 'Hourly': return 'hourly';
-      case 'FixedPrice': return 'fixed-price';
-      case 'ManMonth': return 'man-month';
-      default: return '';
-    }
-  }
+
 
 
   submitCreateLead(): void {
@@ -354,18 +415,54 @@ export class LeadManagementComponent implements OnInit {
       source: lead.source as LeadSource,
       status: lead.status as LeadStatus,
       assignedToId: lead.assignedToId,
-      projectTitle: lead.projectTitle ?? '',
-      budget: lead.budget ? Number(lead.budget.toFixed(2)) : null,
-      projectType: lead.projectType ?? '',
-      dealStartDate: lead.dealStartDate ?? '',
-      dealCloseDate: lead.dealCloseDate ?? '',
     };
     this.showEditModal = true;
+  }
+
+  formatBudgetDisplay(project: LeadProject): string {
+    if (!project.budget) return '—';
+    const formatted = `$${Number(project.budget).toLocaleString()}`;
+    switch (project.projectType) {
+      case 'Hourly': return `${formatted}/hr`;
+      case 'ManMonth': return `${formatted}/mo`;
+      default: return formatted;
+    }
+  }
+
+  private openConversionFlow(lead: Lead, previousStatus: LeadStatus): void {
+    if (lead.contactId) return;
+
+
+    this.zone.run(() => {
+      const primaryProject = lead.projects?.[0] ?? null;
+
+      this.convertingLead = { ...lead };
+      this.convertingLeadPreviousStatus = previousStatus;
+      this.projectForm = {
+        ...this.resetProjectForm(),
+        leadId: lead.id,
+        name: primaryProject?.name ?? '',
+        startDate: primaryProject?.startDate ?? this.resetProjectForm().startDate,
+        endDate: primaryProject?.endDate ?? null,
+      };
+      this.clientForm = {
+        ...this.resetClientForm(),
+        leadId: lead.id,
+        name: lead.name,
+        company: lead.company,
+        email: lead.email,
+        phone: lead.phone ?? '',
+      };
+      this.conversionStep = 1;
+      this.showConvertModal = true;
+      this.cdr.detectChanges();
+    });
   }
 
   submitEditLead(): void {
     if (!this.editLead.id) return;
     const { id, ...dto } = this.editLead;
+    dto.dealCloseDate = dto.dealCloseDate ? dto.dealCloseDate : null;
     dto.budget = Number(dto.budget?.toFixed(2));
     this.leadService.handleUpdateLead(id!, dto as UpdateLeadDto).subscribe({
       next: () => {
@@ -535,25 +632,7 @@ export class LeadManagementComponent implements OnInit {
     });
   }
 
-  private openConversionFlow(lead: Lead, previousStatus: LeadStatus): void {
-    if (lead.contactId) return;
-    this.zone.run(() => {
-      this.convertingLead = { ...lead };
-      this.convertingLeadPreviousStatus = previousStatus;
-      this.projectForm = { ...this.resetProjectForm(), leadId: lead.id, startDate: lead.dealStartDate, endDate: lead.dealCloseDate ?? null, name: lead.projectTitle };
-      this.clientForm = {
-        ...this.resetClientForm(),
-        leadId: lead.id,
-        name: lead.name,
-        company: lead.company,
-        email: lead.email,
-        phone: lead.phone ?? '',
-      };
-      this.conversionStep = 1;
-      this.showConvertModal = true;
-      this.cdr.detectChanges();
-    });
-  }
+
 
   closeConvertModal(): void {
     if (this.convertingLead && this.convertingLeadPreviousStatus) {
@@ -765,5 +844,137 @@ export class LeadManagementComponent implements OnInit {
 
   hasDealInfo(lead: any): boolean {
     return !!(lead?.projectTitle || lead?.budget || lead?.projectType || lead?.dealStartDate || lead?.dealCloseDate);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  showProjectsPanel = false;
+  projectsPanelLead: Lead | null = null;
+  projectsPanelMode: 'list' | 'create' = 'list';
+  newProjectForm: CreateProjectForLeadPayload = this.resetNewProjectForm();
+
+
+  private resetNewProjectForm(): CreateProjectForLeadPayload {
+    return {
+      name: '',
+      projectType: '',
+      budget: null,
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: null,
+      leadId: '',
+    };
+  }
+
+
+
+  formatProjectBudget(project: LeadProject): string {
+    if (!project.budget) return '—';
+    const formatted = `$${Number(project.budget).toLocaleString()}`;
+    switch (project.projectType) {
+      case 'Hourly': return `${formatted}/hr`;
+      case 'ManMonth': return `${formatted}/mo`;
+      default: return formatted;
+    }
+  }
+
+  getProjectTypeClass(type: ProjectType | '' | undefined): string {
+    switch (type) {
+      case 'Hourly': return 'hourly';
+      case 'FixedPrice': return 'fixed-price';
+      case 'ManMonth': return 'man-month';
+      default: return '';
+    }
+  }
+
+  // ── Projects side panel ──
+
+  openProjectsPanel(lead: Lead): void {
+    this.projectsPanelLead = lead;
+    this.projectsPanelMode = 'list';
+    this.showProjectsPanel = true;
+  }
+
+  closeProjectsPanel(): void {
+    this.showProjectsPanel = false;
+    setTimeout(() => {
+      this.projectsPanelLead = null;
+      this.projectsPanelMode = 'list';
+      this.newProjectForm = this.resetNewProjectForm();
+    }, 250); // matches slide-out transition duration, avoids content flash before it's fully offscreen
+  }
+
+  openCreateProjectForm(): void {
+    if (!this.projectsPanelLead) return;
+    this.newProjectForm = { ...this.resetNewProjectForm(), leadId: this.projectsPanelLead.id };
+    this.projectsPanelMode = 'create';
+  }
+
+  cancelCreateProject(): void {
+    this.projectsPanelMode = 'list';
+    this.newProjectForm = this.resetNewProjectForm();
+  }
+
+  submitNewProject(): void {
+    if (!this.newProjectForm.name || !this.projectsPanelLead) {
+      this.toastService.error('Project name is required.');
+      return;
+    }
+
+    this.loader.show('Creating project...', 'md');
+
+    this.leadService.handleUpdateLead(this.projectsPanelLead.id, {
+      projectTitle: this.newProjectForm.name,
+      projectType: this.newProjectForm.projectType || null,
+      budget: this.newProjectForm.budget,
+      dealStartDate: this.newProjectForm.startDate,
+      dealCloseDate: this.newProjectForm.endDate,
+    } as UpdateLeadDto).subscribe({
+      next: (updated) => {
+        this.loader.hide();
+        this.leadState.updateLead(this.projectsPanelLead!.id, { projects: updated.projects });
+        this.projectsPanelLead = { ...this.projectsPanelLead!, projects: updated.projects };
+        if (this.detailLead?.id === this.projectsPanelLead!.id) {
+          this.detailLead = { ...this.detailLead, projects: updated.projects };
+        }
+        this.toastService.success('Project added successfully!');
+        this.projectsPanelMode = 'list';
+        this.newProjectForm = this.resetNewProjectForm();
+      },
+      error: (err) => {
+        this.loader.hide();
+        this.toastService.error('Failed to create project.');
+        console.error(err);
+      },
+    });
+  }
+
+  getBudgetLabel(projectType: ProjectType | '' | undefined): string {
+    switch (projectType) {
+      case 'Hourly': return 'Hourly Rate ($/hr)';
+      case 'ManMonth': return 'Monthly Rate ($/month)';
+      default: return 'Budget ($)';
+    }
+  }
+
+  getBudgetPlaceholder(projectType: ProjectType | '' | undefined): string {
+    switch (projectType) {
+      case 'Hourly': return 'e.g. 75';
+      case 'ManMonth': return 'e.g. 5000';
+      default: return 'e.g. 10000';
+    }
   }
 }

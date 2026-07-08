@@ -211,13 +211,10 @@
 
           <div class="note-meta">
 
-            <div class="note-avatar">
-              {{ note.createdByName | slice:0:2 | uppercase }}
-            </div>
-
+            <app-user-profile [name]="note.createdByName" [profileImage]="null" size="sm"/>
             <div class="note-info">
               <div class="note-top">
-                <span class="note-author">{{ note.createdByName }}</span>
+                <span class="note-author">{{ note.createdByName }}  </span>
                 <span class="note-time">{{ note.updatedAt | date:'dd MMM yyyy, h:mm a' }}</span>
               </div>
             </div>

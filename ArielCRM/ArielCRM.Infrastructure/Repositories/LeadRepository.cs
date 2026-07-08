@@ -10,12 +10,12 @@ namespace ArielCRM.Infrastructure.Repositories
     {
         private readonly AppDbContext _context = context;
 
-
         public async Task<IEnumerable<LeadResponseDto>> GetAllAsync()
         {
             return await _context.Leads
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
+                .Include(l => l.Projects)
                 .OrderByDescending(l => l.CreatedAt)
                 .Select(l => MapToDto(l))
                 .ToListAsync();
@@ -27,6 +27,7 @@ namespace ArielCRM.Infrastructure.Repositories
                 .Where(l => l.AssignedToId == userId)
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
+                .Include(l => l.Projects)
                 .OrderByDescending(l => l.CreatedAt)
                 .Select(l => MapToDto(l))
                 .ToListAsync();
@@ -38,16 +39,16 @@ namespace ArielCRM.Infrastructure.Repositories
 
             return await _context.Leads
                 .Include(l => l.AssignedTo)
+                .Include(l => l.Projects)
                 .Where(l =>
-                    l.Name.ToLower().Contains(q) ||
-                    l.Company.ToLower().Contains(q) ||
-                    l.Email.ToLower().Contains(q)
+                    l.Name.Contains(q, StringComparison.CurrentCultureIgnoreCase) ||
+                    l.Company.Contains(q, StringComparison.CurrentCultureIgnoreCase) ||
+                    l.Email.Contains(q, StringComparison.CurrentCultureIgnoreCase)
                 )
                 .OrderByDescending(l => l.CreatedAt)
                 .Select(l => MapToDto(l))
                 .ToListAsync();
         }
-
 
         public async Task<LeadResponseDto> CreateAsync(Lead lead)
         {
@@ -59,15 +60,26 @@ namespace ArielCRM.Infrastructure.Repositories
             return MapToDto(lead);
         }
 
-
         public async Task<LeadResponseDto?> GetByIdAsync(string id)
         {
             var lead = await _context.Leads
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
+                .Include(l => l.Projects)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             return lead is null ? null : MapToDto(lead);
+        }
+
+        public async Task<Lead?> GetLeadFullByIdAsync(string id)
+        {
+            var lead = await _context.Leads
+                .Include(l => l.AssignedTo)
+                .Include(l => l.Contact)
+                .Include(l => l.Projects)
+                .FirstOrDefaultAsync(l => l.Id == id);
+
+            return lead ;
         }
 
         public async Task<LeadResponseDto?> UpdateLeadAsync(string id, UpdateLeadDto dto)
@@ -75,6 +87,7 @@ namespace ArielCRM.Infrastructure.Repositories
             var lead = await _context.Leads
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
+                .Include(l => l.Projects)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             if (lead is null) return null;
@@ -85,25 +98,28 @@ namespace ArielCRM.Infrastructure.Repositories
             if (dto.Email is not null) lead.Email = dto.Email;
             if (dto.Phone is not null) lead.Phone = dto.Phone;
             if (dto.Source is not null) lead.Source = dto.Source.Value;
+            if (dto.Status is not null) lead.Status = dto.Status.Value;
+
             if (dto.AssignedToId is not null)
             {
-                lead.AssignedToId = dto.AssignedToId;
                 var leadUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.AssignedToId);
-                lead.AssignedTo!.Name = leadUser!.Name;
-            }
-            if (dto.Status is not null) lead.Status = dto.Status.Value;
-            if (dto.ProjectTitle is not null) lead.ProjectTitle = dto.ProjectTitle;
-            if (dto.ProjectType is not null) lead.ProjectType = dto.ProjectType.Value;
-            if (dto.Budget is not null) lead.Budget = decimal.Parse(dto.Budget.Value.ToString("F2"));
-            if (dto.DealStartDate is not null) lead.DealStartDate = dto.DealStartDate.Value;
-            if (dto.DealCloseDate is not null) lead.DealCloseDate = dto.DealCloseDate.Value;
+                if (leadUser is null)
+                    throw new InvalidOperationException($"User '{dto.AssignedToId}' not found.");
 
+                lead.AssignedToId = dto.AssignedToId;
+                lead.AssignedTo = leadUser; // reassign the navigation reference — do NOT mutate leadUser.Name
+            }
+
+            // NOTE: ProjectTitle / ProjectType / Budget / DealStartDate / DealCloseDate
+            // no longer live on Lead — they're handled by LeadService.SyncLeadProjectAsync
+            // against the linked Project entity. Nothing to map here anymore.
 
             lead.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             return MapToDto(lead);
         }
+
         public async Task<bool> DeleteAsync(string id)
         {
             var lead = await _context.Leads.FindAsync(id);
@@ -129,11 +145,6 @@ namespace ArielCRM.Infrastructure.Repositories
             AssignedToName = lead.AssignedTo?.Name ?? string.Empty,
             CreatedAt = lead.CreatedAt,
             UpdatedAt = lead.UpdatedAt,
-            ProjectTitle = lead.ProjectTitle,
-            ProjectType = lead.ProjectType.ToString(),
-            Budget = lead.Budget,
-            DealStartDate = lead.DealStartDate,
-            DealCloseDate = lead.DealCloseDate,
             CreatedContact = lead.Contact is not null ? new ContactDto
             {
                 Id = lead.Contact.Id,
@@ -145,6 +156,17 @@ namespace ArielCRM.Infrastructure.Repositories
                 Address = lead.Contact.Address,
                 CreatedAt = lead.Contact.CreatedAt.ToString("o"),
             } : null,
+            Projects = [.. lead.Projects.Select(p => new LeadProjectSummaryDto
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    ProjectType = p.ProjectType?.ToString(),
+                    Budget = p.Budget,
+                    StartDate = p.StartDate,
+                    EndDate = p.EndDate,
+                    IsActive = p.IsActive,
+                    IsListed = p.ProjectLeadId is not null,
+                })],
         };
     }
 }

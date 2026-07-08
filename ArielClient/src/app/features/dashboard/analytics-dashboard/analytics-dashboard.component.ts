@@ -16,6 +16,7 @@ import { PermissionFacade } from '../../../core/services/permissionFacade.servic
 import { AuthState } from '../../../state/auth.state'; // 🆕
 import { GlobalState } from '../../../state/global.state';
 import { menuItems } from '../../../core/constants/menuItems';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-analytics-dashboard',
@@ -35,15 +36,19 @@ export class AnalyticsDashboardComponent {
   themeService = inject(ThemeService);
   historyState = inject(HistoryState);
   perm = inject(PermissionFacade);
-  authState = inject(AuthState); // 🆕
+  authState = inject(AuthState);
+  router = inject(Router);
 
   barChartType: ChartType = 'bar';
 
-  // 🆕 toggle: default true = show only leads assigned to the current user
   showOnlyMyLeads = true;
 
   toggleMyLeads(): void {
     this.showOnlyMyLeads = !this.showOnlyMyLeads;
+  }
+
+  viewLead(id: string) {
+    this.router.navigate(['/dashboard/lead', id]);
   }
 
   private get gridColor(): string {
@@ -109,6 +114,20 @@ export class AnalyticsDashboardComponent {
     if (!this.globalState.myViewOnly()) return all;
     const userId = this.authState.userId();
     return all.filter(lead => lead.assignedToId === userId);
+  }
+
+
+  get recentProspects() {
+    const all = this.leadState.leads();
+    return [...all]
+      .sort((a, b) => this.toTime(b.updatedAt) - this.toTime(a.updatedAt))
+      .slice(0, 5);
+  }
+
+  private toTime(dateStr: string): number {
+    const iso = dateStr.includes('T') ? dateStr : dateStr.replace(' ', 'T');
+    const time = new Date(iso).getTime();
+    return Number.isNaN(time) ? 0 : time;
   }
 
   get pendingTask() {
@@ -182,21 +201,23 @@ export class AnalyticsDashboardComponent {
 
   /** Avg days from creation to dealStartDate for leads that have one (proxy for response time) */
   get averageResponseTime(): number {
-    const responded = this.leads.filter(l => l.dealStartDate && l.createdAt);
-    if (responded.length === 0) return 0;
-    const totalDays = responded.reduce((sum, lead) => {
-      const created = new Date(lead.createdAt).getTime();
-      const started = new Date(lead.dealStartDate).getTime();
-      const diff = (started - created) / (1000 * 60 * 60 * 24);
-      return sum + Math.max(0, diff);
-    }, 0);
-    return Math.round(totalDays / responded.length);
+    // const responded = this.leads.filter(l => l.project && l.createdAt);
+    // if (responded.length === 0) return 0;
+    // const totalDays = responded.reduce((sum, lead) => {
+    //   const created = new Date(lead.createdAt).getTime();
+    //   const started = new Date(lead.dealStartDate).getTime();
+    //   const diff = (started - created) / (1000 * 60 * 60 * 24);
+    //   return sum + Math.max(0, diff);
+    // }, 0);
+    // return Math.round(totalDays / responded.length);
+    return 2;
   }
 
   get revenueFromConverted(): number {
-    return this.leads
-      .filter(l => l.status === LeadStatusType.Converted)
-      .reduce((sum, l) => sum + (l.budget ?? 0), 0);
+    // return this.leads
+    //   .filter(l => l.status === LeadStatusType.Converted)
+    //   .reduce((sum, l) => sum + (l.budget ?? 0), 0);
+    return 2;
   }
 
   get openTickets(): number {

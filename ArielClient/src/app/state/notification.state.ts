@@ -12,6 +12,15 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface CreateNotificationDto {
+  title: string;
+  message: string;
+  entityType: string;
+  entityId: string;
+  link?: string | null;
+  userIds: string[];
+}
+
 export const DUMMY_NOTIFICATIONS: AppNotification[] = [
   {
     id: '1',

@@ -60,9 +60,8 @@
             <h4 class="meeting-title">{{ m.title }}</h4>
 
             <div class="meeting-avatar-row">
-              <div class="meeting-avatar" [ngClass]="getLocationDotClass(m.location)">
-                {{ m.clientInfo.name | slice:0:1 }}{{ m.clientInfo.name.split(' ')[1] | slice:0:1 }}
-              </div>
+             <app-user-profile [name]=" m.clientInfo.name" [profileImage]="null" size="sm"/>
+
               <div class="meeting-client-info">
                 <span class="meeting-name">{{ m.clientInfo.name }}</span>
                 <span class="meeting-company">{{ m.clientInfo.company }}</span>

@@ -31,13 +31,25 @@
   </div>
 
   <div class="composer-attachments" *ngIf="attachments.length > 0">
-    <div class="attachment-chip" *ngFor="let a of attachments">
+    <div class="attachment-chip" *ngFor="let a of attachments; trackBy: trackByAttachment"
+      [class.uploading]="a.uploading" [class.upload-failed]="a.uploadFailed">
       <img *ngIf="a.previewUrl && a.type === 'image'" [src]="a.previewUrl" class="attachment-thumb" [alt]="a.name" />
       <i *ngIf="a.type !== 'image'" class="fas fa-paperclip attachment-icon"></i>
+
+      <div class="attachment-progress-bar" *ngIf="a.uploading">
+        <div class="attachment-progress-bar__fill" [style.width.%]="a.uploadProgress ?? 0"></div>
+      </div>
+
       <div class="attachment-info">
         <span class="attachment-name">{{ a.name }}</span>
-        <span class="attachment-size">{{ formatBytes(a.size) }}</span>
+        <span class="attachment-size" *ngIf="!a.uploadFailed">
+          {{ a.uploading ? (a.uploadProgress ?? 0) + '%' : formatBytes(a.size) }}
+        </span>
+        <span class="attachment-size attachment-error" *ngIf="a.uploadFailed">
+          Upload failed — <a (click)="retryUpload(a.id)">retry</a>
+        </span>
       </div>
+
       <button type="button" class="attachment-remove" (click)="removeAttachment(a.id)" [title]="'Remove ' + a.name">
         <i class="fas fa-times"></i>
       </button>
@@ -106,8 +118,8 @@
             <div class="schedule-time-dropdown" *ngIf="showTimeDropdown()" (click)="$event.stopPropagation()">
 
               <div class="schedule-time-custom">
-                <input type="number" class="schedule-time-input" [value]="customHour()"
-                  (input)="onHourInput($event)" min="1" max="12" placeholder="8" />
+                <input type="number" class="schedule-time-input" [value]="customHour()" (input)="onHourInput($event)"
+                  min="1" max="12" placeholder="8" />
                 <span class="schedule-time-colon">:</span>
                 <input type="number" class="schedule-time-input" [value]="customMinute()"
                   (input)="onMinuteInput($event)" min="0" max="59" placeholder="00" />
@@ -159,8 +171,7 @@
       <div class="divider"></div>
 
       <div class="tooltip-wrap">
-        <button type="button" class="send-btn" [class.scheduled]="isScheduled()" [disabled]="!canSend"
-          (click)="send()">
+        <button type="button" class="send-btn" [class.scheduled]="isScheduled()" [disabled]="!canSend" (click)="send()">
           <i class="fas" [class.fa-paper-plane]="!isScheduled()" [class.fa-clock]="isScheduled()"></i>
         </button>
         <span class="tooltip-text">{{ isScheduled() ? 'Send at scheduled time' : 'Send (Enter)' }}</span>

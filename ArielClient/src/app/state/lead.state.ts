@@ -34,8 +34,9 @@ export class LeadState {
     }
 
     updateLead(id: string, updated: Partial<Lead>): void {
+        const updateDate = new Date().toString();
         this._leads.update(leads =>
-            leads.map(l => l.id === id ? { ...l, ...updated } : l)
+            leads.map(l => l.id === id ? { ...l, ...updated, updatedAt: updateDate } : l)
         );
     }
 

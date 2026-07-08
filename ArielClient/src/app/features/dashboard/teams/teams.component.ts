@@ -13,7 +13,7 @@ import { TeamState } from '../../../state/team.state';
 import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
 
 
-interface PendingAttachment {
+export interface PendingAttachment {
   id: string;
   file: File;
   name: string;
@@ -21,6 +21,10 @@ interface PendingAttachment {
   type: TeamAttachmentType;
   contentType: string;
   previewUrl?: string;
+  uploading?: boolean;
+  uploadProgress?: number;
+  uploadedUrl?: string;
+  uploadFailed?: boolean;
 }
 
 export interface ScheduledTeamMessage {
@@ -58,6 +62,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   private pendingScrollConversationId: string | null = null;
 
   private typingTimer?: ReturnType<typeof setTimeout>;
+  private preloadedImages = new Set<string>();
 
   @ViewChild('messageInput') messageInputRef!: ElementRef<HTMLElement>;
   @ViewChild('messagesScroller') messagesScroller?: ElementRef<HTMLDivElement>;
@@ -87,6 +92,8 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   hasMoreMessages = signal(false);
   isLoadingMoreMessages = signal(false);
   private readonly PAGE_SIZE = 40;
+  private originalContentCache = new Map<string, string>();
+
 
   viewerAttachment = signal<TeamMessageAttachment | null>(null);
   viewerAttachments = signal<TeamMessageAttachment[]>([]);
@@ -157,10 +164,10 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   ngOnInit(): void {
     this.notificationState.showMessageNotification.set(false);
-    // this.teamsService.loadUsers().subscribe(users => this.teamsService.users.set(users));
-
+    
     this.teamsService.loadConversations().subscribe(conversations => {
       this.teamsService.conversations.set(conversations);
+      this.preloadImageUrls(conversations.map(c => this.getConversationProfileImage(c)));
     });
 
     this.teamsService.connect({
@@ -255,23 +262,36 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   selectConversation(conversation: TeamConversation, updateUrl = true): void {
     if (conversation.id === this.selectedConversationId() && this.messages().length) return;
     this.selectedConversationId.set(conversation.id);
-    this.messages.set([]);
     this.lastScrolledMessageCount = -1;
     this.hasMoreMessages.set(false);
     this.selectedAddMemberIds.set(new Set());
-    this.isLoadingMessages.set(true);
     this.teamsService.joinConversation(conversation.id);
-    if (updateUrl) {
-      this.location.go(`/dashboard/teams/${conversation.id}`);
-    }
+    if (updateUrl) this.location.go(`/dashboard/teams/${conversation.id}`);
 
     this.loadScheduledMessages(conversation.id);
 
+    const cached = this.messagesCache.get(conversation.id);
+    if (cached) {
+      this.messages.set(cached);
+      this.hasMoreMessages.set(cached.length === this.PAGE_SIZE);
+      this.isLoadingMessages.set(false);
+      this.scrollToBottom();
+      setTimeout(() => this.scrollToBottom(), 150);
+      this.markConversationRead(conversation.id);
+      return;
+    }
+
+    this.messages.set([]);
+    this.isLoadingMessages.set(true);
     this.teamsService.loadMessages(conversation.id, undefined, this.PAGE_SIZE).subscribe({
       next: messages => {
         this.messages.set(messages);
+        this.messagesCache.set(conversation.id, messages);
         this.hasMoreMessages.set(messages.length === this.PAGE_SIZE);
         this.isLoadingMessages.set(false);
+        this.preloadImageUrls(
+          messages.flatMap(m => m.attachments.filter(a => a.attachmentType === 'image').map(a => a.fileUrl))
+        );
         this.scrollToBottom();
         setTimeout(() => this.scrollToBottom(), 150);
         this.markConversationRead(conversation.id);
@@ -410,9 +430,17 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     if (!content && attachments.length === 0) return;
     if (this.isSending()) return;
 
+    const attachmentPayload = attachments.map(a => ({
+      fileUrl: a.uploadedUrl!,
+      fileName: a.name,
+      contentType: a.contentType,
+      attachmentType: a.type,
+      sizeBytes: a.size,
+    }));
+
     if (pending) {
       this.isSending.set(true);
-      this.teamsService.createDirect(pending.id, content, attachments.map(a => a.file)).subscribe({
+      this.teamsService.createDirect(pending.id, content, attachmentPayload).subscribe({
         next: conversation => {
           attachments.forEach(a => this.revokePreview(a));
           this.pendingDirect.set(null);
@@ -431,7 +459,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.isSending.set(true);
 
     if (scheduledAt) {
-      this.teamsService.sendMessage(conversationId, content, attachments.map(a => a.file), scheduledAt).subscribe({
+      this.teamsService.sendMessage(conversationId, content, attachmentPayload, scheduledAt).subscribe({
         next: res => {
           attachments.forEach(a => this.revokePreview(a));
           this.isSending.set(false);
@@ -448,7 +476,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.queueScroll(conversationId);
     this.teamsService.sendTyping(conversationId, false);
 
-    this.teamsService.sendMessage(conversationId, content, attachments.map(a => a.file)).subscribe({
+    this.teamsService.sendMessage(conversationId, content, attachmentPayload).subscribe({
       next: res => {
         attachments.forEach(a => this.revokePreview(a));
         this.isSending.set(false);
@@ -494,6 +522,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   getConversationTitle(conversation: TeamConversation): string {
     if (conversation.isGroup) return conversation.name ?? 'New group';
+    if (this.isSelfChat(conversation)) return 'You (Note to Self)';
     return conversation.members.find(m => m.id !== this.currentUserId())?.name ?? 'Direct chat';
   }
 
@@ -625,7 +654,6 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.editingMessageContent.set(el.innerHTML);
   }
 
-  private originalContentCache = new Map<string, string>();
   startEditMessage(msg: TeamMessage) {
     this.editingMessageId.set(msg.id);
     this.editingMessageContent.set(msg.content ?? '');
@@ -692,6 +720,17 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   trackByMessage = (_: number, message: TeamMessage) => message.id;
   trackByAttachment = (_: number, attachment: TeamMessageAttachment | PendingAttachment) => attachment.id;
   trackByScheduled = (_: number, message: ScheduledTeamMessage) => message.id;
+
+
+  private preloadImageUrls(urls: (string | null | undefined)[]): void {
+    for (const url of urls) {
+      if (!url || this.preloadedImages.has(url)) continue;
+      this.preloadedImages.add(url);
+      const img = new Image();
+      img.decoding = 'async';
+      img.src = url;
+    }
+  }
 
   private applyMessageEdited(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
@@ -886,5 +925,94 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     this.selectConversation(conversation, false);
     this.deepLink.pendingConversationId.set(null);
+  }
+
+
+  private messagesCache = new Map<string, TeamMessage[]>();
+  private prefetchInFlight = new Set<string>();
+
+
+  prefetchConversation(conversationId: string): void {
+    if (this.messagesCache.has(conversationId) || this.prefetchInFlight.has(conversationId)) return;
+    this.prefetchInFlight.add(conversationId);
+
+    this.teamsService.loadMessages(conversationId, undefined, this.PAGE_SIZE).subscribe({
+      next: messages => {
+        this.messagesCache.set(conversationId, messages);
+        this.preloadImageUrls(
+          messages.flatMap(m => m.attachments.filter(a => a.attachmentType === 'image').map(a => a.fileUrl))
+        );
+        this.prefetchInFlight.delete(conversationId);
+      },
+      error: () => this.prefetchInFlight.delete(conversationId),
+    });
+  }
+
+
+
+  private readonly FAVORITES_STORAGE_KEY = 'teams-favorite-conversations';
+
+  favoriteIds = signal<Set<string>>(this.loadFavoritesFromStorage());
+
+  private loadFavoritesFromStorage(): Set<string> {
+    try {
+      const raw = localStorage.getItem(this.FAVORITES_STORAGE_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  }
+
+  private persistFavorites(ids: Set<string>): void {
+    localStorage.setItem(this.FAVORITES_STORAGE_KEY, JSON.stringify([...ids]));
+  }
+
+  toggleFavorite(conversationId: string, event?: Event): void {
+    event?.stopPropagation();
+    this.favoriteIds.update(current => {
+      const next = new Set(current);
+      next.has(conversationId) ? next.delete(conversationId) : next.add(conversationId);
+      this.persistFavorites(next);
+      return next;
+    });
+  }
+
+  isFavorite(conversationId: string): boolean {
+    return this.favoriteIds().has(conversationId);
+  }
+
+  isSelfChat(conversation: TeamConversation): boolean {
+    return !conversation.isGroup && conversation.members.length === 1 && conversation.members[0].id === this.currentUserId();
+  }
+
+  selfConversation = computed(() => this.conversations().find(c => this.isSelfChat(c)) ?? null);
+
+  favoriteConversations = computed(() =>
+    this.filteredConversations().filter(c => this.favoriteIds().has(c.id) && !this.isSelfChat(c))
+  );
+
+  directConversations = computed(() =>
+    this.filteredConversations().filter(c => !c.isGroup && !this.favoriteIds().has(c.id) && !this.isSelfChat(c))
+  );
+
+  groupConversations = computed(() =>
+    this.filteredConversations().filter(c => c.isGroup && !this.favoriteIds().has(c.id))
+  );
+
+  openSelfChat(): void {
+    const existing = this.selfConversation();
+    if (existing) {
+      this.selectConversation(existing);
+      return;
+    }
+    this.selectedConversationId.set(null);
+    this.messages.set([]);
+    this.pendingDirect.set({
+      id: this.currentUserId() ?? '',
+      name: 'You',
+      email: '',
+      profileImage: null,
+    } as TeamUser);
+    this.search.set('');
   }
 }

@@ -123,7 +123,7 @@
     <div class="tm-card" *ngFor="let member of teamMemberList" (click)="openProfile(member)">
       <div class="tm-card__top">
         <div class="tm-card__actions">
-          @if(perm.teamMembers.canEdit()) {
+          @if(checkEditPermission(member.access)) {
           <button class="tm-card__edit" (click)="$event.stopPropagation(); openEditModal(member)" title="Edit member">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -142,10 +142,7 @@
           </button>
           }
         </div>
-        <div class="tm-avatar" [style.background]="getAvatarColor(member.name)">
-          <img *ngIf="member.profileImage" [src]="member.profileImage" [alt]="member.name" />
-          <span *ngIf="!member.profileImage">{{ getInitials(member.name) }}</span>
-        </div>
+        <app-user-profile [name]="member.name" [profileImage]="member.profileImage" size="lg" />
         <div class="tm-card__info">
           <h3 class="tm-card__name">{{ member.name }}</h3>
           <span class="tm-badge tm-badge--designation">{{ globalState.getDesignationName(member.designationId) }}</span>
@@ -198,10 +195,9 @@
         <tr *ngFor="let member of teamMemberList" (click)="openProfile(member)" class="tm-table__row">
           <td>
             <div class="tm-table__member">
-              <div class="tm-avatar tm-avatar--sm" [style.background]="getAvatarColor(member.name)">
-                <img *ngIf="member.profileImage" [src]="member.profileImage" [alt]="member.name" />
-                <span *ngIf="!member.profileImage">{{ getInitials(member.name) }}</span>
-              </div>
+
+              <app-user-profile [name]="member.name" [profileImage]="member.profileImage" size="md" />
+
               <span class="tm-table__name">{{ member.name }}</span>
             </div>
           </td>
@@ -212,7 +208,7 @@
           <td class="tm-table__date">{{ formatDate(member.createdAt) }}</td>
           <td>
             <div class="tm-table__actions" (click)="$event.stopPropagation()">
-              @if(perm.teamMembers.canEdit()) {
+              @if(checkEditPermission(member.access)) {
               <button class="tm-card__edit" (click)="openEditModal(member)" title="Edit">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -468,7 +464,8 @@
 
         <div class="tm-form-group">
           <label class="tm-label">Department <span class="tm-required">*</span></label>
-          <select class="tm-input" [(ngModel)]="editMember.departmentId" (focus)="editFormError.set('')">
+          <select class="tm-input" [(ngModel)]="editMember.departmentId" (focus)="editFormError.set('')"
+            (change)="onEditDepartmentChange()">
             <option value="">Select department</option>
             <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
           </select>
@@ -630,7 +627,7 @@
       </div>
 
       <div class="tm-profile__footer">
-        @if(perm.teamMembers.canEdit()) {
+        @if(checkEditPermission(selectedMember()!.access)) {
         <button class="tm-btn-primary" (click)="openEditModal(selectedMember()!)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />

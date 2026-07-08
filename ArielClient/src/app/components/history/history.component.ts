@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuditHistoryStore } from '../../state/audit-history.state';
-import { HistoryResponseDto } from '../../core/services/audit-history.service';
+import { HistoryResponseDto } from '../../interface/history.type';
 
 @Component({
   selector: 'app-audit-history-modal',

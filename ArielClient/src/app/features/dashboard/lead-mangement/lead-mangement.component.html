@@ -61,10 +61,9 @@
         </div>
 
         <!-- Project / Deal Info Section -->
-        <div class="form-section">
+        <!-- <div class="form-section">
           <div class="form-section-label">
             <i class="fas fa-briefcase"></i> Project / Deal Info
-            <!-- <span class="optional-tag">Optional</span> -->
           </div>
           <div class="form-group full-width">
             <label>Project Title</label>
@@ -99,7 +98,7 @@
               <input type="date" [(ngModel)]="newLead.dealCloseDate" />
             </div>
           </div>
-        </div>
+        </div> -->
 
       </div>
 
@@ -180,10 +179,9 @@
         </div>
 
         <!-- Project / Deal Info Section -->
-        <div class="form-section">
+        <!-- <div class="form-section">
           <div class="form-section-label">
             <i class="fas fa-briefcase"></i> Project / Deal Info
-            <!-- <span class="optional-tag">Optional</span> -->
           </div>
           <div class="form-group full-width">
             <label>Project Title</label>
@@ -218,7 +216,7 @@
               <input type="date" [(ngModel)]="editLead.dealCloseDate" />
             </div>
           </div>
-        </div>
+        </div> -->
 
       </div>
 
@@ -237,7 +235,8 @@
     <div class="modal-box detail-modal-box" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <div class="detail-header-left">
-          <div class="detail-avatar">{{ detailLead.name.charAt(0) }}</div>
+          <app-user-profile [name]="detailLead.name" [profileImage]="null" size="sm" />
+
           <div>
             <h2>{{ detailLead.name }}</h2>
             <p class="detail-company"><i class="fas fa-building"></i> {{ detailLead.company }}</p>
@@ -283,64 +282,14 @@
           </div>
         </div>
 
-        <div class="detail-section" *ngIf="hasDealInfo(detailLead)">
-          <div class="detail-section-title"><i class="fas fa-briefcase"></i> Project / Deal Info</div>
-
-          <div class="detail-grid">
-            <!-- Project Title -->
-            <div class="detail-item detail-item-full" *ngIf="detailLead.projectTitle">
-              <span class="detail-label">Project Title</span>
-              <span class="detail-value">
-                <i class="fas fa-folder-open"></i> {{ detailLead.projectTitle }}
-              </span>
-            </div>
-
-            <!-- Project Type -->
-            <div class="detail-item" *ngIf="detailLead.projectType">
-              <span class="detail-label">Project Type</span>
-              <span class="detail-value">
-                <span class="project-type-pill" [ngClass]="getProjectTypeClass(detailLead.projectType)">
-                  <i
-                    class="fas fa-{{ detailLead.projectType === 'Hourly' ? 'clock' : detailLead.projectType === 'ManMonth' ? 'users' : 'tag' }}"></i>
-                  {{ detailLead.projectType }}
-                </span>
-              </span>
-            </div>
-
-            <!-- Budget -->
-            <div class="detail-item" *ngIf="detailLead.budget">
-              <span class="detail-label">{{ getBudgetLabel(detailLead.projectType) }}</span>
-              <span class="detail-value budget-value">
-                <i class="fas fa-dollar-sign"></i>
-                {{ formatBudgetDisplay(detailLead) }}
-              </span>
-            </div>
-
-            <!-- Start Date -->
-            <div class="detail-item" *ngIf="detailLead.dealStartDate">
-              <span class="detail-label">Start Date</span>
-              <span class="detail-value">
-                <i class="fas fa-calendar-check"></i>
-                {{ detailLead.dealStartDate | date:'MMM d, yyyy' }}
-              </span>
-            </div>
-
-            <!-- Close Date -->
-            <div class="detail-item">
-              <span class="detail-label">Close Date</span>
-
-              <span class="detail-value" *ngIf="detailLead.dealCloseDate; else ongoingTemplate">
-                <i class="fas fa-calendar-xmark"></i>
-                {{ detailLead.dealCloseDate | date:'MMM d, yyyy' }}
-              </span>
-
-              <ng-template #ongoingTemplate>
-                <span class="status-badge status-badge--ongoing">
-                  Ongoing
-                </span>
-              </ng-template>
-            </div>
+        <div class="detail-section">
+          <div class="detail-section-title-row">
+            <div class="detail-section-title"><i class="fas fa-briefcase"></i> Projects</div>
+            <span class="project-count-badge">{{ detailLead.projects.length }}</span>
           </div>
+          <button class="btn-view-projects" (click)="openProjectsPanel(detailLead)">
+            <i class="fas fa-diagram-project"></i> Manage Projects
+          </button>
         </div>
 
       </div>
@@ -355,6 +304,17 @@
       </div>
     </div>
   </div>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -395,86 +355,44 @@
         <span class="deal-value-badge source-tag">{{ convertingLead?.source }}</span>
       </div>
 
-      <div class="modal-body" *ngIf="conversionStep === 1">
-        <div class="convert-section-label"><i class="fas fa-folder-open"></i> Project Identity</div>
+      <div class="convert-body-scroll">
+        <ng-container *ngIf="convertingLead; else noLead">
+          <div class="project-item" *ngFor="let project of convertingLead.projects">
+            <label class="project-left">
+              <input type="checkbox" [(ngModel)]="project.isListed" />
+              <span class="project-name">{{ project.name }}</span>
+            </label>
 
-        <div class="form-group full-width">
-          <label>Project Name <span class="required">*</span></label>
-          <input type="text" [(ngModel)]="projectForm.name" placeholder="e.g. CRM Integration for Initech" />
-        </div>
-
-        <div class="form-group full-width">
-          <label>Project Lead <span class="required">*</span></label>
-          <select [(ngModel)]="projectForm.projectLeadId">
-            <option value="" disabled>Assign Project Lead</option>
-            <option *ngFor="let manager of projectManagers" [value]="manager.id">{{ manager.name }}</option>
-          </select>
-        </div>
-
-        <div class="form-group full-width">
-          <label>Description</label>
-          <textarea [(ngModel)]="projectForm.description" placeholder="Describe scope and objectives..."
-            rows="3"></textarea>
-        </div>
-
-        <div class="convert-section-label"><i class="fas fa-calendar-alt"></i> Project Timeline</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Start Date</label>
-            <input type="date" [(ngModel)]="projectForm.startDate" />
+            <button type="button" class="edit-btn" title="Edit Project" (click)="openProjectEditor(project)">
+              <i class="pi pi-pencil"></i>
+            </button>
           </div>
-          <div class="form-group">
-            <label>Estimated End Date</label>
-            <input type="date" [(ngModel)]="projectForm.endDate" />
-          </div>
-        </div>
+        </ng-container>
 
-        <div class="convert-section-label">
-          <i class="fas fa-paperclip"></i> Documents
-          <span class="member-count-badge">{{ projectForm.documents.length }} file(s)</span>
-        </div>
-        <div class="upload-drop-zone" (dragover)="onDocDragOver($event)" (dragleave)="onDocDragLeave($event)"
-          (drop)="onDocDrop($event)" [class.drag-over]="isDragOver" (click)="docFileInput.click()">
-          <i class="fas fa-cloud-upload-alt upload-icon"></i>
-          <p class="upload-label">Drag & drop files, or <span class="upload-link">browse</span></p>
-          <p class="upload-hint">PDF, DOCX, XLSX, PNG, JPG — up to 20MB each</p>
-          <input #docFileInput type="file" multiple hidden (change)="onDocFileSelected($event)" />
-        </div>
-        <div class="doc-list" *ngIf="projectForm.documents.length > 0">
-          <div class="doc-item" *ngFor="let doc of projectForm.documents; let i = index">
-            <div class="doc-item-left">
-              <i class="fas" [ngClass]="getFileIcon(doc.name)"></i>
-              <div>
-                <p class="doc-name">{{ doc.name }}</p>
-                <p class="doc-size">{{ formatFileSize(doc.size) }}</p>
-              </div>
+        <ng-template #noLead></ng-template>
+
+        <div class="modal-body" *ngIf="conversionStep === 2">
+          <div class="convert-section-label"><i class="fas fa-user-tie"></i> Client Details</div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Client Name <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="clientForm.name" placeholder="John Doe" />
             </div>
-            <button class="doc-remove" (click)="removeDocument(i)"><i class="fas fa-times"></i></button>
+            <div class="form-group">
+              <label>Company <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="clientForm.company" placeholder="Initech Corp" />
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div class="modal-body" *ngIf="conversionStep === 2">
-        <div class="convert-section-label"><i class="fas fa-user-tie"></i> Client Details</div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Client Name <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="clientForm.name" placeholder="John Doe" />
-          </div>
-          <div class="form-group">
-            <label>Company <span class="required">*</span></label>
-            <input type="text" [(ngModel)]="clientForm.company" placeholder="Initech Corp" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Email <span class="required">*</span></label>
-            <input type="email" [(ngModel)]="clientForm.email" placeholder="john@initech.com" />
-          </div>
-          <div class="form-group">
-            <label>Phone</label>
-            <input type="tel" [(ngModel)]="clientForm.phone" placeholder="+1 555-0199" />
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email <span class="required">*</span></label>
+              <input type="email" [(ngModel)]="clientForm.email" placeholder="john@initech.com" />
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="tel" [(ngModel)]="clientForm.phone" placeholder="+1 555-0199" />
+            </div>
           </div>
         </div>
       </div>
@@ -493,8 +411,134 @@
         </div>
       </div>
 
+      <div class="project-editor-backdrop" *ngIf="editingProject" (click)="closeProjectEditor()"></div>
+
+      <aside class="project-editor" [class.open]="editingProject" *ngIf="showConvertModal">
+        <div class="editor-header">
+          <h4>Edit Project</h4>
+          <button class="icon-btn" (click)="closeProjectEditor()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="editor-body" *ngIf="editingProject as ep">
+          <label>Project Name</label>
+          <input type="text" class="editor-input" [(ngModel)]="ep.name">
+
+          <label>Project Leader</label>
+          <select class="editor-input" [(ngModel)]="ep.projectLeadId">
+            <option value="" selected disabled>Select Project Leader</option>
+            <option *ngFor="let manager of projectManagers" [value]="manager.id">{{ manager.name }}</option>
+          </select>
+
+
+          <label>Project Type</label>
+          <select class="editor-input" [(ngModel)]="ep.projectType">
+            <option [ngValue]="''">Select Type</option>
+            <option *ngFor="let type of projectTypeOptions" [ngValue]="type">
+              {{ type }}
+            </option>
+          </select>
+
+          <label>Budget</label>
+          <div class="budget-row">
+            <input type="number" class="editor-input" [(ngModel)]="ep.budget">
+
+            <span class="project-type-pill" [ngClass]="getProjectTypeClass(ep.projectType)" *ngIf="ep.projectType">
+              <i
+                class="fas fa-{{ ep.projectType === 'Hourly' ? 'clock' : ep.projectType === 'ManMonth' ? 'users' : 'tag' }}"></i>
+              {{ ep.projectType }}
+            </span>
+          </div>
+
+          <label>Start Date</label>
+          <input type="date" class="editor-input" [(ngModel)]="ep.startDate">
+
+          <label>End Date</label>
+          <input type="date" class="editor-input" [(ngModel)]="ep.endDate">
+
+          <label>Description</label>
+          <textarea class="editor-input editor-textarea" rows="3" [(ngModel)]="ep.description"
+            placeholder="Describe scope and objectives..."></textarea>
+
+          <label>
+            Documents
+            <span class="doc-count-badge" *ngIf="ep.documents.length || editingProjectNewDocs.length">
+              {{ ep.documents.length + editingProjectNewDocs.length }} file(s)
+            </span>
+          </label>
+
+          <div class="upload-drop-zone editor-drop-zone" (dragover)="onEditorDragOver($event)"
+            (dragleave)="onEditorDragLeave($event)" (drop)="onEditorDrop($event)" [class.drag-over]="isEditorDragOver"
+            (click)="editorDocInput.click()">
+            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+            <p class="upload-label">Drag & drop files, or <span class="upload-link">browse</span></p>
+            <p class="upload-hint">PDF, DOCX, XLSX, PNG, JPG — up to 20MB each</p>
+            <input #editorDocInput type="file" multiple hidden (change)="onEditorFileSelected($event)" />
+          </div>
+
+          <div class="doc-list" *ngIf="ep.documents.length > 0">
+            <div class="doc-item" *ngFor="let doc of ep.documents">
+              <div class="doc-item-left">
+                <i class="fas" [ngClass]="getFileIcon(doc.fileName)"></i>
+                <div>
+                  <p class="doc-name">{{ doc.fileName }}</p>
+                  <a class="doc-view-link" [href]="doc.fileUrl" target="_blank" rel="noopener">View file</a>
+                </div>
+              </div>
+              <button class="doc-remove" (click)="removeEditorExistingDoc(doc.id)" title="Remove">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="doc-list" *ngIf="editingProjectNewDocs.length > 0">
+            <div class="doc-item doc-item--pending" *ngFor="let doc of editingProjectNewDocs; let i = index">
+              <div class="doc-item-left">
+                <i class="fas" [ngClass]="getFileIcon(doc.name)"></i>
+                <div>
+                  <p class="doc-name">{{ doc.name }}</p>
+                  <p class="doc-size">{{ formatFileSize(doc.size) }} · pending upload</p>
+                </div>
+              </div>
+              <button class="doc-remove" (click)="removeEditorNewDoc(i)" title="Remove">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-footer">
+          <button class="btn-cancel" (click)="closeProjectEditor()">Cancel</button>
+          <button class="btn-register" (click)="saveProjectEdit()">Save</button>
+        </div>
+      </aside>
+
     </div>
   </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   <div class="page-header">
@@ -528,7 +572,7 @@
           <option *ngFor="let src of leadSourceOptions" [value]="src.value">{{ src.label }}</option>
         </select>
 
-        <button  type="button" class="my-leads-btn" [class.active]="showOnlyMyLeads" (click)="toggleMyLeads()">
+        <button type="button" class="my-leads-btn" [class.active]="showOnlyMyLeads" (click)="toggleMyLeads()">
           <i class="fa fa-user"></i>
           <span>My Leads</span>
           <i class="fa fa-check check-icon" *ngIf="showOnlyMyLeads"></i>
@@ -568,7 +612,7 @@
           (dragstart)="perm.leads.canEdit() && dragLead($event, lead, col.key)" (click)="openDetailModal(lead)">
 
           <div class="lead-card-header">
-            <div class="lead-avatar">{{ lead.name.charAt(0) }}</div>
+            <app-user-profile [name]="lead.name" [profileImage]="null" size="sm" shape="rounded" />
             <div class="lead-card-title">
               <h3>{{ lead.name }}</h3>
               <p><i class="fas fa-building"></i> {{ lead.company }}</p>
@@ -708,3 +752,99 @@
   </div>
 
 </div>
+
+
+
+<!-- Projects side panel -->
+<div class="projects-panel-overlay" *ngIf="showProjectsPanel" (click)="closeProjectsPanel()"></div>
+
+<aside class="projects-panel" [class.open]="showProjectsPanel" *ngIf="projectsPanelLead">
+  <div class="projects-panel-header">
+    <div>
+      <h3>{{ projectsPanelLead.name }}'s Projects</h3>
+      <p class="projects-panel-subtitle">{{ projectsPanelLead.company }}</p>
+    </div>
+    <button class="modal-close" (click)="closeProjectsPanel()"><i class="fas fa-times"></i></button>
+  </div>
+
+  <div class="projects-panel-body" *ngIf="projectsPanelMode === 'list'">
+    <button class="btn-add-project" (click)="openCreateProjectForm()">
+      <i class="fas fa-plus"></i> Add New Project
+    </button>
+
+    <div class="panel-project-list" *ngIf="projectsPanelLead.projects.length; else panelNoProjects">
+      <div class="panel-project-card" *ngFor="let project of projectsPanelLead.projects">
+        <div class="panel-project-card-header">
+          <i class="fas fa-folder-open"></i>
+          <strong>{{ project.name }}</strong>
+          <span class="listed-badge" [class.unlisted]="!project.isListed">
+            {{ project.isListed ? 'Listed' : 'Unlisted' }}
+          </span>
+        </div>
+        <div class="panel-project-card-meta">
+          <span class="project-type-pill" [ngClass]="getProjectTypeClass(project.projectType)"
+            *ngIf="project.projectType">
+            <i
+              class="fas fa-{{ project.projectType === 'Hourly' ? 'clock' : project.projectType === 'ManMonth' ? 'users' : 'tag' }}"></i>
+            {{ project.projectType }}
+          </span>
+          <span *ngIf="project.budget"><i class="fas fa-dollar-sign"></i> {{ formatProjectBudget(project) }}</span>
+        </div>
+        <div class="panel-project-card-dates" *ngIf="project.startDate || project.endDate">
+          <span *ngIf="project.startDate"><i class="fas fa-calendar-check"></i> {{ project.startDate | date:'MMM d,
+            yyyy' }}</span>
+          <span *ngIf="project.endDate"><i class="fas fa-calendar-xmark"></i> {{ project.endDate | date:'MMM d, yyyy'
+            }}</span>
+        </div>
+      </div>
+    </div>
+    <ng-template #panelNoProjects>
+      <div class="panel-empty-state">
+        <i class="fas fa-folder-open"></i>
+        <p>No projects yet. Create the first one.</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <div class="projects-panel-body" *ngIf="projectsPanelMode === 'create'">
+    <div class="form-group full-width">
+      <label>Project Name <span class="required">*</span></label>
+      <input type="text" [(ngModel)]="newProjectForm.name" placeholder="e.g. CRM Integration for Initech" />
+    </div>
+
+    <div class="form-group full-width">
+      <label>Project Type</label>
+      <select [(ngModel)]="newProjectForm.projectType">
+        <option value="">Select Type</option>
+        <option *ngFor="let type of projectTypeOptions" [value]="type">{{ type }}</option>
+      </select>
+    </div>
+
+    <div class="form-group full-width">
+      <label>{{ getBudgetLabel(newProjectForm.projectType) }}</label>
+      <div class="budget-input-wrap">
+        <span class="budget-prefix">$</span>
+        <input type="number" [(ngModel)]="newProjectForm.budget"
+          [placeholder]="getBudgetPlaceholder(newProjectForm.projectType)" min="0" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start Date</label>
+        <input type="date" [(ngModel)]="newProjectForm.startDate" />
+      </div>
+      <div class="form-group">
+        <label>Close Date</label>
+        <input type="date" [(ngModel)]="newProjectForm.endDate" />
+      </div>
+    </div>
+
+    <div class="panel-create-actions">
+      <button class="btn-cancel" (click)="cancelCreateProject()">Cancel</button>
+      <button class="btn-register" (click)="submitNewProject()">
+        <i class="fas fa-plus-circle"></i> Create Project
+      </button>
+    </div>
+  </div>
+</aside>
