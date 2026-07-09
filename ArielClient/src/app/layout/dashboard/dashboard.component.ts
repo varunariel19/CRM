@@ -45,6 +45,7 @@ import { ProjectState } from '../../state/project.state';
 import { NotificationState } from '../../state/notification.state';
 import { NotificationService } from '../../core/services/notification.service';
 import { TaskManagementState } from '../../state/task-management.state';
+import { AuthState } from '../../state/auth.state';
 
 @Component({
   selector: 'app-dashboard',
@@ -87,6 +88,7 @@ export class DashboardComponent implements OnInit {
   notificationState = inject(NotificationState);
 
 
+
   leadService = inject(LeadService);
   contactService = inject(ContactService);
   dealService = inject(DealService);
@@ -95,6 +97,7 @@ export class DashboardComponent implements OnInit {
   historyService = inject(HistoryService);
   projectService = inject(ProjectService);
   notificationService = inject(NotificationService);
+  authState = inject(AuthState);
   selectedMenu = this.menuState.selectedMenu;
 
   teamMemberList: TeamMember[] = [];
@@ -103,14 +106,16 @@ export class DashboardComponent implements OnInit {
   }
 
 
-
-
   ngOnInit(): void {
     this.loadInitialData();
   }
 
   selectMenuByKey(key: string) {
     this.menuState.setActiveMenuByRoute(key);
+  }
+
+  showMyDashView() {
+    return this.authState.user()?.accessLevel.access != 100;
   }
 
   loadInitialData(): void {

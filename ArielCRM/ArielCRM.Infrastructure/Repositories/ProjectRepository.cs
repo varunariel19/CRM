@@ -25,19 +25,21 @@ namespace ArielCRM.Infrastructure.Repositories
         public Task UpdateAsync(Project project)
         {
             _context.Projects.Update(project);
-            return Task.CompletedTask;
+            return _context.SaveChangesAsync();
         }
 
         public Task DeleteAsync(Project project)
         {
             _context.Projects.Remove(project);
-            return Task.CompletedTask;
+            return _context.SaveChangesAsync();
         }
 
         public async Task<Project?> GetByIdWithDetailsAsync(string projectId)
         {
             return await _context.Projects
+                .Where(p => p.ProjectLeadId != null)
                 .Include(p => p.ProjectLead)
+                .Include(p => p.Contact)
                 .Include(p => p.Members)
                 .Include(p => p.Documents)
                 .Include(p => p.Tasks)
@@ -47,10 +49,10 @@ namespace ArielCRM.Infrastructure.Repositories
         public async Task<List<Project>> GetAllWithDetailsAsync(string userId)
         {
             return await _context.Projects
-                .Where(p =>
+                .Where(p => p.ProjectLeadId != null && (
                     p.ProjectLeadId == userId ||
                     (p.Contact != null && p.Contact.Lead != null && p.Contact.Lead.AssignedToId == userId) ||
-                    p.Members.Any(m => m.Id == userId))
+                    p.Members.Any(m => m.Id == userId)))
                 .Include(p => p.ProjectLead)
                 .Include(p => p.Contact)
                 .Include(p => p.Members)
@@ -63,6 +65,7 @@ namespace ArielCRM.Infrastructure.Repositories
         public async Task<List<Project>> GetAllProjectAsync()
         {
             return await _context.Projects
+                .Where(p => p.ProjectLeadId != null)
                 .Include(p => p.ProjectLead)
                 .Include(p => p.Contact)
                 .Include(p => p.Members)
@@ -117,7 +120,7 @@ namespace ArielCRM.Infrastructure.Repositories
         public async Task<List<TicketTask>> GetUpdatedTasksAsync(string userId, DateTime since)
         {
             return await _context.TicketTasks
-                .Where(t => t.UpdatedAt > since && (
+                .Where(t => t.UpdatedAt > since && t.Project.ProjectLeadId != null && (
                         t.Project.ProjectLeadId == userId ||
                         t.Project.Members.Any(m => m.Id == userId) ||
                         (t.Project.Contact != null &&
@@ -136,7 +139,7 @@ namespace ArielCRM.Infrastructure.Repositories
         public async Task<List<TicketTask>> GetAllUpdatedTasksAsync(DateTime since)
         {
             return await _context.TicketTasks
-                .Where(x => x.UpdatedAt > since)
+                .Where(x => x.UpdatedAt > since && x.Project.ProjectLeadId != null)
                 .Include(x => x.AssignedUser)
                 .Include(x => x.ReportedUser)
                 .ToListAsync();

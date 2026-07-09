@@ -47,5 +47,6 @@ namespace ArielCRM.DataLayer.Entities
         public Project Project { get; set; } = null!;
 
         public ICollection<Ticket> Tickets { get; set; } = [];
+        public ICollection<Project> Projects { get; set; } = [];
     }
 }

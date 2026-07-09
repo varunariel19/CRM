@@ -131,7 +131,10 @@ export class AnalyticsDashboardComponent {
   }
 
   get pendingTask() {
-    return this.taskState.tasks().filter(task => task.status === 'Pending');
+    if(this.authState.user()?.accessLevel.access == 100) {
+         return this.taskState.tasks().filter(task => task.status === 'Pending');
+    }
+    return this.taskState.tasks().filter(task => task.status === 'Pending' && task.assignedToId == this.authState.userId());
   }
 
   navigateMenuOptions(index: number) {
@@ -156,7 +159,6 @@ export class AnalyticsDashboardComponent {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 
-  // ── Lead KPI helpers ──────────────────────────────────────────────────────
 
   get totalLeads(): number {
     return this.leads.length;
@@ -199,27 +201,32 @@ export class AnalyticsDashboardComponent {
     return Math.round(totalDays / this.leads.length);
   }
 
-  /** Avg days from creation to dealStartDate for leads that have one (proxy for response time) */
   get averageResponseTime(): number {
-    // const responded = this.leads.filter(l => l.project && l.createdAt);
-    // if (responded.length === 0) return 0;
-    // const totalDays = responded.reduce((sum, lead) => {
-    //   const created = new Date(lead.createdAt).getTime();
-    //   const started = new Date(lead.dealStartDate).getTime();
-    //   const diff = (started - created) / (1000 * 60 * 60 * 24);
-    //   return sum + Math.max(0, diff);
-    // }, 0);
-    // return Math.round(totalDays / responded.length);
-    return 2;
+    const responded = this.leads.filter(l => l.createdAt && l.projects.some(p => p.startDate));
+    if (responded.length === 0) return 0;
+
+    const totalDays = responded.reduce((sum, lead) => {
+      const created = new Date(lead.createdAt).getTime();
+
+      // earliest start date among this lead's projects
+      const earliestStart = lead.projects
+        .map(p => p.startDate)
+        .filter((d): d is string => !!d)
+        .map(d => new Date(d).getTime())
+        .sort((a, b) => a - b)[0];
+
+      const diff = (earliestStart - created) / (1000 * 60 * 60 * 24);
+      return sum + Math.max(0, diff);
+    }, 0);
+
+    return Math.round(totalDays / responded.length);
   }
 
   get revenueFromConverted(): number {
-    // return this.leads
-    //   .filter(l => l.status === LeadStatusType.Converted)
-    //   .reduce((sum, l) => sum + (l.budget ?? 0), 0);
-    return 2;
+    return this.leads
+      .filter(l => l.status === LeadStatusType.Converted)
+      .reduce((sum, l) => sum + l.projects.reduce((pSum, p) => pSum + (p.budget ?? 0), 0), 0);
   }
-
   get openTickets(): number {
     return this.ticketState.tickets().filter(t => t.status === 'Open').length;
   }

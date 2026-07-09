@@ -15,6 +15,7 @@ import { MenuState } from '../../../state/menu.state';
 import { TaskState } from '../../../state/task.state';
 import { TeamState } from '../../../state/team.state';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
+import { ProjectState } from '../../../state/project.state';
 
 const TASK_TYPE_MAP: Record<string, number> = {
   'Call Outreach': 0,
@@ -52,6 +53,7 @@ export class TasksFollowupsComponent implements OnInit {
   menuState = inject(MenuState);
   taskState = inject(TaskState);
   perm = inject(PermissionFacade);
+  projectState = inject(ProjectState);
 
   activeTab: 'pending' | 'completed' | 'all' = 'all';
   showCreateModal = false;
@@ -100,7 +102,7 @@ export class TasksFollowupsComponent implements OnInit {
 
   get teamMembers() { return this.teamState.teamMembers();}
   get leads() { return this.leadState.leads(); }
-  get deals() { return this.dealState.deals(); }
+  get projects() { return this.projectState.projects(); }
   get tasks() { return this.taskState.tasks(); }
 
 

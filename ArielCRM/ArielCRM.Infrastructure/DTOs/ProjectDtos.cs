@@ -7,10 +7,13 @@ namespace ArielCRM.Infrastructure.DTOs
 {
     public class CreateProjectDto
     {
+        public string? ProjectId { get; set; }
         public string LeadId { get; set; } = default!;
         public string Name { get; set; } = default!;
         public string? ProjectLeadId { get; set; }
         public string? Description { get; set; }
+        public ProjectType? ProjectType { get; set; }
+        public decimal? Budget { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string? ContactId { get; set; }
@@ -22,8 +25,11 @@ namespace ArielCRM.Infrastructure.DTOs
         public string? Name { get; set; }
         public string? ProjectLeadId { get; set; }
         public string? Description { get; set; }
+        public ProjectType? ProjectType { get; set; }
+        public decimal? Budget { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
+        public string? ContactId { get; set; }
         public bool? IsActive { get; set; }
         public List<IFormFile>? NewDocuments { get; set; }
     }

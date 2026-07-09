@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, inject, effect, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, effect, ViewChild, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Contact, CreateContactPayload, UpdateContactPayload } from '../../../core/types/contact.type';
 import { ContactService } from '../../../services/contact.service';
@@ -8,11 +8,12 @@ import { AuthState } from '../../../state/auth.state';
 import { NoteService, NoteDto, CreateNoteRequest } from '../../../services/notes.service';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
+import { DeletionModalComponent } from '../../../shared/modals/deletion-modal/deletion-modal.component';
 
 @Component({
   selector: 'app-customer-profiles',
   standalone: true,
-  imports: [CommonModule, FormsModule , UserProfileComponent],
+  imports: [CommonModule, FormsModule, UserProfileComponent , DeletionModalComponent],
   templateUrl: './customer-profiles.component.html',
   styleUrl: './customer-profiles.component.scss',
 })
@@ -36,6 +37,11 @@ export class CustomerProfilesComponent {
 
   editingNote: NoteDto | null = null;
   editingText = '';
+
+  protected readonly showDeleteModal = signal(false);
+  protected readonly clientToDelete = signal<Contact | null>(null);
+  protected readonly isDeletingClient = signal(false);
+
 
   constructor(private contactService: ContactService) {
     effect(() => {
@@ -90,16 +96,37 @@ export class CustomerProfilesComponent {
   }
 
   deleteClient(id: string): void {
-    if (!confirm('Are you sure you want to permanently delete this corporate profile?')) return;
+    const contact = this.clients.find((c) => c.id === id) ?? null;
+    this.clientToDelete.set(contact);
+    this.showDeleteModal.set(true);
+  }
 
-    this.contactService.deleteContact(id).subscribe({
+  closeDeleteModal(): void {
+    if (this.isDeletingClient()) return;
+    this.showDeleteModal.set(false);
+    this.clientToDelete.set(null);
+  }
+
+  confirmDeleteClient(): void {
+    const contact = this.clientToDelete();
+    if (!contact) return;
+
+    this.isDeletingClient.set(true);
+    this.contactService.deleteContact(contact.id).subscribe({
       next: () => {
-        this.contactState.removeContact(id);
+        this.contactState.removeContact(contact.id);
         this.contactState.selectContact(this.clients.length ? this.clients[0] : null);
+        this.isDeletingClient.set(false);
+        this.showDeleteModal.set(false);
+        this.clientToDelete.set(null);
       },
-      error: (err) => console.error('Failed to delete contact', err),
+      error: (err) => {
+        console.error('Failed to delete contact', err);
+        this.isDeletingClient.set(false);
+      },
     });
   }
+
 
   saveNewContact(): void {
     if (!this.newClient.name || !this.newClient.company || !this.newClient.email) {

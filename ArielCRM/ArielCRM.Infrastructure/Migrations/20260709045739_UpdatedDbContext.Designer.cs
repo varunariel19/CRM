@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ArielCRM.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ArielCRM.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260709045739_UpdatedDbContext")]
+    partial class UpdatedDbContext
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -42,7 +45,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("access_levels", (string)null);
+                    b.ToTable("access_levels");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.AccessLevelPermission", b =>
@@ -71,7 +74,7 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("AccessLevelId", "PermissionId")
                         .IsUnique();
 
-                    b.ToTable("access_level_permissions", (string)null);
+                    b.ToTable("access_level_permissions");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.ActivityLog", b =>
@@ -118,7 +121,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasIndex("TicketTaskTaskId");
 
-                    b.ToTable("activity_log", (string)null);
+                    b.ToTable("activity_log");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.AuditLog", b =>
@@ -389,7 +392,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("comments", (string)null);
+                    b.ToTable("comments");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Contact", b =>
@@ -438,7 +441,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("contacts", (string)null);
+                    b.ToTable("contacts");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.CrmTask", b =>
@@ -564,7 +567,7 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("Stage")
                         .HasDatabaseName("idx_deals_stage");
 
-                    b.ToTable("deals", (string)null);
+                    b.ToTable("deals");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Department", b =>
@@ -588,7 +591,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("departments", (string)null);
+                    b.ToTable("departments");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Designation", b =>
@@ -614,7 +617,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasIndex("DepartmentId");
 
-                    b.ToTable("designations", (string)null);
+                    b.ToTable("designations");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Documents", b =>
@@ -655,7 +658,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("documents", (string)null);
+                    b.ToTable("documents");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Lead", b =>
@@ -730,7 +733,7 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("idx_leads_status");
 
-                    b.ToTable("leads", (string)null);
+                    b.ToTable("leads");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Meeting", b =>
@@ -780,7 +783,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasIndex("LeadId");
 
-                    b.ToTable("meetings", (string)null);
+                    b.ToTable("meetings");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Note", b =>
@@ -836,7 +839,7 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("RelatedTo", "RelatedId")
                         .HasDatabaseName("idx_notes_lookup");
 
-                    b.ToTable("notes", (string)null);
+                    b.ToTable("notes");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Notification", b =>
@@ -879,7 +882,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("notifications", (string)null);
+                    b.ToTable("notifications");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.NotificationRecipient", b =>
@@ -915,7 +918,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasIndex("UserId", "IsRead");
 
-                    b.ToTable("notification_recipients", (string)null);
+                    b.ToTable("notification_recipients");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Permission", b =>
@@ -938,7 +941,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("permissions", (string)null);
+                    b.ToTable("permissions");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Project", b =>
@@ -957,9 +960,6 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("contact_id");
-
-                    b.Property<string>("ContactId1")
-                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone")
@@ -1013,9 +1013,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ContactId");
-
-                    b.HasIndex("ContactId1")
+                    b.HasIndex("ContactId")
                         .IsUnique();
 
                     b.HasIndex("LeadId");
@@ -1027,7 +1025,7 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("ProjectLeadId")
                         .HasDatabaseName("idx_projects_lead");
 
-                    b.ToTable("projects", (string)null);
+                    b.ToTable("projects");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessage", b =>
@@ -1097,7 +1095,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("scheduled_team_messages", (string)null);
+                    b.ToTable("scheduled_team_messages");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessageAttachment", b =>
@@ -1155,7 +1153,7 @@ namespace ArielCRM.Infrastructure.Migrations
 
                     b.HasIndex("ScheduledMessageId");
 
-                    b.ToTable("scheduled_team_message_attachments", (string)null);
+                    b.ToTable("scheduled_team_message_attachments");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TeamConversation", b =>
@@ -1201,7 +1199,7 @@ namespace ArielCRM.Infrastructure.Migrations
                         .IsDescending()
                         .HasDatabaseName("idx_team_conversations_last_message");
 
-                    b.ToTable("team_conversations", (string)null);
+                    b.ToTable("team_conversations");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TeamMessage", b =>
@@ -1264,7 +1262,7 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("ConversationId", "CreatedAt")
                         .HasDatabaseName("idx_team_messages_lookup");
 
-                    b.ToTable("team_messages", (string)null);
+                    b.ToTable("team_messages");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TeamMessageAttachment", b =>
@@ -1322,7 +1320,7 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("MessageId")
                         .HasDatabaseName("idx_team_message_attachments_message");
 
-                    b.ToTable("team_message_attachments", (string)null);
+                    b.ToTable("team_message_attachments");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Ticket", b =>
@@ -1386,54 +1384,34 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("idx_tickets_status");
 
-                    b.ToTable("tickets", (string)null);
+                    b.ToTable("tickets");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TicketHistory", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("CommitedById")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("commited_by_id");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Content")
-                        .HasColumnType("text")
-                        .HasColumnName("content");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("TicketId")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("ticket_id");
+                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("title");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CommitedById");
-
                     b.HasIndex("TicketId");
 
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ticket_history", (string)null);
+                    b.ToTable("TicketHistories");
                 });
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TicketTask", b =>
@@ -1585,7 +1563,7 @@ namespace ArielCRM.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("idx_users_email");
 
-                    b.ToTable("users", (string)null);
+                    b.ToTable("users");
                 });
 
             modelBuilder.Entity("project_members", b =>
@@ -1814,13 +1792,8 @@ namespace ArielCRM.Infrastructure.Migrations
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.Project", b =>
                 {
                     b.HasOne("ArielCRM.DataLayer.Entities.Contact", "Contact")
-                        .WithMany("Projects")
-                        .HasForeignKey("ContactId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("ArielCRM.DataLayer.Entities.Contact", null)
                         .WithOne("Project")
-                        .HasForeignKey("ArielCRM.DataLayer.Entities.Project", "ContactId1");
+                        .HasForeignKey("ArielCRM.DataLayer.Entities.Project", "ContactId");
 
                     b.HasOne("ArielCRM.DataLayer.Entities.Lead", "Lead")
                         .WithMany("Projects")
@@ -1929,23 +1902,40 @@ namespace ArielCRM.Infrastructure.Migrations
 
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TicketHistory", b =>
                 {
-                    b.HasOne("ArielCRM.DataLayer.Entities.User", "CommitedBy")
-                        .WithMany()
-                        .HasForeignKey("CommitedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ArielCRM.DataLayer.Entities.TicketTask", "Ticket")
                         .WithMany()
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ArielCRM.DataLayer.Entities.User", null)
-                        .WithMany("TicketHistory")
-                        .HasForeignKey("UserId");
+                    b.OwnsOne("ArielCRM.DataLayer.Entities.UserSummaryDto1", "CommitedBy", b1 =>
+                        {
+                            b1.Property<Guid>("TicketHistoryId")
+                                .HasColumnType("uuid");
 
-                    b.Navigation("CommitedBy");
+                            b1.Property<string>("Id")
+                                .HasColumnType("text")
+                                .HasColumnName("CommitedById");
+
+                            b1.Property<string>("Name")
+                                .IsRequired()
+                                .HasColumnType("text")
+                                .HasColumnName("CommitedByName");
+
+                            b1.Property<string>("ProfileImage")
+                                .HasColumnType("text")
+                                .HasColumnName("CommitedByProfileImage");
+
+                            b1.HasKey("TicketHistoryId");
+
+                            b1.ToTable("TicketHistories");
+
+                            b1.WithOwner()
+                                .HasForeignKey("TicketHistoryId");
+                        });
+
+                    b.Navigation("CommitedBy")
+                        .IsRequired();
 
                     b.Navigation("Ticket");
                 });
@@ -2030,8 +2020,6 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("Project")
                         .IsRequired();
 
-                    b.Navigation("Projects");
-
                     b.Navigation("Tickets");
                 });
 
@@ -2113,8 +2101,6 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("LedProjects");
 
                     b.Navigation("ReportedProjTickets");
-
-                    b.Navigation("TicketHistory");
                 });
 #pragma warning restore 612, 618
         }

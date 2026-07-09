@@ -389,7 +389,7 @@
 
         <!-- canDelete: Delete project button in overview -->
         <div class="overview-danger" *ngIf="perm.projects.canDelete()">
-          <button class="btn-delete-project">
+          <!-- <button class="btn-delete-project">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6" />
@@ -399,7 +399,7 @@
               <path d="M9 6V4h6v2" />
             </svg>
             Delete Project
-          </button>
+          </button> -->
         </div>
 
       </div>
@@ -559,37 +559,76 @@
 
       </div>
 
-      <!-- ── DOCUMENTS TAB ── -->
-      <div *ngIf="activeTab() === 'documents'" class="tab-content">
-        <div class="documents-list">
-          <div class="document-row" *ngFor="let doc of proj.documents">
-            <div class="doc-icon">{{ getDocIcon(doc.fileName) }}</div>
-            <div class="doc-info">
-              <span class="doc-name">{{ doc.fileName }}</span>
-              <span class="doc-meta">Uploaded: {{ doc.uploadedAt | date:'mediumDate' }}</span>
-            </div>
-            <!-- canView guards download action -->
-            <div class="doc-actions" *ngIf="perm.projects.canView()">
-              <a [href]="doc.fileUrl" target="_blank" class="doc-action-btn">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="7 10 12 15 17 10" />
-                  <line x1="12" y1="15" x2="12" y2="3" />
-                </svg>
-              </a>
-            </div>
-            <!-- canDelete guards document delete -->
-            <button class="btn-remove-member" *ngIf="perm.projects.canDelete()" title="Delete document">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                stroke-linecap="round" stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-        </div>
+     <!-- ── DOCUMENTS TAB ── -->
+<div *ngIf="activeTab() === 'documents'" class="tab-content">
+
+  <!-- canEdit guards uploading new documents -->
+  <div class="doc-upload-section" *ngIf="perm.projects.canEdit()">
+    <div class="doc-dropzone"
+         [class.drag-over]="isDocDragOver()"
+         (dragover)="onDocDragOver($event)"
+         (dragleave)="onDocDragLeave($event)"
+         (drop)="onDocFileDrop($event)"
+         (click)="docFileInput.click()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+      <span>Drag & drop files, or click to browse</span>
+      <input #docFileInput type="file" multiple hidden (change)="onDocFileSelect($event)" />
+    </div>
+
+    <div class="doc-upload-preview" *ngIf="docUploadFiles().length > 0">
+      <div class="doc-upload-chip" *ngFor="let file of docUploadFiles(); let i = index">
+        <span class="doc-icon-small">{{ getDocIcon(file.name) }}</span>
+        <span class="doc-upload-name">{{ file.name }}</span>
+        <button class="doc-upload-remove" (click)="removeDocUploadFile(i)" title="Remove">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
+
+      <button class="btn-upload-docs" [disabled]="isUploadingDocs()" (click)="uploadDocuments()">
+        {{ isUploadingDocs() ? 'Uploading...' : 'Upload ' + docUploadFiles().length + ' file' + (docUploadFiles().length > 1 ? 's' : '') }}
+      </button>
+    </div>
+  </div>
+
+  <div class="documents-list">
+    <div class="document-row" *ngFor="let doc of proj.documents">
+      <div class="doc-icon">{{ getDocIcon(doc.fileName) }}</div>
+      <div class="doc-info">
+        <span class="doc-name">{{ doc.fileName }}</span>
+        <span class="doc-meta">Uploaded: {{ doc.uploadedAt | date:'mediumDate' }}</span>
+      </div>
+      <!-- canView guards download action -->
+      <div class="doc-actions" *ngIf="perm.projects.canView()">
+        <a [href]="doc.fileUrl" target="_blank" class="doc-action-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+        </a>
+      </div>
+      <!-- canDelete guards document delete -->
+      <button class="btn-remove-member" *ngIf="perm.projects.canDelete()" (click)="removeDocument(doc.id)"
+        title="Delete document">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
 
     </div>
   </div>

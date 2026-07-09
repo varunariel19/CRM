@@ -18,7 +18,7 @@ export class ProjectState {
 
     setProjects(projects: Project[]): void {
         this._projects.set(projects);
-        this._loaded.set(true); // mark loaded regardless of whether the array is empty
+        this._loaded.set(true); 
     }
 
     addProject(project: Project): void {

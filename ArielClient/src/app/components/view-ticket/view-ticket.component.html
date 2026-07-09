@@ -93,7 +93,6 @@
         <div class="activity-header">
           <h3>Activity</h3>
           <div class="tabs">
-            <button [class.active]="activeTab==='all'" (click)="activeTab='all'">All</button>
             <button [class.active]="activeTab==='comments'" (click)="activeTab='comments'">Comments</button>
             <button [class.active]="activeTab==='history'" (click)="activeTab='history'">History</button>
           </div>
@@ -116,96 +115,8 @@
           </div>
         </div>
 
-        <!-- ALL TAB -->
-        <ng-container *ngIf="activeTab === 'all'">
 
-          <div class="feed-section">
-            <div class="feed-section-label">
-              <i class="ti ti-message-circle"></i>
-              Comments
-              <span class="feed-count">{{ comments().length }}</span>
-            </div>
-
-            <div class="comment-list" *ngIf="comments().length; else noComments">
-              <div class="comment-item" *ngFor="let comment of comments()">
-                <app-user-profile [name]="comment.author?.name ?? '?'" [profileImage]="comment.author?.profileImage"
-                  size="sm" shape="rounded">
-                </app-user-profile>
-                <div class="comment-body">
-                  <ng-container *ngIf="editingCommentId !== comment.id">
-                    <div class="comment-top">
-                      <strong>{{ comment.author?.name }}</strong>
-                      <div *ngIf="comment.author?.id == currentUserId" class="comment-actions">
-                        <a (click)="startEditingComment(comment)">Edit</a>
-                      </div>
-                    </div>
-                    <small>{{ comment.updatedAt | date:'MMM d, y, h:mm a' }}
-                      <span *ngIf="comment.edited" class="edited-badge"> · edited</span>
-                    </small>
-                    <p>{{ comment.content }}</p>
-                  </ng-container>
-                  <ng-container *ngIf="editingCommentId === comment.id">
-                    <div class="comment-top">
-                      <strong>{{ comment.author?.name }}</strong>
-                    </div>
-                    <small>{{ comment.updatedAt | date:'MMM d, y, h:mm a' }}</small>
-                    <div class="comment-edit-box">
-                      <textarea rows="3" [(ngModel)]="editingCommentText"
-                        (keydown)="onCommentKeydown($event, comment.id)"></textarea>
-                      <div class="comment-edit-footer">
-                        <small>Shift+Enter for new line · Esc to cancel</small>
-                        <div class="comment-edit-btns">
-                          <button class="btn-cancel" (click)="cancelCommentEdit()">Cancel</button>
-                          <button class="btn-save" (click)="saveCommentEdit(comment.id)">Save</button>
-                        </div>
-                      </div>
-                    </div>
-                  </ng-container>
-                </div>
-              </div>
-            </div>
-
-            <ng-template #noComments>
-              <p class="feed-empty">No comments yet. Be the first to comment.</p>
-            </ng-template>
-          </div>
-
-          <div class="feed-divider"></div>
-
-          <div class="feed-section">
-            <div class="feed-section-label">
-              <i class="ti ti-history"></i>
-              History
-              <span class="feed-count">{{ ticketHistory.length }}</span>
-            </div>
-
-            <div class="history-list" *ngIf="ticketHistory.length; else noHistory">
-              <div class="history-item" *ngFor="let h of ticketHistory; let last = last">
-                <div class="history-timeline">
-                  <div class="history-dot" [ngClass]="getHistoryDotClass(h.title)"></div>
-                  <div class="history-line" *ngIf="!last"></div>
-                </div>
-                <div class="history-body">
-                  <div class="history-meta">
-                    <img class="history-avatar" [src]="h.commitedBy.profileImage || 'https://i.pravatar.cc/100?img=5'"
-                      [alt]="h.commitedBy.name">
-                    <span class="history-author">{{ h.commitedBy.name }}</span>
-                    <span class="history-action">{{ h.title | lowercase }}</span>
-                    <span class="history-time">{{ h.createdAt | date:'MMM d, y · h:mm a' }}</span>
-                  </div>
-                  <div *ngIf="h.content" class="history-content" [innerHTML]="getSafeHistoryContent(h.content)"></div>
-                </div>
-              </div>
-            </div>
-
-            <ng-template #noHistory>
-              <p class="feed-empty">No history yet.</p>
-            </ng-template>
-          </div>
-
-        </ng-container>
-
-        <!-- COMMENTS ONLY TAB -->
+        <!-- COMMENTS  TAB -->
         <div class="comment-list" *ngIf="activeTab === 'comments'">
           <div class="comment-item" *ngFor="let comment of comments()">
             <app-user-profile [name]="comment.author?.name ?? '?'" [profileImage]="comment.author?.profileImage"
@@ -224,12 +135,30 @@
                 </small>
                 <p>{{ comment.content }}</p>
               </ng-container>
+
+              <ng-container *ngIf="editingCommentId === comment.id">
+                <div class="comment-top">
+                  <strong>{{ comment.author?.name }}</strong>
+                </div>
+                <small>{{ comment.updatedAt | date:'MMM d, y, h:mm a' }}</small>
+                <div class="comment-edit-box">
+                  <textarea rows="3" [(ngModel)]="editingCommentText"
+                    (keydown)="onCommentKeydown($event, comment.id)"></textarea>
+                  <div class="comment-edit-footer">
+                    <small>Shift+Enter for new line · Esc to cancel</small>
+                    <div class="comment-edit-btns">
+                      <button class="btn-cancel" (click)="cancelCommentEdit()">Cancel</button>
+                      <button class="btn-save" (click)="saveCommentEdit(comment.id)">Save</button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
             </div>
           </div>
           <p *ngIf="!comments().length" class="feed-empty">No comments yet.</p>
         </div>
 
-        <!-- HISTORY ONLY TAB -->
+        <!-- HISTORY  TAB -->
         <div class="history-list" *ngIf="activeTab === 'history'">
           <div class="history-item" *ngFor="let h of ticketHistory; let last = last">
             <div class="history-timeline">

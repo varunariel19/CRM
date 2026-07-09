@@ -264,3 +264,10 @@
 
   </div>
 </div>
+
+
+<app-deletion-modal [isOpen]="showDeleteModal()"
+  [title]="'Delete ' + (clientToDelete()?.name ?? 'this corporate profile') + '?'"
+  subtitle="Are you sure you want to permanently delete this corporate profile? This action cannot be undone."
+  confirmPhrase="delete" [isProcessing]="isDeletingClient()" confirmButtonText="Delete profile"
+  processingText="Deleting…" (confirmed)="confirmDeleteClient()" (cancelled)="closeDeleteModal()" />

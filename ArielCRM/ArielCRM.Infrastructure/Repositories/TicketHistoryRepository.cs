@@ -20,7 +20,16 @@ namespace ArielCRM.Infrastructure.Repositories
         {
             return await _context.TicketHistories
                 .Where(x => x.TicketId == ticketId)
+                .Include(x => x.CommitedBy)
                 .OrderByDescending(x => x.CreatedAt)
+                .ToListAsync();
+        }
+
+         public async Task<List<TicketHistory>> GetAllAsync()
+        {
+            return await _context.TicketHistories
+                .Include(h => h.CommitedBy)
+                .OrderByDescending(h => h.CreatedAt)
                 .ToListAsync();
         }
     }

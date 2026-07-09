@@ -48,7 +48,6 @@ export class HeaderComponent  {
 
 
 
-
   onToggleSidebar() {
     this.toggleSidebar.emit();
   }

@@ -305,19 +305,6 @@
     </div>
   </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
   <div class="modal-overlay convert-overlay" *ngIf="showConvertModal" (click)="closeConvertModalOnOverlay($event)">
     <div class="modal-box convert-modal-box" (click)="$event.stopPropagation()">
 
@@ -356,11 +343,15 @@
       </div>
 
       <div class="convert-body-scroll">
-        <ng-container *ngIf="convertingLead; else noLead">
+        <ng-container *ngIf="conversionStep === 1 && convertingLead; else noLead">
           <div class="project-item" *ngFor="let project of convertingLead.projects">
             <label class="project-left">
-              <input type="checkbox" [(ngModel)]="project.isListed" />
+              <input type="checkbox" [checked]="isProjectSelected(project)"
+                (change)="toggleProjectForConversion(project, $event)" />
               <span class="project-name">{{ project.name }}</span>
+              <span class="listed-badge" [class.unlisted]="!project.isListed">
+                {{ project.isListed ? 'Listed' : 'Unlisted' }}
+              </span>
             </label>
 
             <button type="button" class="edit-btn" title="Edit Project" (click)="openProjectEditor(project)">
@@ -572,11 +563,13 @@
           <option *ngFor="let src of leadSourceOptions" [value]="src.value">{{ src.label }}</option>
         </select>
 
+        @if(!this.globalState.checkAdminAccess()){
         <button type="button" class="my-leads-btn" [class.active]="showOnlyMyLeads" (click)="toggleMyLeads()">
           <i class="fa fa-user"></i>
           <span>My Leads</span>
           <i class="fa fa-check check-icon" *ngIf="showOnlyMyLeads"></i>
         </button>
+        }
       </div>
     </div>
 
@@ -622,7 +615,7 @@
               <i class="fas fa-pen card-action-icon" (click)="openEditModal(lead)" title="Edit"></i>
               }
               @if(perm.leads.canDelete()) {
-              <i class="fas fa-trash card-action-icon danger" (click)="deleteLead(lead.id)" title="Delete"></i>
+              <i class="fas fa-trash card-action-icon danger" (click)="deleteLead(lead)" title="Delete"></i>
               }
               <i class="fas fa-history card-action-icon" (click)="openHistory(lead)" title="History">
               </i>
@@ -739,9 +732,7 @@
         </button>
         }
         @if(perm.leads.canDelete()) {
-        <button class="action-btn delete-btn" (click)="deleteLead(lead.id)">
-          <i class="fas fa-trash"></i>
-        </button>
+        <i class="fas fa-trash card-action-icon danger" (click)="deleteLead(lead)" title="Delete"></i>
         }
 
         <button class="action-btn delete-btn" (click)="openHistory(lead)">
@@ -796,6 +787,14 @@
           <span *ngIf="project.endDate"><i class="fas fa-calendar-xmark"></i> {{ project.endDate | date:'MMM d, yyyy'
             }}</span>
         </div>
+        <div class="panel-create-actions">
+          <button class="btn-register" [disabled]="!canListProject(projectsPanelLead)"
+            (click)="openProjectEditor(project)">
+            <i class="fas fa-list-check"></i> {{ project.isListed ? 'Edit Project' : 'List Project' }}
+          </button>
+        </div>
+        <p class="date-text" *ngIf="!canListProject(projectsPanelLead)">Move the lead to Converted before listing a
+          project.</p>
       </div>
     </div>
     <ng-template #panelNoProjects>
@@ -848,3 +847,99 @@
     </div>
   </div>
 </aside>
+
+<div class="project-editor-backdrop" *ngIf="editingProject && !showConvertModal" (click)="closeProjectEditor()"></div>
+
+<aside class="project-editor open" *ngIf="editingProject && !showConvertModal">
+  <div class="editor-header">
+    <h4>Edit Project</h4>
+    <button class="icon-btn" (click)="closeProjectEditor()">
+      <i class="pi pi-times"></i>
+    </button>
+  </div>
+
+  <div class="editor-body" *ngIf="editingProject as ep">
+    <label>Project Name</label>
+    <input type="text" class="editor-input" [(ngModel)]="ep.name">
+
+    <label>Project Manager</label>
+    <select class="editor-input" [(ngModel)]="ep.projectLeadId">
+      <option value="" selected disabled>Select Project Manager</option>
+      <option *ngFor="let manager of projectManagers" [value]="manager.id">{{ manager.name }}</option>
+    </select>
+
+    <label>Project Type</label>
+    <select class="editor-input" [(ngModel)]="ep.projectType">
+      <option [ngValue]="''">Select Type</option>
+      <option *ngFor="let type of projectTypeOptions" [ngValue]="type">{{ type }}</option>
+    </select>
+
+    <label>Budget</label>
+    <div class="budget-row">
+      <input type="number" class="editor-input" [(ngModel)]="ep.budget">
+      <span class="project-type-pill" [ngClass]="getProjectTypeClass(ep.projectType)" *ngIf="ep.projectType">
+        <i
+          class="fas fa-{{ ep.projectType === 'Hourly' ? 'clock' : ep.projectType === 'ManMonth' ? 'users' : 'tag' }}"></i>
+        {{ ep.projectType }}
+      </span>
+    </div>
+
+    <label>Start Date</label>
+    <input type="date" class="editor-input" [(ngModel)]="ep.startDate">
+
+    <label>End Date</label>
+    <input type="date" class="editor-input" [(ngModel)]="ep.endDate">
+
+    <label>Description</label>
+    <textarea class="editor-input editor-textarea" rows="3" [(ngModel)]="ep.description"
+      placeholder="Describe scope and objectives..."></textarea>
+
+    <label>Documents</label>
+    <div class="upload-drop-zone editor-drop-zone" (dragover)="onEditorDragOver($event)"
+      (dragleave)="onEditorDragLeave($event)" (drop)="onEditorDrop($event)" [class.drag-over]="isEditorDragOver"
+      (click)="panelEditorDocInput.click()">
+      <i class="fas fa-cloud-upload-alt upload-icon"></i>
+      <p class="upload-label">Drag & drop files, or <span class="upload-link">browse</span></p>
+      <p class="upload-hint">PDF, DOCX, XLSX, PNG, JPG - up to 20MB each</p>
+      <input #panelEditorDocInput type="file" multiple hidden (change)="onEditorFileSelected($event)" />
+    </div>
+
+    <div class="doc-list" *ngIf="ep.documents.length > 0">
+      <div class="doc-item" *ngFor="let doc of ep.documents">
+        <div class="doc-item-left">
+          <i class="fas" [ngClass]="getFileIcon(doc.fileName)"></i>
+          <div>
+            <p class="doc-name">{{ doc.fileName }}</p>
+            <a class="doc-view-link" [href]="doc.fileUrl" target="_blank" rel="noopener">View file</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-list" *ngIf="editingProjectNewDocs.length > 0">
+      <div class="doc-item doc-item--pending" *ngFor="let doc of editingProjectNewDocs; let i = index">
+        <div class="doc-item-left">
+          <i class="fas" [ngClass]="getFileIcon(doc.name)"></i>
+          <div>
+            <p class="doc-name">{{ doc.name }}</p>
+            <p class="doc-size">{{ formatFileSize(doc.size) }} - pending upload</p>
+          </div>
+        </div>
+        <button class="doc-remove" (click)="removeEditorNewDoc(i)" title="Remove">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="editor-footer">
+    <button class="btn-cancel" (click)="closeProjectEditor()">Cancel</button>
+    <button class="btn-register" (click)="saveProjectEdit()">Save</button>
+  </div>
+</aside>
+
+
+<app-deletion-modal [isOpen]="showDeleteModal()" [title]="'Delete ' + (leadToDelete()?.name ?? 'this lead') + '?'"
+  subtitle="Are you sure you want to delete this lead? This action cannot be undone." confirmPhrase="delete"
+  [isProcessing]="isDeletingLead()" confirmButtonText="Delete lead" processingText="Deleting…"
+  (confirmed)="confirmDeleteLead()" (cancelled)="closeDeleteModal()" />

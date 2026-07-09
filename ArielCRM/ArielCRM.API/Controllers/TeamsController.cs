@@ -4,7 +4,6 @@ using ArielCRM.Application.Interfaces;
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.DTOs;
-using ArielCRM.Infrastructure.Interfaces.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -15,8 +14,9 @@ namespace ArielCRM.API.Controllers
     [ApiController]
     [Route("api/teams")]
     [Authorize]
-    public class TeamsController(AppDbContext db, IHubContext<TeamsHub> hubContext, IAppwriteStorageService storageService,
-    IConfiguration configuration, IHttpClientFactory httpClientFactory, INotificationService notificationService) : ControllerBase
+    public class TeamsController(AppDbContext db, IHubContext<TeamsHub> hubContext, IConfiguration configuration,
+     IHttpClientFactory httpClientFactory, INotificationService notificationService) : ControllerBase
+    
     {
         private const int MaxAttachmentCount = 8;
         private const long MaxAttachmentBytes = 50 * 1024 * 1024;

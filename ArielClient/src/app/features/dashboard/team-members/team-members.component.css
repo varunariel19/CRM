@@ -912,60 +912,6 @@
   color: #9ca3af;
 }
 
-.tm-delete-modal {
-  max-width: 420px;
-  text-align: center;
-  padding: 32px 28px;
-}
-
-.tm-delete-modal__icon {
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--danger-soft-bg);
-  color: var(--danger-text);
-}
-
-.tm-delete-modal__title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-dark);
-  margin: 0 0 8px;
-}
-
-.tm-delete-modal__sub {
-  font-size: 14px;
-  color: var(--text-light);
-  margin: 0 0 20px;
-  line-height: 1.5;
-}
-
-.tm-delete-modal__instruction {
-  font-size: 13px;
-  color: var(--text-light);
-  margin: 0 0 10px;
-}
-
-.tm-delete-modal__instruction strong {
-  color: var(--danger-text);
-  letter-spacing: 0.5px;
-}
-
-.tm-delete-modal__input {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.tm-delete-modal__footer {
-  justify-content: center;
-  gap: 12px;
-}
-
 .tm-btn-danger {
   display: inline-flex;
   align-items: center;

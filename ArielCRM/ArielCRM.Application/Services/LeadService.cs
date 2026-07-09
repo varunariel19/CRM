@@ -95,7 +95,18 @@ namespace ArielCRM.Application.Services
             var updated = await _leadRepository.UpdateLeadAsync(id, dto);
             if (updated is null) return null;
 
-            // await _projectService.SyncLeadProjectAsync(existing, dto);
+            if (!string.IsNullOrWhiteSpace(dto.ProjectTitle))
+            {
+                await _projectService.CreateProjectForLeadAsync(new CreateProjectForLeadDto
+                {
+                    LeadId = id,
+                    ProjectTitle = dto.ProjectTitle,
+                    ProjectType = dto.ProjectType,
+                    Budget = dto.Budget,
+                    DealStartDate = dto.DealStartDate,
+                    DealCloseDate = dto.DealCloseDate,
+                });
+            }
 
             updated = await _leadRepository.GetByIdAsync(id) ?? updated;
 

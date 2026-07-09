@@ -112,8 +112,7 @@
             <div class="sidebar-section-label">Favorites</div>
             <div class="conversation-list">
                 <button type="button" class="conversation conversation--self"
-                    [class.active]="selfConversation()?.id === selectedConversationId()"
-                    (click)="openSelfChat()">
+                    [class.active]="selfConversation()?.id === selectedConversationId()" (click)="openSelfChat()">
                     <span class="avatar avatar--self"><i class="fas fa-bookmark"></i></span>
                     <span class="conversation__content">
                         <span class="conversation__title">You (Note to Self)</span>
@@ -240,11 +239,9 @@
                         (click)="isSidebarCollapsed.set(false)">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <span class="presence-wrap">
-                        <span class="avatar">{{ getInitials(pendingDirect()!.name) }}</span>
-                        <span class="presence" [class.online]="onlineUserIds().has(pendingDirect()!.id)"
-                            [class.offline]="!onlineUserIds().has(pendingDirect()!.id)"></span>
-                    </span>
+                    <app-user-profile [name]="pendingDirect()!.name" [profileImage]="pendingDirect()!.profileImage"
+                        size="sm" shape="rounded">
+                    </app-user-profile>
                     <div>
                         <h3>{{ pendingDirect()!.name }}</h3>
                         <p [class.status-online]="onlineUserIds().has(pendingDirect()!.id)"

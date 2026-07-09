@@ -16,36 +16,19 @@ import {
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Editor, EditorModule } from 'primeng/editor';
-import { Task, TaskPriority, TaskStatus, TaskType } from '../../services/task-management.service';
+import { Task, TaskManageService, TaskPriority, TaskStatus, TaskType, TicketHistory } from '../../services/task-management.service';
 import { ProjectMember } from '../../features/dashboard/projects/projects.component';
 import { CommentState, TicketComment } from '../../state/comment.state';
 import { AuthState } from '../../state/auth.state';
 import { AiService } from '../../core/services/ai-modal.service';
 import { PermissionFacade } from '../../core/services/permissionFacade.service';
 import { AppwriteService } from '../../core/services/appwrite.service';
-import { UserSummary } from '../../core/types/auth.type';
 import { UserProfileComponent } from '../items/user-profile/user-profile.component';
-
-
-export interface TicketHistory {
-  id: string;
-  ticketId: string;
-  ticket: Task | null;
-
-  title: string;
-  content: string | null;
-
-  commitedBy: UserSummary;
-
-  createdAt: Date;
-}
-
-
 
 
 @Component({
   selector: 'app-view-ticket',
-  imports: [CommonModule, FormsModule, EditorModule , UserProfileComponent],
+  imports: [CommonModule, FormsModule, EditorModule, UserProfileComponent],
   templateUrl: './view-ticket.component.html',
   styleUrls: ['./view-ticket.component.scss']
 })
@@ -61,12 +44,13 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
 
 
   perm = inject(PermissionFacade);
+  private readonly taskManageService = inject(TaskManageService);
 
   readonly priorities: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
   readonly types: TaskType[] = ['FEATURE', 'BUG', 'TASK', 'CHORE'];
   readonly statuses: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'];
 
-  activeTab: 'all' | 'comments' | 'history' = 'all';
+  activeTab: 'comments' | 'history' = 'comments';
   isEditingDescription = false;
   isGeneratingSummary = false;
   isUploading = false;
@@ -83,6 +67,10 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
   editingCommentId: string | null = null;
   editingCommentText = '';
 
+  ticketHistory: TicketHistory[] = [];
+  isLoadingHistory = false;
+  historyError = '';
+
   private readonly commentState = inject(CommentState);
   private authState = inject(AuthState);
   private readonly aiService = inject(AiService);
@@ -97,6 +85,19 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
   quillInstance: any;
 
   constructor(private sanitizer: DomSanitizer, private appwrite: AppwriteService) { }
+
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(e: MouseEvent) {
+    if (!(e.target as HTMLElement).closest('.custom-select')) {
+      this.assigneeDropdownOpen = false;
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    this.close();
+  }
 
   ngOnInit(): void {
     this.loadTicketContext();
@@ -121,6 +122,8 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     return this.sanitizer.bypassSecurityTrustHtml(this.ticket?.description ?? "");
   }
 
+  isSubmitting = (id: string) => this.commentState.isCommentSubmitting(id);
+
 
   onEditorInit(event: any): void {
     this.quillInstance = event.editor;
@@ -128,7 +131,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     const toolbar = this.quillInstance.getModule('toolbar');
     toolbar.addHandler('image', () => this.handleImageInsert());
   }
-
 
   handleImageInsert(): void {
     const input = document.createElement('input');
@@ -162,12 +164,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     };
   }
 
-
-  isSubmitting = (id: string) => this.commentState.isCommentSubmitting(id);
-
-
-
-
   selectedAssignee() {
     return this.projectMembers.find(m => m.id === this.ticket.assignee.id) ?? null;
   }
@@ -180,14 +176,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     this.assigneeDropdownOpen = false;
     this.onAssigneeChange(member.id);
   }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(e: MouseEvent) {
-    if (!(e.target as HTMLElement).closest('.custom-select')) {
-      this.assigneeDropdownOpen = false;
-    }
-  }
-
 
   startEditing() {
     this.htmlContent = this.ticket?.description ?? "";
@@ -215,6 +203,86 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
   initials(name: string): string {
     return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
   }
+
+
+  cancelCommentEdit(): void {
+    this.editingCommentId = null;
+    this.editingCommentText = '';
+  }
+
+  insertQuickReply(text: string) {
+    this.newComment = text;
+  }
+
+
+  close() {
+    this.resetCommentDraft();
+    this.closeModal.emit();
+  }
+
+  onAssigneeChange(assigneeId: string): void {
+    const member = this.projectMembers.find((m) => m.id === assigneeId);
+
+    this.emitTicketUpdate({
+      ...this.ticket,
+      assignee: {
+        id: assigneeId,
+        profileImage: member?.profileImage ?? "",
+        name: member?.name ?? this.ticket.assignee?.name ?? '',
+      },
+    });
+  }
+
+  onStatusChange(status: TaskStatus): void {
+    this.emitTicketUpdate({ ...this.ticket, status });
+  }
+
+  onPriorityChange(priority: TaskPriority): void {
+    this.emitTicketUpdate({ ...this.ticket, priority });
+  }
+
+  onTypeChange(type: TaskType): void {
+    this.emitTicketUpdate({ ...this.ticket, type });
+  }
+
+  getHistoryDotClass(title: string): string {
+    const t = title.toLowerCase();
+    if (t.includes('status')) return 'dot-status';
+    if (t.includes('priority')) return 'dot-priority';
+    if (t.includes('assignee')) return 'dot-assign';
+    if (t.includes('type')) return 'dot-type';
+    if (t.includes('description') || t.includes('title')) return 'dot-desc';
+    if (t.includes('bulk')) return 'dot-default';
+    return 'dot-default';
+  }
+
+  getSafeHistoryContent(content: string | null): SafeHtml {
+    if (!content) return '';
+
+    const transformed = this.stripMediaTagsToUrls(content);
+    return this.sanitizer.bypassSecurityTrustHtml(transformed);
+  }
+
+
+  startEditingComment(comment: TicketComment): void {
+    this.editingCommentId = comment.id;
+    this.editingCommentText = comment.content;
+  }
+
+  onCommentKeydown(event: KeyboardEvent, commentId: string): void {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      this.saveCommentEdit(commentId);
+    }
+    if (event.key === 'Escape') {
+      this.cancelCommentEdit();
+    }
+  }
+
+  canEditAsAssignee(): boolean {
+    return this.ticket?.assignee?.id === this.authState.userId();
+  }
+
 
 
   async generateDescription(): Promise<void> {
@@ -318,24 +386,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     if (result) this.newComment = '';
   }
 
-  startEditingComment(comment: TicketComment): void {
-    this.editingCommentId = comment.id;
-    this.editingCommentText = comment.content;
-  }
-
-  onCommentKeydown(event: KeyboardEvent, commentId: string): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      this.saveCommentEdit(commentId);
-    }
-    if (event.key === 'Escape') {
-      this.cancelCommentEdit();
-    }
-  }
-
-  canEditAsAssignee(): boolean {
-    return this.ticket?.assignee?.id === this.authState.userId();
-  }
 
 
   async saveCommentEdit(commentId: string): Promise<void> {
@@ -345,50 +395,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     if (result) this.cancelCommentEdit();
   }
 
-  cancelCommentEdit(): void {
-    this.editingCommentId = null;
-    this.editingCommentText = '';
-  }
-
-  insertQuickReply(text: string) {
-    this.newComment = text;
-  }
-
-
-  close() {
-    this.resetCommentDraft();
-    this.closeModal.emit();
-  }
-
-  onAssigneeChange(assigneeId: string): void {
-    const member = this.projectMembers.find((m) => m.id === assigneeId);
-
-    this.emitTicketUpdate({
-      ...this.ticket,
-      assignee: {
-        id: assigneeId,
-        profileImage: member?.profileImage ?? "",
-        name: member?.name ?? this.ticket.assignee?.name ?? '',
-      },
-    });
-  }
-
-  onStatusChange(status: TaskStatus): void {
-    this.emitTicketUpdate({ ...this.ticket, status });
-  }
-
-  onPriorityChange(priority: TaskPriority): void {
-    this.emitTicketUpdate({ ...this.ticket, priority });
-  }
-
-  onTypeChange(type: TaskType): void {
-    this.emitTicketUpdate({ ...this.ticket, type });
-  }
-
-  @HostListener('document:keydown.escape')
-  onEscape() {
-    this.close();
-  }
 
 
   private loadTicketContext(): void {
@@ -401,6 +407,7 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     this.activeTicketId = this.ticket.taskId;
     this.commentState.setActiveTicket(this.ticket.taskId);
     this.commentState.loadCommentsByTicketId(this.ticket.taskId);
+    this.loadTicketHistory(this.ticket.taskId);
   }
 
   private emitTicketUpdate(updatedTicket: Task): void {
@@ -421,24 +428,34 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
     this.cdr.detectChanges();
   }
 
-
   private buildDescriptionPayload(referenceDescription: string): string {
     return `
-Title: ${this.ticket?.title ?? ''}
-Current Description Draft: ${referenceDescription}
+You are a ticket summarizer. Your only job is to describe what the task/issue actually is, based on the information given.
 
-Rewrite the current description into a polished, clear, actionable ticket description.
-Keep the same intent and do not add unsupported facts.
-    `.trim();
+Ticket Title: ${this.ticket?.title ?? '(no title provided)'}
+Notes: ${referenceDescription}
+
+Rules:
+- Only summarize informative content: what is broken, what needs to be built, what the user is asking for. That is the only valid subject of your output.
+- Completely ignore and never mention: image tags, video tags, audio tags, attachments, file names, URLs, links, HTML tags of any kind, formatting markup, or any reference to how the ticket was written, edited, or attached to. Treat these as if they were not in the input at all.
+- Never refer to the ticket, its fields, or its history in your output.
+- If the notes contain no real information about the task once the above is ignored, disregard them entirely and write a short, logical description based on the title alone — something a ticket with that title would reasonably be about.
+- Output plain text only: 2-4 sentences, no HTML, no markdown, no labels, no quotes.
+  `.trim();
   }
 
   private stripHtml(value: string): string {
-    return value
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
+    const container = document.createElement('div');
+    container.innerHTML = value;
+
+    // Convert media tags into a short text hint instead of losing them entirely
+    container.querySelectorAll('img, video, audio').forEach((el) => {
+      const label = el.getAttribute('alt') || el.getAttribute('title') || '';
+      const hint = label ? `[attached media: ${label}]` : '[attached media]';
+      el.replaceWith(document.createTextNode(hint));
+    });
+
+    return (container.textContent || '')
       .replace(/\s+/g, ' ')
       .trim();
   }
@@ -530,92 +547,50 @@ Keep the same intent and do not add unsupported facts.
     });
   }
 
+  private loadTicketHistory(taskId: string): void {
+    this.isLoadingHistory = true;
+    this.historyError = '';
 
-  ticketHistory: TicketHistory[] = [
-    {
-      id: crypto.randomUUID(),
-      ticketId: "",
-      ticket: null!,
-      title: 'Status changed',
-      content: `<span class="from-pill old">TODO</span><span class="arrow">→</span><span class="from-pill new status">IN_PROGRESS</span>`,
-      commitedBy: { id: 'u1', name: 'Sarah Chen', profileImage: 'https://i.pravatar.cc/100?img=12' },
-      createdAt: new Date('2026-06-24T10:42:00Z')
-    },
-    {
-      id: crypto.randomUUID(),
-      ticketId: "",
-
-      ticket: null!,
-      title: 'Assignee changed',
-      content: `<span class="from-pill old">Alex Rivera</span><span class="arrow">→</span><span class="from-pill new assignee">James Okafor</span>`,
-      commitedBy: { id: 'u1', name: 'Sarah Chen', profileImage: 'https://i.pravatar.cc/100?img=12' },
-      createdAt: new Date('2026-06-23T16:10:00Z')
-    },
-    {
-      id: crypto.randomUUID(),
-      ticketId: "",
-
-      ticket: null!,
-      title: 'Priority changed',
-      content: `<span class="from-pill old">MEDIUM</span><span class="arrow">→</span><span class="from-pill new priority">HIGH</span>`,
-      commitedBy: { id: 'u2', name: 'Priya Nair', profileImage: 'https://i.pravatar.cc/100?img=22' },
-      createdAt: new Date('2026-06-23T14:30:00Z')
-    },
-    {
-      id: crypto.randomUUID(),
-      ticketId: "",
-
-      ticket: null!,
-      title: 'Description updated',
-      content: `<span class="history-text-change">Added OAuth2 token refresh details → Expanded with secure storage requirements</span>`,
-      commitedBy: { id: 'u3', name: 'Alex Rivera', profileImage: 'https://i.pravatar.cc/100?img=33' },
-      createdAt: new Date('2026-06-22T11:15:00Z')
-    },
-    {
-      id: crypto.randomUUID(),
-      ticketId: "",
-
-      ticket: null!,
-      title: 'Bulk update',
-      content: `<ul class="history-change-list">
-      <li><span class="from-pill old">MEDIUM</span><span class="arrow">→</span><span class="from-pill new priority">HIGH</span></li>
-      <li><span class="from-pill old">TODO</span><span class="arrow">→</span><span class="from-pill new status">IN_PROGRESS</span></li>
-    </ul>`,
-      commitedBy: { id: 'u1', name: 'Sarah Chen', profileImage: 'https://i.pravatar.cc/100?img=12' },
-      createdAt: new Date('2026-06-21T09:00:00Z')
-    }
-  ];
-
-  getHistoryDotClass(title: string): string {
-    const t = title.toLowerCase();
-    if (t.includes('status')) return 'dot-status';
-    if (t.includes('priority')) return 'dot-priority';
-    if (t.includes('assignee')) return 'dot-assign';
-    if (t.includes('type')) return 'dot-type';
-    if (t.includes('description') || t.includes('title')) return 'dot-desc';
-    if (t.includes('bulk')) return 'dot-default';
-    return 'dot-default';
+    this.taskManageService.getTicketHistory(taskId).subscribe({
+      next: (history) => {
+        this.ticketHistory = history;
+        this.isLoadingHistory = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.historyError = 'Failed to load ticket history.';
+        this.isLoadingHistory = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  getSafeHistoryContent(content: string | null): SafeHtml {
-    return content ? this.sanitizer.bypassSecurityTrustHtml(content) : '';
+  private stripMediaTagsToUrls(html: string): string {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+
+    const mediaSelectors = ['img', 'video', 'audio', 'source'];
+
+    mediaSelectors.forEach(tag => {
+      container.querySelectorAll(tag).forEach(el => {
+        const src = el.getAttribute('src') || el.getAttribute('data-src') || '';
+        if (src) {
+          const link = document.createElement('a');
+          link.href = src;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = src;
+          link.className = 'history-media-link';
+          el.replaceWith(link);
+        } else {
+          el.remove();
+        }
+      });
+    });
+
+    return container.innerHTML;
   }
 
-  get mergedFeed(): { type: 'comment' | 'history'; data: any; date: Date }[] {
-    const commentEntries = this.comments().map(c => ({
-      type: 'comment' as const,
-      data: c,
-      date: new Date(c.updatedAt)
-    }));
 
-    const historyEntries = this.ticketHistory.map(h => ({
-      type: 'history' as const,
-      data: h,
-      date: new Date(h.createdAt)
-    }));
-
-    return [...commentEntries, ...historyEntries]
-      .sort((a, b) => b.date.getTime() - a.date.getTime()); // newest first
-  }
 
 }

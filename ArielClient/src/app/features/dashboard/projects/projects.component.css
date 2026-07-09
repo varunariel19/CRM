@@ -2159,3 +2159,96 @@
   cursor: not-allowed;
   transform: none;
 }
+
+
+.doc-upload-section {
+  margin-bottom: 16px;
+}
+
+.doc-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  border: 1.5px dashed var(--border-color);
+  border-radius: 8px;
+  color: var(--text-light);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.doc-dropzone:hover,
+.doc-dropzone.drag-over {
+  border-color: var(--active-bg);
+  background-color: var(--primary-soft-bg);
+  color: var(--link-text);
+}
+
+.doc-upload-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.doc-upload-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: var(--surface-muted);
+  border-radius: 6px;
+  font-size: 12px;
+  max-width: 200px;
+}
+
+.doc-icon-small {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.doc-upload-name {
+  color: var(--text-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-upload-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.doc-upload-remove:hover {
+  color: var(--danger-text);
+}
+
+.btn-upload-docs {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--button-color);
+  color: var(--on-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-upload-docs:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-upload-docs:hover:not(:disabled) {
+  background-color: var(--button-hover-color);
+}

@@ -11,7 +11,7 @@ namespace ArielCRM.Application.Interfaces
 
         Task<TaskDetailDto> CreateAsync(CreateTaskDto dto, string reportedById);
 
-        Task<bool> UpdateAsync(string taskId, UpdateTaskDto dto);
+        Task<bool> UpdateAsync(string taskId, UpdateTaskDto dto, string committedById);
 
         Task<bool> DeleteAsync(string taskId);
     }

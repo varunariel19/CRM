@@ -59,8 +59,7 @@
 
       <div class="modal-footer">
         <button class="btn-cancel" (click)="showCreateModal = false">Cancel</button>
-        <button class="btn-register"
-          [disabled]="!newTicket.title || !newTicket.description"
+        <button class="btn-register" [disabled]="!newTicket.title || !newTicket.description"
           (click)="submitTicket()">Log Incident</button>
       </div>
 
@@ -85,10 +84,10 @@
       </select>
 
       @if(perm.tickets.canCreate()) {
-        <button class="raise-btn" (click)="showCreateModal = true">
-          <i class="fas fa-plus"></i>
-          Raise Support Ticket
-        </button>
+      <button class="raise-btn" (click)="showCreateModal = true">
+        <i class="fas fa-plus"></i>
+        Raise Support Ticket
+      </button>
       }
     </div>
   </div>
@@ -108,20 +107,20 @@
         <div class="header-right">
 
           @if(perm.tickets.canEdit()) {
-            <select class="status-select" [ngClass]="ticket.status" [(ngModel)]="ticket.status"
-              (ngModelChange)="changeStatus(ticket, $event)">
-              <option *ngFor="let item of status | keyvalue" [value]="item.value">
-                {{ item.key }}
-              </option>
-            </select>
+          <select class="status-select" [ngClass]="ticket.status" [(ngModel)]="ticket.status"
+            (ngModelChange)="changeStatus(ticket, $event)">
+            <option *ngFor="let item of status | keyvalue" [value]="item.value">
+              {{ item.key }}
+            </option>
+          </select>
           } @else {
-            <span class="status-select" [ngClass]="ticket.status">
-              {{ ticket.status }}
-            </span>
+          <span class="status-select" [ngClass]="ticket.status">
+            {{ ticket.status }}
+          </span>
           }
 
           @if(perm.tickets.canDelete()) {
-            <i class="fas fa-trash delete-icon" (click)="deleteTicket(ticket.id)"></i>
+          <i class="fas fa-trash delete-icon" (click)="deleteTicket(ticket.id)"></i>
           }
 
         </div>
@@ -148,15 +147,15 @@
             <span>{{ ticket.assignedMemberName }}</span>
 
             @if(perm.tickets.canEdit()) {
-              <select class="engineer-select" [(ngModel)]="ticket.assignedToId"
-                (ngModelChange)="changeAssignee(ticket, $event)">
-                <option *ngIf="ticket.assignedToId && !hasTeamMember(ticket.assignedToId)" [value]="ticket.assignedToId">
-                  {{ ticket.assignedMemberName || 'Assigned member' }}
-                </option>
-                <option *ngFor="let member of teamMembers" [value]="member.id">
-                  {{ member.name }}
-                </option>
-              </select>
+            <select class="engineer-select" [(ngModel)]="ticket.assignedToId"
+              (ngModelChange)="changeAssignee(ticket, $event)">
+              <option *ngIf="ticket.assignedToId && !hasTeamMember(ticket.assignedToId)" [value]="ticket.assignedToId">
+                {{ ticket.assignedMemberName || 'Assigned member' }}
+              </option>
+              <option *ngFor="let member of teamMembers" [value]="member.id">
+                {{ member.name }}
+              </option>
+            </select>
             }
 
           </div>
@@ -172,3 +171,5 @@
   </div>
 
 </div>
+
+

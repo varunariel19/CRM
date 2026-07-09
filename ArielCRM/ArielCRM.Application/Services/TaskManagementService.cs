@@ -7,18 +7,17 @@ using ArielCRM.Infrastructure.Interfaces.IRepository;
 namespace ArielCRM.Application.Services
 {
 
-    public class TaskManagementService(ITaskManagementRepository repository, ITicketHistoryRepository ticketHistory) : ITaskManagementService
+    public class TaskManagementService(ITaskManagementRepository repository,
+    ITicketHistoryRepository ticketHistory, IUserRepository userRepo) : ITaskManagementService
     {
         private readonly ITaskManagementRepository _repository = repository;
-        private readonly ITicketHistoryRepository _ticketHRepo = ticketHistory;
+        private readonly IUserRepository _userRepo = userRepo;
 
+        private readonly ITicketHistoryRepository _ticketHRepo = ticketHistory;
 
         public async Task<IEnumerable<TaskDetailDto>> GetAllAsync()
         {
-
-            // need since timestamps & 
             var tasks = await _repository.GetAllAsync();
-
             return tasks.Select(MapToDto);
         }
 
@@ -53,21 +52,9 @@ namespace ArielCRM.Application.Services
             return MapToDto(created);
         }
 
-        private async Task<string> GenerateUniqueTaskIdAsync()
-        {
-            const int maxAttempts = 20;
 
-            for (var attempt = 0; attempt < maxAttempts; attempt++)
-            {
-                var taskId = TicketTask.GenerateFiveDigitTaskId();
-                if (await _repository.GetByIdAsync(taskId) is null)
-                    return taskId;
-            }
 
-            throw new InvalidOperationException("Unable to generate a unique task ID.");
-        }
-
-        public async Task<bool> UpdateAsync(string taskId, UpdateTaskDto dto)
+        public async Task<bool> UpdateAsync(string taskId, UpdateTaskDto dto, string committedById)
         {
             var task = await _repository.GetByIdAsync(taskId);
 
@@ -84,7 +71,6 @@ namespace ArielCRM.Application.Services
 
             if (dto.AiSummary is not null)
             {
-                // changes.Add(("AiSummary", task.AiSummary, dto.AiSummary));
                 task.AiSummary = dto.AiSummary;
             }
 
@@ -115,7 +101,8 @@ namespace ArielCRM.Application.Services
             if (dto.AssignToId is not null && dto.AssignToId != task.AssignToId)
             {
                 var oldName = task.AssignedUser?.Name ?? task.AssignToId ?? "Unassigned";
-                changes.Add(("Assignee", oldName, dto.AssignToId));
+                var user = await _userRepo.GetByIdAsync(dto.AssignToId);
+                changes.Add(("Assignee", oldName, user?.Name ?? "UnAssigneed"));
                 task.AssignToId = dto.AssignToId;
             }
 
@@ -130,6 +117,7 @@ namespace ArielCRM.Application.Services
                     TicketId = task.TaskId,
                     Title = GetHistoryTitle(field),
                     Content = BuildPillHtml(field, oldVal, newVal),
+                    CommitedById = committedById,
                     CreatedAt = DateTime.UtcNow
                 });
             }
@@ -144,6 +132,7 @@ namespace ArielCRM.Application.Services
                     TicketId = task.TaskId,
                     Title = "Bulk update",
                     Content = $"<ul class=\"history-change-list\">{rows}</ul>",
+                    CommitedById = committedById,
                     CreatedAt = DateTime.UtcNow
                 });
             }
@@ -151,7 +140,6 @@ namespace ArielCRM.Application.Services
             await _repository.UpdateAsync(task);
             return true;
         }
-
 
         private static string GetHistoryTitle(string field) => field switch
         {
@@ -176,7 +164,6 @@ namespace ArielCRM.Application.Services
                 $"<span class=\"arrow\">→</span>" +
                 $"<span class=\"from-pill new {category}\">{newVal}</span>";
         }
-
 
         public async Task<bool> DeleteAsync(string taskId)
         {
@@ -219,5 +206,20 @@ namespace ArielCRM.Application.Services
                 UpdatedAt = task.UpdatedAt
             };
         }
+
+        private async Task<string> GenerateUniqueTaskIdAsync()
+        {
+            const int maxAttempts = 20;
+
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                var taskId = TicketTask.GenerateFiveDigitTaskId();
+                if (await _repository.GetByIdAsync(taskId) is null)
+                    return taskId;
+            }
+
+            throw new InvalidOperationException("Unable to generate a unique task ID.");
+        }
+
     }
 }

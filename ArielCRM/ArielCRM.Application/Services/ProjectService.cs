@@ -23,14 +23,24 @@ namespace ArielCRM.Application.Services
 
         public async Task<string> FinalizeCreateAsync(CreateProjectDto dto)
         {
-            var leadProjects = await _leadRepository.GetLeadFullByIdAsync(dto.LeadId);
+            if (string.IsNullOrWhiteSpace(dto.LeadId))
+                throw new ArgumentException("Lead is required.", nameof(dto.LeadId));
 
-            // BUGFIX: drafts from CreateProjectForLeadAsync are IsActive = false,
-            // so we must look for the most recent INACTIVE draft, not an active one.
-            var draftProject = leadProjects!.Projects
-                .Where(p => !p.IsActive)
-                .OrderByDescending(p => p.CreatedAt)
-                .FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(dto.Name))
+                throw new ArgumentException("Project name is required.", nameof(dto.Name));
+
+            if (string.IsNullOrWhiteSpace(dto.ProjectLeadId))
+                throw new ArgumentException("Project manager is required to list a project.", nameof(dto.ProjectLeadId));
+
+            var lead = await _leadRepository.GetLeadFullByIdAsync(dto.LeadId)
+                ?? throw new Exception("Lead not found.");
+
+            var draftProject = !string.IsNullOrWhiteSpace(dto.ProjectId)
+                ? lead.Projects.FirstOrDefault(p => p.Id == dto.ProjectId)
+                : lead.Projects
+                    .Where(p => !p.IsActive)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .FirstOrDefault();
 
             Project project;
 
@@ -39,6 +49,8 @@ namespace ArielCRM.Application.Services
                 draftProject.Name = dto.Name;
                 draftProject.ProjectLeadId = dto.ProjectLeadId;
                 draftProject.Description = dto.Description;
+                draftProject.ProjectType = dto.ProjectType;
+                draftProject.Budget = dto.Budget;
                 draftProject.StartDate = dto.StartDate;
                 draftProject.EndDate = dto.EndDate;
                 draftProject.ContactId = dto.ContactId;
@@ -57,6 +69,8 @@ namespace ArielCRM.Application.Services
                     LeadId = dto.LeadId,
                     ProjectLeadId = dto.ProjectLeadId,
                     Description = dto.Description,
+                    ProjectType = dto.ProjectType,
+                    Budget = dto.Budget,
                     StartDate = dto.StartDate,
                     EndDate = dto.EndDate,
                     ContactId = dto.ContactId,
@@ -91,7 +105,14 @@ namespace ArielCRM.Application.Services
 
         public async Task<Project?> CreateProjectForLeadAsync(CreateProjectForLeadDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.ProjectTitle)) return null;
+            if (string.IsNullOrWhiteSpace(dto.LeadId))
+                throw new ArgumentException("Lead is required.", nameof(dto.LeadId));
+
+            if (string.IsNullOrWhiteSpace(dto.ProjectTitle))
+                throw new ArgumentException("Project name is required.", nameof(dto.ProjectTitle));
+
+            _ = await _leadRepository.GetLeadFullByIdAsync(dto.LeadId)
+                ?? throw new Exception("Lead not found.");
 
             var project = new Project
             {
@@ -119,8 +140,11 @@ namespace ArielCRM.Application.Services
             if (dto.Name is not null) project.Name = dto.Name;
             if (dto.ProjectLeadId is not null) project.ProjectLeadId = dto.ProjectLeadId;
             if (dto.Description is not null) project.Description = dto.Description;
+            if (dto.ProjectType.HasValue) project.ProjectType = dto.ProjectType;
+            if (dto.Budget.HasValue) project.Budget = dto.Budget;
             if (dto.StartDate.HasValue) project.StartDate = dto.StartDate;
             if (dto.EndDate.HasValue) project.EndDate = dto.EndDate;
+            if (dto.ContactId is not null) project.ContactId = dto.ContactId;
             if (dto.IsActive.HasValue) project.IsActive = dto.IsActive.Value;
             project.UpdatedAt = DateTime.UtcNow;
 
@@ -159,12 +183,12 @@ namespace ArielCRM.Application.Services
         public async Task<IEnumerable<ProjectDetailDto>> GetAllAsync(HttpContext context)
         {
             if (context.User.Identity is null || !context.User.Identity.IsAuthenticated)
-                return Enumerable.Empty<ProjectDetailDto>();
+                return [];
 
             var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))
-                return Enumerable.Empty<ProjectDetailDto>();
+                return [];
 
             var adminAccessLvlId = _configuration["Seeding:AdminLevel"];
             var accessLevelId = context.User.FindFirst("AccessLevelId")?.Value;
@@ -287,6 +311,9 @@ namespace ArielCRM.Application.Services
                 UpdatedAt = task.UpdatedAt
             };
         }
+
+
+
 
     }
 

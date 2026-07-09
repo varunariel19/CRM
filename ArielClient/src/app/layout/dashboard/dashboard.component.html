@@ -16,13 +16,14 @@
         </div>
 
         <div class="action-bar-right">
+          @if(showMyDashView()) {
           <button class="ab-view-toggle" [class.active]="this.globalState.myViewOnly()"
             (click)="this.globalState.toggle()" title="Toggle between your items and everyone's">
             <i class="fas fa-user"></i>
             <span>My Dashboard View</span>
             <i class="fas fa-check ab-check" *ngIf="this.globalState.myViewOnly()"></i>
           </button>
-
+        }
           <div class="ab-divider"></div>
 
           <button class="ab-btn ab-btn-icon" (click)="refresh()" title="Reload">

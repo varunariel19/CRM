@@ -507,46 +507,17 @@
 </div>
 
 <!-- DELETE CONFIRMATION MODAL -->
-<div *ngIf="showDeleteModal() && memberToDelete()" class="tm-overlay" (click)="closeDeleteModal()">
-  <div class="tm-modal tm-delete-modal" (click)="$event.stopPropagation()">
-    <div class="tm-delete-modal__icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-        <line x1="12" y1="9" x2="12" y2="13" />
-        <line x1="12" y1="17" x2="12.01" y2="17" />
-      </svg>
-    </div>
-
-    <h2 class="tm-delete-modal__title">Remove {{ memberToDelete()!.name }}?</h2>
-    <p class="tm-delete-modal__sub">
-      This will permanently remove this member and their access. This action cannot be undone.
-    </p>
-
-    <p class="tm-delete-modal__instruction">
-      Type <strong>{{ DELETE_CONFIRM_PHRASE }}</strong> to confirm.
-    </p>
-
-    <input class="tm-input tm-delete-modal__input" type="text" [value]="deleteConfirmText()"
-      (input)="onDeleteConfirmInput($any($event.target).value)" placeholder="{{ DELETE_CONFIRM_PHRASE }}"
-      autocomplete="off" />
-
-    <div class="tm-modal__footer tm-delete-modal__footer">
-      <button class="tm-btn-ghost" (click)="closeDeleteModal()" [disabled]="isDeletingMember()">Cancel</button>
-      <button class="tm-btn-danger" (click)="confirmDeleteMember()"
-        [disabled]="!isDeleteConfirmed || isDeletingMember()">
-        <span *ngIf="isDeletingMember()" class="tm-btn-spinner"></span>
-        <svg *ngIf="!isDeletingMember()" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6l-1 14H6L5 6" />
-          <path d="M10 11v6M14 11v6" />
-          <path d="M9 6V4h6v2" />
-        </svg>
-        {{ isDeletingMember() ? 'Removing…' : 'Remove member' }}
-      </button>
-    </div>
-  </div>
-</div>
+<app-deletion-modal
+  [isOpen]="showDeleteModal() && !!memberToDelete()"
+  [title]="'Remove ' + memberToDelete()?.name + '?'"
+  subtitle="This will permanently remove this member and their access. This action cannot be undone."
+  [confirmPhrase]="DELETE_CONFIRM_PHRASE"
+  [isProcessing]="isDeletingMember()"
+  confirmButtonText="Remove member"
+  processingText="Removing…"
+  (confirmed)="confirmDeleteMember()"
+  (cancelled)="closeDeleteModal()"
+/>
 
 <!-- PROFILE MODAL -->
 <div *ngIf="showProfileModal() && selectedMember()" class="tm-overlay" (click)="closeProfile()">

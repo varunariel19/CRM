@@ -164,7 +164,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   ngOnInit(): void {
     this.notificationState.showMessageNotification.set(false);
-    
+
     this.teamsService.loadConversations().subscribe(conversations => {
       this.teamsService.conversations.set(conversations);
       this.preloadImageUrls(conversations.map(c => this.getConversationProfileImage(c)));
@@ -348,6 +348,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.teamsService.loadMessages(conversationId, oldestMessageId, this.PAGE_SIZE).subscribe({
       next: older => {
         this.messages.update(current => [...older, ...current]);
+        this.messagesCache.set(conversationId, this.messages());
         this.hasMoreMessages.set(older.length === this.PAGE_SIZE);
         this.isLoadingMoreMessages.set(false);
 
@@ -473,6 +474,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     const optimisticId = `pending-${crypto.randomUUID()}`;
     const optimisticMessage = this.buildOptimisticMessage(optimisticId, conversationId, content, attachments);
     this.messages.update(messages => [...messages, optimisticMessage]);
+    this.messagesCache.set(conversationId, this.messages()); // ← sync cache
     this.queueScroll(conversationId);
     this.teamsService.sendTyping(conversationId, false);
 
@@ -489,6 +491,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
         this.messages.update(messages => messages.map(m =>
           m.id === optimisticId ? { ...m, pending: false, failed: true } : m
         ));
+        this.messagesCache.set(conversationId, this.messages());
       },
     });
   }
@@ -735,6 +738,10 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   private applyMessageEdited(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
       this.messages.update(messages => messages.map(m => m.id === message.id ? message : m));
+      this.messagesCache.set(message.conversationId, this.messages());
+    } else {
+      const cached = this.messagesCache.get(message.conversationId);
+      if (cached) this.messagesCache.set(message.conversationId, cached.map(m => m.id === message.id ? message : m));
     }
 
     this.teamsService.conversations.update(conversations => conversations.map(c =>
@@ -746,8 +753,14 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   private applyMessageDeleted(message: TeamMessage): void {
     const currentTime = new Date(Date.now()).toString();
+    const patch = (m: TeamMessage) => m.id === message.id ? { ...m, isDeleted: true, updatedAt: currentTime, content: '' } : m;
+
     if (message.conversationId === this.selectedConversationId()) {
-      this.messages.update(messages => messages.map(m => m.id === message.id ? { ...m, isDeleted: true, updatedAt: currentTime, content: '' } : m));
+      this.messages.update(messages => messages.map(patch));
+      this.messagesCache.set(message.conversationId, this.messages());
+    } else {
+      const cached = this.messagesCache.get(message.conversationId);
+      if (cached) this.messagesCache.set(message.conversationId, cached.map(patch));
     }
 
     this.teamsService.conversations.update(conversations => conversations.map(c =>
@@ -760,6 +773,10 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   private applyMessageRestored(message: TeamMessage): void {
     if (message.conversationId === this.selectedConversationId()) {
       this.messages.update(messages => messages.map(m => m.id === message.id ? message : m));
+      this.messagesCache.set(message.conversationId, this.messages());
+    } else {
+      const cached = this.messagesCache.get(message.conversationId);
+      if (cached) this.messagesCache.set(message.conversationId, cached.map(m => m.id === message.id ? message : m));
     }
 
     this.teamsService.conversations.update(conversations => conversations.map(c =>
@@ -769,27 +786,38 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     ));
   }
 
-  private receiveMessage(message: TeamMessage): void {
-    if (message.conversationId === this.selectedConversationId()) {
-      this.notificationState.playMessageReceivedSound();
+private receiveMessage(message: TeamMessage): void {
+  if (message.conversationId === this.selectedConversationId()) {
+    this.notificationState.playMessageReceivedSound();
 
-      this.messages.update(messages => {
-        const withoutPending = messages.filter(existing =>
-          !existing.id.startsWith('pending-') || existing.content !== message.content
-        );
-        return withoutPending.some(m => m.id === message.id) ? withoutPending : [...withoutPending, message];
-      });
-      this.queueScroll(message.conversationId);
-      this.markConversationRead(message.conversationId);
+    this.messages.update(messages => {
+      const withoutPending = messages.filter(existing =>
+        !existing.id.startsWith('pending-') || existing.content !== message.content
+      );
+      return withoutPending.some(m => m.id === message.id) ? withoutPending : [...withoutPending, message];
+    });
+    this.messagesCache.set(message.conversationId, this.messages());
+    this.queueScroll(message.conversationId);
+    this.markConversationRead(message.conversationId);
+  } else {
+    const cached = this.messagesCache.get(message.conversationId);
+    if (cached) {
+      const withoutPending = cached.filter(existing =>
+        !existing.id.startsWith('pending-') || existing.content !== message.content
+      );
+      const updated = withoutPending.some(m => m.id === message.id)
+        ? withoutPending
+        : [...withoutPending, message];
+      this.messagesCache.set(message.conversationId, updated);
     }
-
-    this.teamsService.conversations.update(conversations => conversations.map(c =>
-      c.id === message.conversationId
-        ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
-        : c
-    ).sort((a, b) => this.sortByRecent(a, b)));
-
   }
+
+  this.teamsService.conversations.update(conversations => conversations.map(c =>
+    c.id === message.conversationId
+      ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
+      : c
+  ).sort((a, b) => this.sortByRecent(a, b)));
+}
 
   private upsertConversation(conversation: TeamConversation): void {
     this.teamsService.conversations.update(conversations => {
@@ -809,6 +837,10 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     if (conversationId === this.selectedConversationId()) {
       this.messages.update(messages => messages.map(appendSeen));
+      this.messagesCache.set(conversationId, this.messages());
+    } else {
+      const cached = this.messagesCache.get(conversationId);
+      if (cached) this.messagesCache.set(conversationId, cached.map(appendSeen));
     }
 
     this.teamsService.conversations.update(conversations => conversations.map(conversation => {
@@ -859,7 +891,15 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   private replaceOptimisticMessage(id: string, saved: TeamMessage): void {
-    this.messages.update(messages => messages.map(message => message.id === id ? saved : message));
+    if (saved.conversationId === this.selectedConversationId()) {
+      this.messages.update(messages => messages.map(message => message.id === id ? saved : message));
+      this.messagesCache.set(saved.conversationId, this.messages());
+    } else {
+      const cached = this.messagesCache.get(saved.conversationId);
+      if (cached) {
+        this.messagesCache.set(saved.conversationId, cached.map(m => m.id === id ? saved : m));
+      }
+    }
   }
 
   private toPendingAttachment(file: File): PendingAttachment {

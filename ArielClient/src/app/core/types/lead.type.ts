@@ -22,6 +22,7 @@ export interface LeadProjectDocument {
   fileName: string;
   fileUrl: string;
   uploadId: string;
+  uploadedAt?: string;
 }
 
 export interface LeadProject {

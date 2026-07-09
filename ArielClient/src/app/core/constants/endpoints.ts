@@ -72,6 +72,9 @@ export const endpoints = {
     // commments : 
     comments: `${BASE_URL}/api/comments`,
 
+
+    ticketHistory: `${BASE_URL}/api/ticket-history`,
+
     // teams messaging
     teams: {
         users: `${BASE_URL}/api/teams/users`,
@@ -91,7 +94,7 @@ export const endpoints = {
 
 
     notification: {
-        createNotification : `${BASE_URL}/api/notifications/create-notification`,
+        createNotification: `${BASE_URL}/api/notifications/create-notification`,
         allNotification: `${BASE_URL}/api/notifications`, // ?take=30
         unreadCount: `${BASE_URL}/api/notifications/unread-count`,
         singleRead: (notificationId: string) => `${BASE_URL}/api/notifications/${notificationId}/read`,

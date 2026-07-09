@@ -260,7 +260,10 @@ export class ProjectsComponent implements OnInit {
 
     forkJoin(pending.map(m => this.projectService.addMemberToProject(proj.id, m.id)))
       .subscribe({
-        next: () => { this.isAddingMembers.set(false); this.loadProjects(); },
+        next: () => {
+          this.isAddingMembers.set(false);
+          this.projectState.updateProject(updated);
+        },
         error: () => { this.selectedProject.set(proj); this.isAddingMembers.set(false); }
       });
   }
@@ -276,9 +279,30 @@ export class ProjectsComponent implements OnInit {
     this.selectedProject.set(updated);
 
     this.projectService.removeMemberFromProject(proj.id, memberId).subscribe({
-      next: () => this.loadProjects(),
+      next: () => {
+        this.projectState.updateProject(updated);
+      },
       error: () => this.selectedProject.set(proj)
     });
+  }
+
+
+  removeDocument(docId: string) {
+    const proj = this.selectedProject();
+    if (!proj) return;
+
+    const updated: Project = {
+      ...proj,
+      documents: proj.documents.filter(doc => doc.id != docId)
+    }
+
+    this.selectedProject.set(updated);
+    this.projectService.removeDocumentFromProject(docId).subscribe({
+      next: () => {
+        this.projectState.updateProject(updated);
+      },
+      error: () => this.selectedProject.set(proj)
+    })
   }
 
   getInitials(name: string): string {
@@ -384,4 +408,69 @@ export class ProjectsComponent implements OnInit {
       this.closeCreateModal();
     }
   }
+
+
+  // New signals (add alongside the other tab-related signals)
+  docUploadFiles = signal<File[]>([]);
+  isUploadingDocs = signal(false);
+  isDocDragOver = signal(false);
+
+  // New methods (add alongside removeDocument, near the end of the class)
+
+  onDocFileSelect(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files) {
+      this.docUploadFiles.update(prev => [...prev, ...Array.from(input.files!)]);
+    }
+    input.value = '';
+  }
+
+  onDocFileDrop(event: DragEvent) {
+    event.preventDefault();
+    this.isDocDragOver.set(false);
+    if (event.dataTransfer?.files) {
+      this.docUploadFiles.update(prev => [...prev, ...Array.from(event.dataTransfer!.files)]);
+    }
+  }
+
+  onDocDragOver(event: DragEvent) {
+    event.preventDefault();
+    this.isDocDragOver.set(true);
+  }
+
+  onDocDragLeave(event: DragEvent) {
+    event.preventDefault();
+    this.isDocDragOver.set(false);
+  }
+
+  removeDocUploadFile(index: number) {
+    this.docUploadFiles.update(prev => prev.filter((_, i) => i !== index));
+  }
+
+  uploadDocuments() {
+    const proj = this.selectedProject();
+    const files = this.docUploadFiles();
+    if (!proj || files.length === 0 || this.isUploadingDocs()) return;
+
+    this.isUploadingDocs.set(true);
+    const formData = new FormData();
+    files.forEach(f => formData.append('documents', f));
+
+    this.projectService.uploadDocuments(proj.id, formData).subscribe({
+      next: (newDocs: ProjectDocument[]) => {
+        const updated: Project = {
+          ...proj,
+          documents: [...proj.documents, ...newDocs]
+        };
+        this.selectedProject.set(updated);
+        this.projectState.updateProject(updated);
+        this.docUploadFiles.set([]);
+        this.isUploadingDocs.set(false);
+      },
+      error: () => this.isUploadingDocs.set(false)
+    });
+  }
 }
+
+
+

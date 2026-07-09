@@ -5,6 +5,7 @@ import { RouterOutlet } from '@angular/router';
 import { AuthState } from './state/auth.state';
 import { TeamsService } from './services/teams.service';
 import { NotificationState } from './state/notification.state';
+import { NotificationService } from './core/services/notification.service';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,7 @@ import { NotificationState } from './state/notification.state';
 export class App implements OnInit {
   private teamsService = inject(TeamsService);
   private notificationState = inject(NotificationState);
+  private notificationService = inject(NotificationService);
   private unregister?: () => void;
 
   constructor(public authState: AuthState) {
@@ -24,7 +26,11 @@ export class App implements OnInit {
       if (this.authState.isLoggedIn()) {
         this.teamsService.connect({
           onNotification: (notification) => {
-            if (notification.entityType == "Message" && !this.notificationState.showMessageNotification()) return;
+            if (notification.entityType == "Message" && !this.notificationState.showMessageNotification()) {
+              // remove that notificataion instantly !! 
+              this.notificationService.remove(notification.id).subscribe();
+                return;
+            };
             this.notificationState.add(notification);
             this.notificationState.show(notification);
             this.notificationState.showMainMessageNotification(notification.message, notification.title);

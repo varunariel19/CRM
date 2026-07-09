@@ -35,12 +35,7 @@ namespace ArielCRM.Infrastructure.Repositories
                 TicketId = task.TaskId,
                 Title = $"{reportedUser.Name} Created the Work Item.",
                 Content = null,
-                CommitedBy = new UserSummaryDto1
-                {
-                    Id = reportedUser.Id,
-                    Name = reportedUser.Name,
-                    ProfileImage = reportedUser.ProfileImage ?? null
-                },
+                CommitedById = reportedUser.Id,
                 CreatedAt = DateTime.UtcNow
             };
 

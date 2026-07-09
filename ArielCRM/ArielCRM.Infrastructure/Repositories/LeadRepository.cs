@@ -15,7 +15,8 @@ namespace ArielCRM.Infrastructure.Repositories
             return await _context.Leads
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
-                .Include(l => l.Projects)
+                .Include(l => l.Projects).ThenInclude(p => p.ProjectLead)
+                .Include(l => l.Projects).ThenInclude(p => p.Documents)
                 .OrderByDescending(l => l.CreatedAt)
                 .Select(l => MapToDto(l))
                 .ToListAsync();
@@ -27,7 +28,8 @@ namespace ArielCRM.Infrastructure.Repositories
                 .Where(l => l.AssignedToId == userId)
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
-                .Include(l => l.Projects)
+                .Include(l => l.Projects).ThenInclude(p => p.ProjectLead)
+                .Include(l => l.Projects).ThenInclude(p => p.Documents)
                 .OrderByDescending(l => l.CreatedAt)
                 .Select(l => MapToDto(l))
                 .ToListAsync();
@@ -39,7 +41,8 @@ namespace ArielCRM.Infrastructure.Repositories
 
             return await _context.Leads
                 .Include(l => l.AssignedTo)
-                .Include(l => l.Projects)
+                .Include(l => l.Projects).ThenInclude(p => p.ProjectLead)
+                .Include(l => l.Projects).ThenInclude(p => p.Documents)
                 .Where(l =>
                     l.Name.Contains(q, StringComparison.CurrentCultureIgnoreCase) ||
                     l.Company.Contains(q, StringComparison.CurrentCultureIgnoreCase) ||
@@ -65,7 +68,8 @@ namespace ArielCRM.Infrastructure.Repositories
             var lead = await _context.Leads
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
-                .Include(l => l.Projects)
+                .Include(l => l.Projects).ThenInclude(p => p.ProjectLead)
+                .Include(l => l.Projects).ThenInclude(p => p.Documents)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             return lead is null ? null : MapToDto(lead);
@@ -76,7 +80,8 @@ namespace ArielCRM.Infrastructure.Repositories
             var lead = await _context.Leads
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
-                .Include(l => l.Projects)
+                .Include(l => l.Projects).ThenInclude(p => p.ProjectLead)
+                .Include(l => l.Projects).ThenInclude(p => p.Documents)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             return lead ;
@@ -87,7 +92,8 @@ namespace ArielCRM.Infrastructure.Repositories
             var lead = await _context.Leads
                 .Include(l => l.AssignedTo)
                 .Include(l => l.Contact)
-                .Include(l => l.Projects)
+                .Include(l => l.Projects).ThenInclude(p => p.ProjectLead)
+                .Include(l => l.Projects).ThenInclude(p => p.Documents)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
             if (lead is null) return null;
@@ -166,6 +172,17 @@ namespace ArielCRM.Infrastructure.Repositories
                     EndDate = p.EndDate,
                     IsActive = p.IsActive,
                     IsListed = p.ProjectLeadId is not null,
+                    ProjectLeadId = p.ProjectLeadId,
+                    ProjectLeadName = p.ProjectLead?.Name,
+                    Description = p.Description,
+                    Documents = [.. p.Documents.Select(d => new ProjectDocumentDto
+                    {
+                        Id = d.Id,
+                        FileName = d.FileName,
+                        FileUrl = d.FileUrl,
+                        UploadId = d.UploadId,
+                        UploadedAt = d.UploadedAt
+                    })],
                 })],
         };
     }

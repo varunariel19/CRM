@@ -57,21 +57,23 @@ export const menuItems: MenuItem[] = [
     route: 'appointments',
     permission: PermissionKey.AppointmentsView,
   },
+
   {
     idx: 6,
+
+    icon: 'fas fa-tasks',
+    label: 'Task Management',
+    route: 'task-management',
+    permission: PermissionKey.TaskManagementView,
+  },
+
+  {
+    idx: 7,
 
     icon: 'fas fa-folder-open',
     label: 'Projects',
     route: 'projects',
     permission: PermissionKey.ProjectsView,
-  },
-  {
-    idx: 7,
-
-    icon: 'fas fa-users',
-    label: 'Team Members',
-    route: 'team-members',
-    permission: PermissionKey.TeamMembersView,
   },
   {
     idx: 8,
@@ -84,11 +86,13 @@ export const menuItems: MenuItem[] = [
   {
     idx: 9,
 
-    icon: 'fas fa-tasks',
-    label: 'Task Management',
-    route: 'task-management',
-    permission: PermissionKey.TaskManagementView,
+    icon: 'fas fa-users',
+    label: 'Team Members',
+    route: 'team-members',
+    permission: PermissionKey.TeamMembersView,
   },
+
+
   {
     idx: 10,
 
@@ -107,9 +111,9 @@ export const MenuItemState = {
   tasks: 3,
   tickets: 4,
   appointments: 5,
-  projects: 6,
-  "team-members": 7,
+  "task-management": 6,
+  projects: 7,
   teams: 8,
-  "task-management": 9,
+  "team-members": 9,
   "audit-history": 10,
 } as const;

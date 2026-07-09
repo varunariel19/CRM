@@ -9,6 +9,7 @@ using ArielCRM.Infrastructure.Interfaces.IService;
 using ArielCRM.Infrastructure.Repositories;
 using ArielCRM.Infrastructure.Repositories.ArielCRM.Infrastructure.Repository;
 using ArielCRM.Infrastructure.Services;
+using ArielCRM.Infrastructure.Services.ArielCRM.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -117,6 +118,9 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<CredentialFileLogger>();
+builder.Services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
+builder.Services.AddScoped<ITicketHistoryService, TicketHistoryService>();  
+builder.Services.AddScoped<IDocumentService, DocumentService>();
 
 
 

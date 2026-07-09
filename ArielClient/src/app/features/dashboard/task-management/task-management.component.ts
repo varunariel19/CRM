@@ -128,7 +128,6 @@ export class TaskManagementComponent implements OnInit {
 
 
   private applyTaskStatusChange(taskId: string, newStatus: TaskStatus) {
-    debugger;
     this.allTasks.update((list) =>
       list.map((t) => (t.taskId === taskId ? { ...t, status: newStatus } : t))
     );

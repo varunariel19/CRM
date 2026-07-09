@@ -1,5 +1,6 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { DepartmentKey } from '../core/constants/global';
+import { AuthState } from './auth.state';
 
 export interface PermissionItem {
     id: string;
@@ -28,6 +29,8 @@ export interface DesignationItem {
 
 @Injectable({ providedIn: 'root' })
 export class GlobalState {
+
+    private authState = inject(AuthState);
     private _permissions = signal<PermissionItem[]>([]);
     private _departments = signal<DepartmentItem[]>([]);
     private _accessLevels = signal<AccessLevelItem[]>([]);
@@ -41,7 +44,7 @@ export class GlobalState {
     isLoading = computed(() => this._isLoading());
 
 
-    readonly myViewOnly = signal<boolean>(true);
+    readonly myViewOnly = signal<boolean>(this.authState.user()?.accessLevel.access != 100);
     readonly isOpen = signal<boolean>(false);
 
     open(): void {
@@ -87,6 +90,11 @@ export class GlobalState {
 
     getDesignationName(id: string) {
         return this.designations().find(d => d.id == id)?.name ?? "Unknown";
+    }
+
+
+    checkAdminAccess() {
+        return this.authState.user()?.accessLevel.access == 100;
     }
 
 

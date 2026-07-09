@@ -27,19 +27,15 @@ namespace ArielCRM.Infrastructure.DTOs
         [Required]
         public string AssignedToId { get; set; } = string.Empty;
 
-        [Required]
         public string ProjectTitle { get; set; } = string.Empty;
 
-        [Required]
         [JsonConverter(typeof(JsonStringEnumConverter))]
-        public ProjectType ProjectType { get; set; }
+        public ProjectType? ProjectType { get; set; }
 
-        [Required]
         [Range(0.01, double.MaxValue, ErrorMessage = "Budget must be greater than zero.")]
-        public decimal Budget { get; set; }
+        public decimal? Budget { get; set; }
 
-        [Required]
-        public DateOnly DealStartDate { get; set; }
+        public DateOnly? DealStartDate { get; set; }
 
         public DateOnly? DealCloseDate { get; set; } = null;
     }
@@ -105,6 +101,9 @@ namespace ArielCRM.Infrastructure.DTOs
         public DateTime? EndDate { get; set; }
         public bool IsListed { get; set; }
         public bool IsActive { get; set; }
-
+        public string? ProjectLeadId { get; set; }
+        public string? ProjectLeadName { get; set; }
+        public string? Description { get; set; }
+        public List<ProjectDocumentDto> Documents { get; set; } = [];
     }
 }

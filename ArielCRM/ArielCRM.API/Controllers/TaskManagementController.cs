@@ -122,7 +122,7 @@ namespace ArielCRM.API.Controllers
                 if (!string.IsNullOrWhiteSpace(dto.Description) && dto.Description != existing.Description)
                     changes.Add("description");
 
-                var updated = await _service.UpdateAsync(taskId, dto);
+                var updated = await _service.UpdateAsync(taskId, dto, UserId);
                 if (!updated) return NotFound();
 
                 if (changes.Count > 0)

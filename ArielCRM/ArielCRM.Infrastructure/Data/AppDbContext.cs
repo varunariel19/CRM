@@ -93,6 +93,13 @@ namespace ArielCRM.Infrastructure.Data
 
             // ── Relationships ─────────────────────────
 
+            modelBuilder.Entity<TicketHistory>()
+                .HasOne(h => h.CommitedBy)
+                .WithMany(u => u.TicketHistory)
+                .HasForeignKey(h => h.CommitedById)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
             modelBuilder.Entity<Designation>()
                 .HasOne(d => d.Department).WithMany()
                 .HasForeignKey(d => d.DepartmentId)
@@ -157,10 +164,8 @@ namespace ArielCRM.Infrastructure.Data
                 .HasOne(p => p.ProjectLead).WithMany(u => u.LedProjects)
                 .HasForeignKey(p => p.ProjectLeadId)
                 .OnDelete(DeleteBehavior.SetNull);
-            modelBuilder.Entity<Project>()
-                .HasOne(p => p.Contact).WithOne(d => d.Project)
-                .HasForeignKey<Project>(p => p.ContactId)
-                .OnDelete(DeleteBehavior.SetNull);
+
+
             modelBuilder.Entity<Project>()
                 .HasMany(p => p.Members).WithMany(u => u.MemberProjects)
                 .UsingEntity<Dictionary<string, object>>(
@@ -247,15 +252,11 @@ namespace ArielCRM.Infrastructure.Data
             modelBuilder.Entity<NotificationRecipient>()
                 .HasIndex(r => new { r.UserId, r.IsRead });
 
-
-
-            modelBuilder.Entity<TicketHistory>()
-                .OwnsOne(h => h.CommitedBy, cb =>
-                {
-                    cb.Property(x => x.Id).HasColumnName("CommitedById");
-                    cb.Property(x => x.Name).HasColumnName("CommitedByName");
-                    cb.Property(x => x.ProfileImage).HasColumnName("CommitedByProfileImage");
-                });
+            modelBuilder.Entity<Project>()
+                .HasOne(p => p.Contact)
+                .WithMany(c => c.Projects)
+                .HasForeignKey(p => p.ContactId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // ── Indexes ───────────────────────────────
 
@@ -270,6 +271,7 @@ namespace ArielCRM.Infrastructure.Data
 
             modelBuilder.Entity<Deal>()
                 .HasIndex(d => d.Stage).HasDatabaseName("idx_deals_stage");
+
             modelBuilder.Entity<Deal>()
                 .HasIndex(d => d.ContactId).HasDatabaseName("idx_deals_contact");
 

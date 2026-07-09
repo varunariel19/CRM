@@ -77,11 +77,11 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Connect to Deal</label>
+              <label>Connect to Project</label>
               <select [(ngModel)]="newTask.dealId" (ngModelChange)="onDealSelect($event)">
                 <option [value]="null" disabled>None</option>
-                <option *ngFor="let deal of deals" [value]="deal.id">
-                  {{ deal.title }}
+                <option *ngFor="let project of projects" [value]="project.id">
+                  {{ project.name }}
                 </option>
               </select>
             </div>

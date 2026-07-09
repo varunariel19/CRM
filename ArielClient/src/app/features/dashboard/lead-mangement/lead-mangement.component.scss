@@ -593,7 +593,7 @@
 
 .date-text {
   position: absolute;
-  margin-top: 6px;
+  margin-top: 7px;
   margin-left: 10px;
   font-size: 12px;
   color: var(--placeholder-text);
@@ -1915,13 +1915,13 @@
 .panel-project-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
 .panel-project-card {
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 14px;
+  padding: 15px;
   background: var(--surface-bg);
 }
 

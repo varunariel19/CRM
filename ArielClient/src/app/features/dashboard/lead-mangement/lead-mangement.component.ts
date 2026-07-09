@@ -20,7 +20,7 @@ import { TeamState } from '../../../state/team.state';
 import { PermissionFacade } from '../../../core/services/permissionFacade.service';
 import { ProjectService } from '../../../services/project.service';
 import { ContactService } from '../../../services/contact.service';
-import { map, switchMap } from 'rxjs';
+import { forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthState } from '../../../state/auth.state';
 import { DepartmentItem, GlobalState } from '../../../state/global.state';
 import { DepartmentKey } from '../../../core/constants/global';
@@ -30,6 +30,7 @@ import { DeepLinkService } from '../../../core/services/deepLink.service';
 import { ActivatedRoute } from '@angular/router';
 import { ContactState } from '../../../state/contact.state';
 import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
+import { DeletionModalComponent } from '../../../shared/modals/deletion-modal/deletion-modal.component';
 
 
 export interface ProjectDocument {
@@ -86,7 +87,7 @@ export const leadSourceOptions: { value: LeadSource; label: string }[] = [
 
 @Component({
   selector: 'app-lead-management',
-  imports: [CommonModule, FormsModule, UserProfileComponent],
+  imports: [CommonModule, FormsModule, UserProfileComponent, DeletionModalComponent],
   templateUrl: './lead-mangement.component.html',
   styleUrls: ['./lead-mangement.component.scss', '../deals-pipeline/deals-pipeline.component.css'],
 })
@@ -107,6 +108,9 @@ export class LeadManagementComponent implements OnInit {
   teamsService = inject(TeamsService);
   private deepLink = inject(DeepLinkService);
   private location = inject(Location);
+  protected readonly showDeleteModal = signal(false);
+  protected readonly leadToDelete = signal<Lead | null>(null);
+  protected readonly isDeletingLead = signal(false);
 
   viewMode: 'list' | 'pipeline' = 'pipeline';
 
@@ -135,6 +139,12 @@ export class LeadManagementComponent implements OnInit {
   searchText = '';
   filterStatus: LeadStatus | '' = '';
   filterSource: LeadSource | '' = '';
+
+
+  showProjectsPanel = false;
+  projectsPanelLead: Lead | null = null;
+  projectsPanelMode: 'list' | 'create' = 'list';
+  newProjectForm: CreateProjectForLeadPayload = this.resetNewProjectForm();
 
   leadSourceOptions = leadSourceOptions;
 
@@ -173,22 +183,23 @@ export class LeadManagementComponent implements OnInit {
   }
 
 
-  selectedProjects: LeadProject[] = [];
+  selectedProjectIds = new Set<string>();
+  projectPendingDocs = new Map<string, ProjectDocument[]>();
 
   editingProject: LeadProject | null = null;
   editingProjectNewDocs: ProjectDocument[] = [];
   isEditorDragOver = false;
 
   openProjectEditor(project: LeadProject): void {
-    debugger;
     this.editingProject = {
       ...project,
-      projectLeadId: "",
-      projectType: "",
+      projectLeadId: project.projectLeadId ?? '',
+      projectType: project.projectType ?? '',
       startDate: project.startDate?.split('T')[0] ?? '',
-      endDate: project.endDate?.split('T')[0] ?? '', documents: [...(project.documents ?? [])]
+      endDate: project.endDate?.split('T')[0] ?? '',
+      documents: [...(project.documents ?? [])]
     };
-    this.editingProjectNewDocs = [];
+    this.editingProjectNewDocs = [...(this.projectPendingDocs.get(project.id) ?? [])];
   }
 
   closeProjectEditor(): void {
@@ -213,6 +224,11 @@ export class LeadManagementComponent implements OnInit {
     event.preventDefault(); event.stopPropagation(); this.isEditorDragOver = false;
     const files = event.dataTransfer?.files;
     if (files) this.addEditorFiles(Array.from(files));
+  }
+
+
+  leadView() {
+    return this.authState.user()?.accessLevel.access != 100;
   }
 
   private addEditorFiles(files: File[]): void {
@@ -240,19 +256,39 @@ export class LeadManagementComponent implements OnInit {
   }
 
 
-  saveProjectEdit() {
-    debugger;
-    if (!this.editingProject || !this.convertingLead) {
+  saveProjectEdit(): void {
+    if (!this.editingProject) {
       return;
     }
 
-    this.convertingLead.projects = this.convertingLead.projects.map(project =>
-      project.id === this.editingProject!.id
-        ? { ...this.editingProject! }
-        : project
-    );
+    const project = this.editingProject;
+    const updatedProject = this.createLocalProjectUpdate(project);
+    this.projectPendingDocs.set(project.id, [...this.editingProjectNewDocs]);
 
-    this.editingProject = null;
+    if (this.showConvertModal) {
+      this.applyProjectUpdate(updatedProject);
+      this.toastService.success(project.projectLeadId ? 'Project marked as listed for conversion.' : 'Project details saved.');
+      this.closeProjectEditor();
+      return;
+    }
+
+    const formData = this.buildProjectFormData(updatedProject, 'update');
+
+    this.loader.show('Saving project...', 'md');
+    this.projectService.updateProject(project.id, formData).subscribe({
+      next: () => {
+        this.applyProjectUpdate(updatedProject);
+        this.projectPendingDocs.delete(project.id);
+        this.loader.hide();
+        this.toastService.success(project.projectLeadId ? 'Project listed successfully.' : 'Project updated successfully.');
+        this.closeProjectEditor();
+      },
+      error: (err) => {
+        this.loader.hide();
+        this.toastService.error('Failed to save project.');
+        console.error(err);
+      }
+    });
   }
 
 
@@ -386,8 +422,16 @@ export class LeadManagementComponent implements OnInit {
 
   submitCreateLead(): void {
     if (!this.newLead.name || !this.newLead.company || !this.newLead.email) return;
+    const payload: CreateLeadDto = {
+      name: this.newLead.name,
+      company: this.newLead.company,
+      email: this.newLead.email,
+      phone: this.newLead.phone,
+      source: this.newLead.source,
+      assignedToId: this.newLead.assignedToId,
+    };
     this.loader.show('Creating Lead...', 'lg');
-    this.leadService.handleCreateLead(this.newLead).subscribe({
+    this.leadService.handleCreateLead(payload).subscribe({
       next: (created) => {
         this.leadState.addLead(created);
         this.showCreateModal = false;
@@ -437,6 +481,7 @@ export class LeadManagementComponent implements OnInit {
       const primaryProject = lead.projects?.[0] ?? null;
 
       this.convertingLead = { ...lead };
+      this.selectedProjectIds.clear();
       this.convertingLeadPreviousStatus = previousStatus;
       this.projectForm = {
         ...this.resetProjectForm(),
@@ -463,7 +508,9 @@ export class LeadManagementComponent implements OnInit {
     if (!this.editLead.id) return;
     const { id, ...dto } = this.editLead;
     dto.dealCloseDate = dto.dealCloseDate ? dto.dealCloseDate : null;
-    dto.budget = Number(dto.budget?.toFixed(2));
+    if (dto.budget != null) {
+      dto.budget = Number(dto.budget.toFixed(2));
+    }
     this.leadService.handleUpdateLead(id!, dto as UpdateLeadDto).subscribe({
       next: () => {
         this.leadState.updateLead(id!, this.editLead);
@@ -491,21 +538,6 @@ export class LeadManagementComponent implements OnInit {
       this.location.go('/dashboard');
     }
   }
-
-
-  deleteLead(id: string): void {
-    this.menuState.open({
-      title: 'Delete Lead',
-      message: 'Are you sure you want to delete this lead? This action cannot be undone.',
-      onConfirm: () => {
-        this.leadService.handleRemoveLead(id).subscribe({
-          next: () => { this.leadState.removeLead(id); },
-          error: (err) => console.error('Failed to delete lead', err),
-        });
-      },
-    });
-  }
-
 
   setStatus(lead: Lead, status: LeadStatus): void {
     this.openStatusIndex = null;
@@ -648,10 +680,20 @@ export class LeadManagementComponent implements OnInit {
   }
 
   proceedToClientCreation(): void {
-    if (!this.projectForm.name || !this.projectForm.projectLeadId) {
-      this.toastService.error('Project name and lead are required.');
+    if (!this.convertingLead) return;
+
+    const selectedProjects = this.getSelectedConversionProjects();
+
+    if (!selectedProjects.length) {
+      this.toastService.error('Select at least one project before converting the lead.');
       return;
     }
+
+    if (selectedProjects.some(project => !project.projectLeadId)) {
+      this.toastService.error('Assign a project manager to every selected project.');
+      return;
+    }
+
     this.conversionStep = 2;
   }
 
@@ -667,29 +709,10 @@ export class LeadManagementComponent implements OnInit {
 
     if (!this.convertingLead) return;
 
-    const formData = new FormData();
-    formData.append('name', this.projectForm.name);
-    formData.append('projectLeadId', this.projectForm.projectLeadId);
-
-    if (this.projectForm.description) {
-      formData.append('description', this.projectForm.description);
-    }
-
-    if (this.projectForm.startDate) {
-      formData.append('startDate', this.projectForm.startDate);
-    }
-
-    if (this.projectForm.endDate) {
-      formData.append('endDate', this.projectForm.endDate);
-    }
-
-    this.projectForm.documents.forEach(doc =>
-      formData.append('documents', doc.file, doc.name)
-    );
-
     const leadId = this.convertingLead.id;
     const leadName = this.convertingLead.name;
-    const projectName = this.projectForm.name;
+    const selectedProjects = this.getSelectedConversionProjects();
+    const projectNames = selectedProjects.map(project => project.name).join(', ');
     const previousStatus = this.convertingLeadPreviousStatus;
 
     this.loader.show('Converting lead...', 'lg');
@@ -697,22 +720,33 @@ export class LeadManagementComponent implements OnInit {
       .pipe(
         switchMap((contact) => {
           this.contactState.addContact(contact);
+          const finalizeRequests = selectedProjects.map(project => {
+            const projectData = this.buildProjectFormData(project, 'create');
+            projectData.append('projectId', project.id);
+            projectData.append('leadId', leadId);
+            projectData.append('contactId', contact.id);
+            return this.projectService.createProject(projectData);
+          });
+
+          return (finalizeRequests.length ? forkJoin(finalizeRequests) : of([]))
+            .pipe(map(() => contact));
+        }),
+        switchMap((contact: any) => {
           return this.leadService.handleUpdateLead(leadId, {
             status: 'Converted',
             contactId: contact.id
-          }).pipe(map(() => contact));
-        }),
-
-        switchMap((contact) => {
-          formData.append('contactId', contact.id);
-          this.leadState.updateLead(leadId, { contactId: contact.id });
-          return this.projectService.createProject(formData);
+          }).pipe(map((updatedLead) => ({ contact, updatedLead })));
         })
       )
       .subscribe({
-        next: () => {
+        next: ({ contact, updatedLead }) => {
           this.loader.hide();
-          this.toastService.success(`Lead "${leadName}" successfully converted to client and project "${projectName}" created.`);
+          this.leadState.updateLead(leadId, {
+            status: 'Converted',
+            contactId: contact.id,
+            projects: updatedLead.projects,
+          });
+          this.toastService.success(`Lead "${leadName}" successfully converted with project(s): ${projectNames}.`);
           this._closeConvertModalAndReset();
         },
 
@@ -739,6 +773,8 @@ export class LeadManagementComponent implements OnInit {
     this.conversionStep = 1;
     this.convertingLead = null;
     this.convertingLeadPreviousStatus = null;
+    this.selectedProjectIds.clear();
+    this.projectPendingDocs.clear();
     this.projectForm = this.resetProjectForm();
     this.clientForm = this.resetClientForm();
     this.cdr.detectChanges();
@@ -849,25 +885,6 @@ export class LeadManagementComponent implements OnInit {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-  showProjectsPanel = false;
-  projectsPanelLead: Lead | null = null;
-  projectsPanelMode: 'list' | 'create' = 'list';
-  newProjectForm: CreateProjectForLeadPayload = this.resetNewProjectForm();
-
-
   private resetNewProjectForm(): CreateProjectForLeadPayload {
     return {
       name: '',
@@ -914,7 +931,7 @@ export class LeadManagementComponent implements OnInit {
       this.projectsPanelLead = null;
       this.projectsPanelMode = 'list';
       this.newProjectForm = this.resetNewProjectForm();
-    }, 250); // matches slide-out transition duration, avoids content flash before it's fully offscreen
+    }, 250);
   }
 
   openCreateProjectForm(): void {
@@ -936,21 +953,27 @@ export class LeadManagementComponent implements OnInit {
 
     this.loader.show('Creating project...', 'md');
 
-    this.leadService.handleUpdateLead(this.projectsPanelLead.id, {
+    this.projectService.createProjectForLead({
+      leadId: this.projectsPanelLead.id,
       projectTitle: this.newProjectForm.name,
       projectType: this.newProjectForm.projectType || null,
       budget: this.newProjectForm.budget,
       dealStartDate: this.newProjectForm.startDate,
       dealCloseDate: this.newProjectForm.endDate,
-    } as UpdateLeadDto).subscribe({
-      next: (updated) => {
+    }).pipe(
+      switchMap(() => this.leadService.handleGetLeads())
+    ).subscribe({
+      next: (leads) => {
         this.loader.hide();
-        this.leadState.updateLead(this.projectsPanelLead!.id, { projects: updated.projects });
-        this.projectsPanelLead = { ...this.projectsPanelLead!, projects: updated.projects };
-        if (this.detailLead?.id === this.projectsPanelLead!.id) {
-          this.detailLead = { ...this.detailLead, projects: updated.projects };
+        this.leadState.setLeads(leads);
+        const updatedLead = leads.find(lead => lead.id === this.projectsPanelLead!.id);
+        if (updatedLead) {
+          this.projectsPanelLead = updatedLead;
+          if (this.detailLead?.id === updatedLead.id) {
+            this.detailLead = updatedLead;
+          }
         }
-        this.toastService.success('Project added successfully!');
+        this.toastService.success('Project added successfully as unlisted.');
         this.projectsPanelMode = 'list';
         this.newProjectForm = this.resetNewProjectForm();
       },
@@ -977,4 +1000,113 @@ export class LeadManagementComponent implements OnInit {
       default: return 'e.g. 10000';
     }
   }
+
+  canListProject(lead: Lead | null): boolean {
+    return lead?.status === 'Converted';
+  }
+
+  isProjectSelected(project: LeadProject): boolean {
+    return this.selectedProjectIds.has(project.id);
+  }
+
+  toggleProjectForConversion(project: LeadProject, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    if (checked) {
+      this.selectedProjectIds.add(project.id);
+      this.openProjectEditor(project);
+    } else {
+      this.selectedProjectIds.delete(project.id);
+    }
+  }
+
+
+  deleteLead(lead: Lead): void {
+    this.leadToDelete.set(lead);
+    this.showDeleteModal.set(true);
+  }
+
+  closeDeleteModal(): void {
+    if (this.isDeletingLead()) return;
+    this.showDeleteModal.set(false);
+    this.leadToDelete.set(null);
+  }
+
+  confirmDeleteLead(): void {
+    const lead = this.leadToDelete();
+    if (!lead) return;
+
+    this.isDeletingLead.set(true);
+    this.leadService.handleRemoveLead(lead.id).subscribe({
+      next: () => {
+        this.leadState.removeLead(lead.id);
+        this.isDeletingLead.set(false);
+        this.showDeleteModal.set(false);
+        this.leadToDelete.set(null);
+      },
+      error: (err) => {
+        console.error('Failed to delete lead', err);
+        this.isDeletingLead.set(false);
+      },
+    });
+  }
+
+  private getSelectedConversionProjects(): LeadProject[] {
+    return this.convertingLead?.projects.filter(project => this.selectedProjectIds.has(project.id)) ?? [];
+  }
+
+  private buildProjectFormData(project: LeadProject, mode: 'create' | 'update'): FormData {
+    const formData = new FormData();
+    formData.append('name', project.name);
+    if (project.projectLeadId) formData.append('projectLeadId', project.projectLeadId);
+    if (project.description) formData.append('description', project.description);
+    if (project.projectType) formData.append('projectType', project.projectType);
+    if (project.budget != null) formData.append('budget', String(project.budget));
+    if (project.startDate) formData.append('startDate', project.startDate);
+    if (project.endDate) formData.append('endDate', project.endDate);
+    if (mode === 'update' && this.projectsPanelLead?.contactId) formData.append('contactId', this.projectsPanelLead.contactId);
+    if (mode === 'update' && project.projectLeadId) formData.append('isActive', 'true');
+
+    const fileKey = mode === 'create' ? 'documents' : 'newDocuments';
+    (this.projectPendingDocs.get(project.id) ?? []).forEach(doc => formData.append(fileKey, doc.file, doc.name));
+    return formData;
+  }
+
+  private createLocalProjectUpdate(project: LeadProject): LeadProject {
+    return {
+      ...project,
+      budget: project.budget != null ? Number(project.budget) : null,
+      isListed: !!project.projectLeadId,
+      isActive: project.isActive || !!project.projectLeadId,
+      projectLeadName: this.projectManagers.find(manager => manager.id === project.projectLeadId)?.name ?? project.projectLeadName,
+      documents: [...(project.documents ?? [])],
+    };
+  }
+
+  private applyProjectUpdate(updatedProject: LeadProject): void {
+    const updateProjects = (projects: LeadProject[] = []) =>
+      projects.map(project => project.id === updatedProject.id ? updatedProject : project);
+
+    if (this.convertingLead) {
+      this.convertingLead = {
+        ...this.convertingLead,
+        projects: updateProjects(this.convertingLead.projects),
+      };
+    }
+
+    if (this.projectsPanelLead) {
+      this.projectsPanelLead = {
+        ...this.projectsPanelLead,
+        projects: updateProjects(this.projectsPanelLead.projects),
+      };
+      this.leadState.updateLead(this.projectsPanelLead.id, { projects: this.projectsPanelLead.projects });
+    }
+
+    if (this.detailLead) {
+      this.detailLead = {
+        ...this.detailLead,
+        projects: updateProjects(this.detailLead.projects),
+      };
+    }
+  }
+
 }

@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { endpoints } from '../core/constants/endpoints';
 import { Observable } from 'rxjs';
+import { UserSummary } from '../core/types/auth.type';
 
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
@@ -62,6 +63,16 @@ export interface ApiResponse {
 }
 
 
+export interface TicketHistory {
+    id: string;
+    ticketId: string;
+    title: string;
+    content: string | null;
+    commitedBy: UserSummary;
+    createdAt: string;
+}
+
+
 @Injectable({
     providedIn: 'root',
 })
@@ -97,6 +108,10 @@ export class TaskManageService {
         );
     }
 
+    getTicketHistory(taskId: string): Observable<TicketHistory[]> {
+    return this.http.get<TicketHistory[]>(`${endpoints.ticketHistory}/${taskId}`, { withCredentials: true });
+}
+    
     updateTask(
         taskId: string,
         payload: UpdateTaskRequest

@@ -1,21 +1,40 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace ArielCRM.DataLayer.Entities
 {
-public class TicketHistory
-{
-    public Guid Id { get; set; }
-    public string TicketId { get; set; } = string.Empty;
-    public TicketTask Ticket { get; set; } = null!;
-    public string Title { get; set; } = string.Empty;
-    public string? Content { get; set; } = null;
-    public UserSummaryDto1  CommitedBy { get; set; } = null!;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-}
-
- public class UserSummaryDto1
+    [Table("ticket_history")]
+    public class TicketHistory
     {
-        public string Id { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string? ProfileImage { get; set; }
-    }
+        [Key]
+        [Column("id")]
+        public Guid Id { get; set; } = Guid.NewGuid();
 
+        [Required]
+        [Column("ticket_id")]
+        [MaxLength(50)]
+        public string TicketId { get; set; } = string.Empty;
+
+        [Required]
+        [Column("title")]
+        [MaxLength(255)]
+        public string Title { get; set; } = string.Empty;
+
+        [Column("content")]
+        public string? Content { get; set; } = null;
+
+        [Required]
+        [Column("commited_by_id")]
+        [MaxLength(50)]
+        public string CommitedById { get; set; } = string.Empty;
+
+        [Column("created_at")]
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [ForeignKey(nameof(TicketId))]
+        public TicketTask Ticket { get; set; } = null!;
+
+        [ForeignKey(nameof(CommitedById))]
+        public User CommitedBy { get; set; } = null!;
+    }
 }

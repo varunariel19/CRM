@@ -44,10 +44,11 @@ export class AuditHistoryModalComponent {
     if (!item.diffData) return null;
     try {
       const obj = JSON.parse(item.diffData);
+      const normalize = (v: any) => (v === undefined || v === null || v === '' ? null : v);
       return Object.entries(obj).map(([field, val]: any) => ({
         field,
-        from: val?.from ?? null,
-        to: val?.to ?? null
+        from: normalize(val?.from),
+        to: normalize(val?.to)
       }));
     } catch { return null; }
   }

@@ -1,5 +1,6 @@
 using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
+using ArielCRM.Infrastructure.Interfaces.IService;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,6 +11,7 @@ namespace ArielCRM.API.Controllers
     [Authorize]
     public class ProjectController(
         IProjectService projectService,
+        IDocumentService documentService,
         ILogger<ProjectController> logger,
         INotificationService notificationService) : ControllerBase
     {
@@ -61,15 +63,18 @@ namespace ArielCRM.API.Controllers
                 {
                     try
                     {
-                        await notificationService.CreateAsync(new CreateNotificationDto
+                        if (!string.IsNullOrWhiteSpace(dto.ProjectLeadId))
                         {
-                            UserIds = [dto.ProjectLeadId!],
-                            Title = "New project assigned to you",
-                            Message = $"You've been assigned as project lead for \"{dto.Name}\"",
-                            EntityType = "Lead",
-                            EntityId = projectId,
-                            Link = "projects"
-                        });
+                            await notificationService.CreateAsync(new CreateNotificationDto
+                            {
+                                UserIds = [dto.ProjectLeadId],
+                                Title = "New project assigned to you",
+                                Message = $"You've been assigned as project lead for \"{dto.Name}\"",
+                                EntityType = "Project",
+                                EntityId = projectId,
+                                Link = "projects"
+                            });
+                        }
                     }
                     catch (Exception notifyEx)
                     {
@@ -82,6 +87,31 @@ namespace ArielCRM.API.Controllers
                     Success = true,
                     Message = "Project created successfully",
                     ProjectId = projectId
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+        }
+
+        // POST: api/projects/for-lead
+        [HttpPost("for-lead")]
+        [Authorize(Policy = "Permission:Projects.Create")]
+        public async Task<IActionResult> CreateProjectForLead([FromBody] CreateProjectForLeadDto dto)
+        {
+            try
+            {
+                var project = await projectService.CreateProjectForLeadAsync(dto);
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Project added to lead successfully",
+                    Data = project
                 });
             }
             catch (Exception ex)
@@ -205,6 +235,33 @@ namespace ArielCRM.API.Controllers
         {
             var result = await projectService.GetUpdatedTasksAsync(HttpContext, since);
             return Ok(result);
+        }
+
+
+        [HttpDelete("remove-document/{docId}")]
+        public async Task<IActionResult> RemoveDocument(string docId)
+        {
+            var deleted = await documentService.DeleteDocumentAsync(docId);
+
+            if (!deleted)
+                return NotFound(new { message = $"Document '{docId}' not found." });
+
+            return NoContent();
+        }
+
+
+        [HttpPost("add-document/{projectId}")]
+        public async Task<IActionResult> AddDocumentAsync(string projectId, [FromForm] List<IFormFile> documents)
+        {
+            try
+            {
+                var uploaded = await documentService.UploadDocumentsAsync(documents, projectId);
+                return Ok(uploaded);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
 

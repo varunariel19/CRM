@@ -69,6 +69,7 @@ namespace ArielCRM.DataLayer.Entities
         public ICollection<TicketTask> AssignedProjTickets { get; set; } = [];
         public ICollection<TicketTask> ReportedProjTickets { get; set; } = [];
         public ICollection<Ticket> AssignedTickets { get; set; } = [];
+        public ICollection<TicketHistory> TicketHistory { get; set; } = [];
         public ICollection<Project> LedProjects { get; set; } = [];
         public ICollection<Project> MemberProjects { get; set; } = [];
     }

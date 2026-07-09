@@ -11,11 +11,12 @@ import { PermissionFacade } from '../../../core/services/permissionFacade.servic
 import { ToastService } from '../../../core/services/toast.service';
 import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
 import { AuthState } from '../../../state/auth.state';
+import { DeletionModalComponent } from '../../../shared/modals/deletion-modal/deletion-modal.component';
 
 @Component({
   selector: 'app-team-members',
   standalone: true,
-  imports: [CommonModule, FormsModule, UserProfileComponent],
+  imports: [CommonModule, FormsModule, UserProfileComponent , DeletionModalComponent],
   templateUrl: './team-members.component.html',
   styleUrl: './team-members.component.css',
 })
@@ -213,7 +214,6 @@ export class TeamMembersComponent implements OnInit {
   }
 
   handleEditMember(): void {
-    debugger;
     this.editFormError.set('');
     if (!this.validateEditForm() || !this.editMember || !this.originalEditMember) return;
 
