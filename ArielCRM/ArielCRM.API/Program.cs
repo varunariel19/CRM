@@ -40,6 +40,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins([
+            "https://crm-steel-kappa.vercel.app",
             "http://localhost:4200",
             "http://192.168.1.8:4200",
             "http://192.168.4.104:4200",
@@ -119,7 +120,7 @@ builder.Services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<CredentialFileLogger>();
 builder.Services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
-builder.Services.AddScoped<ITicketHistoryService, TicketHistoryService>();  
+builder.Services.AddScoped<ITicketHistoryService, TicketHistoryService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 
 
@@ -127,11 +128,15 @@ builder.Services.AddScoped<IDocumentService, DocumentService>();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// if (app.Environment.IsDevelopment())
+// {
+//     app.UseSwagger();
+//     app.UseSwaggerUI();
+// }
+
+
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseRouting();
 app.UseHttpsRedirection();
