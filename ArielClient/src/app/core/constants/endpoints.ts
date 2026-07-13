@@ -1,4 +1,6 @@
-export const BASE_URL = 'https://localhost:7111';
+import { environment } from "../../../environments/environment";
+
+export const BASE_URL = environment.baseUrl;
 export const SignalRUrl = `${BASE_URL}/notificationHub`;
 export const TeamsHubUrl = `${BASE_URL}/teamsHub`;
 
@@ -104,8 +106,8 @@ export const endpoints = {
     },
 
 
-    AIUrl: 'https://api.groq.com/openai/v1/chat/completions',
-    groqApiKey: ``,
+    AIUrl: environment.ai.url,
+    groqApiKey: environment.ai.apiKey,
 
     PERMISSIONS: `${BASE_URL}/api/admin/permissions`,
     DEPARTMENTS: `${BASE_URL}/api/admin/departments`,
@@ -115,12 +117,11 @@ export const endpoints = {
 }
 
 export const appwrite = {
-    production: false,
-    appwriteEndpoint: 'https://sgp.cloud.appwrite.io/v1',
-    appwriteProjectId: '6a256a1900079536dd82',
-    appwriteBucketId: '6a256d420025f0e2a3fc'
-}
-
+    production: environment.production,
+    appwriteEndpoint: environment.appwrite.endpoint,
+    appwriteProjectId: environment.appwrite.projectId,
+    appwriteBucketId: environment.appwrite.bucketId,
+};
 
 export enum Routes {
     signIn = "/sign-in",
