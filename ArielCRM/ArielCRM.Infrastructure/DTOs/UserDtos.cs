@@ -33,4 +33,12 @@ namespace ArielCRM.Infrastructure.DTOs
             throw new NotImplementedException();
         }
     }
+
+
+    public class UserEncryptionKeyDto
+    {
+        public string PublicKey { get; set; } = string.Empty;
+        public string EncryptedPrivateKey { get; set; } = string.Empty;
+        public string Salt { get; set; } = string.Empty;
+    }
 }

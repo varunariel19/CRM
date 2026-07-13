@@ -25,15 +25,15 @@ namespace ArielCRM.Application.Services
                 return null;
 
             var claims = new List<Claim>
-            {
-                new(ClaimTypes.NameIdentifier, user.Id),
-                new(ClaimTypes.Name,           user.Name),
-                new(ClaimTypes.Email,          user.Email),
-                new("Department",              user.Department.Name),
-                new("Designation",             user.Designation.Name),
-                new("AccessLevelId",             user.AccessLevel.Id),
-                new("Permissions", string.Join("|", user.AccessLevel.Permissions.Select(p => p.Permission.Code)))
-            };
+                {
+                    new(ClaimTypes.NameIdentifier, user.Id),
+                    new(ClaimTypes.Name,           user.Name),
+                    new(ClaimTypes.Email,          user.Email),
+                    new("Department",              user.Department.Name),
+                    new("Designation",             user.Designation.Name),
+                    new("AccessLevelId",             user.AccessLevel.Id),
+                    new("Permissions", string.Join("|", user.AccessLevel.Permissions.Select(p => p.Permission.Code)))
+                };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
@@ -62,11 +62,19 @@ namespace ArielCRM.Application.Services
                     Name = user.AccessLevel.Name,
                     Access = user.AccessLevel.Access,
                     Permissions = [.. user.AccessLevel.Permissions.Select(p => new PermissionDto
-                    {
-                        Id = p.Permission.Id,
-                        Code = p.Permission.Code,
-                        Description = p.Permission.Description
-                    })]
+            {
+                Id = p.Permission.Id,
+                Code = p.Permission.Code,
+                Description = p.Permission.Description
+            })]
+                },
+                // E2E key material — client uses password (still in memory from login form)
+                // + salt to derive the KDF key and decrypt the private key locally.
+                EncryptionKey = user.EncryptionKey is null ? null : new UserEncryptionKeyDto
+                {
+                    PublicKey = user.EncryptionKey.PublicKey,
+                    EncryptedPrivateKey = user.EncryptionKey.EncryptedPrivateKey,
+                    Salt = user.EncryptionKey.Salt
                 }
             };
         }
@@ -104,11 +112,17 @@ namespace ArielCRM.Application.Services
                     Name = user.AccessLevel.Name,
                     Access = user.AccessLevel.Access,
                     Permissions = [.. user.AccessLevel.Permissions.Select(p => new PermissionDto
-                    {
-                        Id = p.Permission.Id,
-                        Code = p.Permission.Code
-                    })]
+            {
+                Id = p.Permission.Id,
+                Code = p.Permission.Code
+            })]
                 },
+                EncryptionKey = user.EncryptionKey is null ? null : new UserEncryptionKeyDto
+                {
+                    PublicKey = user.EncryptionKey.PublicKey,
+                    EncryptedPrivateKey = user.EncryptionKey.EncryptedPrivateKey,
+                    Salt = user.EncryptionKey.Salt
+                }
             };
         }
     }

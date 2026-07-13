@@ -1,10 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../services/auth.service';
 import { AuthState } from '../../../state/auth.state';
 import { Router } from '@angular/router';
 import { Routes } from '../../../core/constants/endpoints';
+import { LoaderService } from '../../../core/services/loader.service';
+import { E2eKeyService } from '../../../core/services/E2eKey.service';
 
 
 @Component({
@@ -15,12 +18,14 @@ import { Routes } from '../../../core/constants/endpoints';
   styleUrl: './login.component.css',
 })
 
-
 export class LoginComponent {
 
   private authState = inject(AuthState);
   private router = inject(Router);
+  private loader = inject(LoaderService);
   private cdr = inject(ChangeDetectorRef);
+  private e2eKeyService = inject(E2eKeyService);
+  private http = inject(HttpClient);
 
   step: 1 | 2 = 1;
 
@@ -29,6 +34,7 @@ export class LoginComponent {
   captchaInput = '';
   showPassword = false;
   errorMsg = '';
+  isLoading = false;
 
   captchaCode = '';
   private captchaChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -69,9 +75,21 @@ export class LoginComponent {
       return;
     }
     this.errorMsg = '';
+    this.isLoading = true;
+    this.loader.show?.();
+
     this.authService.login({ email: this.email, password: this.password }).subscribe({
-      next: (user) => {
+      next: async (user: any) => {
+        try {
+          // await this.setupOrUnlockEncryptionKey(user);
+        } catch (e) {
+          console.error('E2E key setup/unlock failed:', e);
+          this.errorMsg = 'Login succeeded, but secure messaging could not be unlocked.';
+        }
+
         this.authState.setUser(user);
+        this.isLoading = false;
+        this.loader.hide();
         this.router.navigate([Routes.dashboard]);
       },
       error: (err: any) => {
@@ -81,9 +99,29 @@ export class LoginComponent {
           err?.message ||
           'Login failed. Please try again.';
         this.generateCaptcha();
+        this.isLoading = false;
+        this.loader.hide();
         this.cdr.detectChanges();
       }
     });
+  }
+
+  private async setupOrUnlockEncryptionKey(user: any): Promise<void> {
+    if (!user?.encryptionKey) {
+      const keyMaterial = await this.e2eKeyService.generateAndEncryptKeyPair(this.password);
+
+      await this.http.post(Routes.saveEncryptionKey, {
+        publicKey: keyMaterial.publicKeyBase64,
+        encryptedPrivateKey: keyMaterial.encryptedPrivateKeyBase64,
+        salt: keyMaterial.saltBase64,
+      }).toPromise();
+    } else {
+      await this.e2eKeyService.decryptPrivateKey(
+        this.password,
+        user.encryptionKey.encryptedPrivateKey,
+        user.encryptionKey.salt
+      );
+    }
   }
 
   goBack(): void {

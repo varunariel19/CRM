@@ -52,6 +52,14 @@ namespace ArielCRM.DataLayer.Entities
         [MaxLength(50)]
         public string DesignationId { get; set; } = string.Empty;
 
+        [Required]
+        [Column("encryption_id")]
+        [MaxLength(50)]
+        public string EncryptionId { get; set; } = string.Empty;
+
+        [ForeignKey(nameof(EncryptionId))]
+        public UserEncryptionKey EncryptionKey { get; set; } = null!;
+
         [ForeignKey(nameof(DesignationId))]
         public Designation Designation { get; set; } = null!;
 
@@ -72,5 +80,6 @@ namespace ArielCRM.DataLayer.Entities
         public ICollection<TicketHistory> TicketHistory { get; set; } = [];
         public ICollection<Project> LedProjects { get; set; } = [];
         public ICollection<Project> MemberProjects { get; set; } = [];
+
     }
 }

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace ArielCRM.DataLayer.Entities
 {
 
-  public enum ScheduledMessageStatus
+    public enum ScheduledMessageStatus
     {
         Pending,
         Sent,
@@ -48,6 +48,6 @@ namespace ArielCRM.DataLayer.Entities
         [Column("members", TypeName = "text[]")]
         public string[] Members { get; set; } = [];
 
-        public ICollection<TeamMessage> Messages { get; set; } = new List<TeamMessage>();
+        public ICollection<TeamMessage> Messages { get; set; } = [];
     }
 }

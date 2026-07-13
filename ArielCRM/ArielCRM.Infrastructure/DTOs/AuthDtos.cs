@@ -36,6 +36,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public string DepartmentId { get; set; } = string.Empty;
         public string DesignationId { get; set; } = string.Empty;
         public AccessLevelDto AccessLevel { get; set; } = new();
+        public UserEncryptionKeyDto? EncryptionKey { get; set; }
     }
 
     public class SeedAdminRequestDto

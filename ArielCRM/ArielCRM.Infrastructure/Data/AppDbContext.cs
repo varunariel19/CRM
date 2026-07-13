@@ -46,6 +46,7 @@ namespace ArielCRM.Infrastructure.Data
 
 
 
+
         // ─────────────────────────────────────────────
         // Model Configuration
         // ─────────────────────────────────────────────
@@ -257,6 +258,15 @@ namespace ArielCRM.Infrastructure.Data
                 .WithMany(c => c.Projects)
                 .HasForeignKey(p => p.ContactId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<User>()
+            .HasOne(u => u.EncryptionKey)
+            .WithOne(k => k.User)
+            .HasForeignKey<UserEncryptionKey>(k => k.UserId);
+
+            modelBuilder.Entity<UserEncryptionKey>()
+                .HasIndex(k => k.UserId)
+                .IsUnique();
 
             // ── Indexes ───────────────────────────────
 

@@ -78,6 +78,7 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 builder.Services.AddHttpClient();
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<EncryptionService>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
 builder.Services.AddHttpContextAccessor();
@@ -122,7 +123,6 @@ builder.Services.AddSingleton<CredentialFileLogger>();
 builder.Services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
 builder.Services.AddScoped<ITicketHistoryService, TicketHistoryService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
-
 
 
 

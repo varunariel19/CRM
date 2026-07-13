@@ -1,5 +1,12 @@
 <div class="login-page">
 
+ <div class="loader-overlay" *ngIf="isLoading">
+  <div class="loader-content">
+    <div class="loader-spinner"></div>
+    <span class="loader-text">Logging in...</span>
+  </div>
+</div>
+
   <div class="visual-panel">
 
     <div class="visual-overlay"></div>
@@ -56,6 +63,8 @@
     </div>
 
   </div>
+
+
 
  
   <div class="login-panel">
@@ -175,22 +184,7 @@
     </div>
 
     <div class="login-footer">
-      <!-- <div class="app-badges">
-        <div class="badge apple">
-          <i class="fab fa-apple"></i>
-          <div>
-            <small>Download on the</small>
-            <span>App Store</span>
-          </div>
-        </div>
-        <div class="badge google">
-          <i class="fab fa-google-play"></i>
-          <div>
-            <small>GET IT ON</small>
-            <span>Google Play</span>
-          </div>
-        </div>
-      </div> -->
+     
       <p class="footer-legal">
         By logging in, you agree to ArielCRM
         <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>

@@ -125,6 +125,7 @@ export const appwrite = {
 
 export enum Routes {
     signIn = "/sign-in",
-    dashboard = "/dashboard"
+    dashboard = "/dashboard",
+    saveEncryptionKey  = "/api/users/encryption-key",
 
 }

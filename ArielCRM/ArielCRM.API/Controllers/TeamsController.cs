@@ -16,7 +16,7 @@ namespace ArielCRM.API.Controllers
     [Authorize]
     public class TeamsController(AppDbContext db, IHubContext<TeamsHub> hubContext, IConfiguration configuration,
      IHttpClientFactory httpClientFactory, INotificationService notificationService) : ControllerBase
-    
+
     {
         private const int MaxAttachmentCount = 8;
         private const long MaxAttachmentBytes = 50 * 1024 * 1024;
@@ -179,7 +179,7 @@ namespace ArielCRM.API.Controllers
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(dto.UserId) || dto.UserId == UserId)
+                if (string.IsNullOrWhiteSpace(dto.UserId))
                     return BadRequest(new { message = "Select another employee to start a direct chat." });
 
                 var content = (dto.FirstMessage ?? string.Empty).Trim();
@@ -196,11 +196,30 @@ namespace ArielCRM.API.Controllers
                 if (attachments.Any(a => !IsValidAttachmentUrl(a.FileUrl)))
                     return BadRequest(new { message = "One or more attachment URLs are invalid." });
 
-                var targetExists = await db.Users.AnyAsync(u => u.Id == dto.UserId);
-                if (!targetExists) return NotFound(new { message = "Employee not found." });
+                var isSelfChat = dto.UserId == UserId;
 
-                var existing = await db.TeamConversations
-                    .FirstOrDefaultAsync(c => !c.IsGroup && c.Members.Contains(UserId) && c.Members.Contains(dto.UserId));
+                if (!isSelfChat)
+                {
+                    var targetExists = await db.Users.AnyAsync(u => u.Id == dto.UserId);
+                    if (!targetExists) return NotFound(new { message = "Employee not found." });
+                }
+
+                TeamConversation? existing;
+
+                if (isSelfChat)
+                {
+                    // A self-conversation is one where you're the only member
+                    existing = await db.TeamConversations
+                        .FirstOrDefaultAsync(c => !c.IsGroup && c.Members.Count() == 1 && c.Members.Contains(UserId));
+                }
+                else
+                {
+                    existing = await db.TeamConversations
+                        .FirstOrDefaultAsync(c => !c.IsGroup
+                            && c.Members.Count() == 2
+                            && c.Members.Contains(UserId)
+                            && c.Members.Contains(dto.UserId));
+                }
 
                 string conversationId;
 
@@ -214,7 +233,7 @@ namespace ArielCRM.API.Controllers
                     {
                         IsGroup = false,
                         CreatedById = UserId,
-                        Members = [UserId, dto.UserId]
+                        Members = isSelfChat ? [UserId] : [UserId, dto.UserId]
                     };
                     db.TeamConversations.Add(conversation);
                     await db.SaveChangesAsync();
@@ -698,20 +717,6 @@ namespace ArielCRM.API.Controllers
             CreatedAt = a.CreatedAt
         })]
         };
-
-
-        private static string GetAttachmentType(string? contentType, string fileName)
-        {
-            var type = contentType?.ToLowerInvariant() ?? string.Empty;
-            if (type.StartsWith("image/")) return "image";
-            if (type.StartsWith("audio/")) return "audio";
-            if (type.StartsWith("video/")) return "video";
-
-            var extension = Path.GetExtension(fileName).ToLowerInvariant();
-            return extension is ".pdf" or ".doc" or ".docx" or ".xls" or ".xlsx" or ".ppt" or ".pptx" or ".txt" or ".csv"
-                ? "document"
-                : "file";
-        }
 
 
         private async Task<string> ScheduleDelayedMessageAsync(ScheduledTeamMessage scheduled, TeamConversation conversation)
