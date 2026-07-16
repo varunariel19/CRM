@@ -53,7 +53,6 @@ export class TeamService {
     if (dto.designationId != null) formData.append('DesignationId', dto.designationId);
     if (dto.accessLevelId != null) formData.append('AccessLevelId', dto.accessLevelId);
     if (dto.profileImage instanceof File) formData.append('ProfileImage', dto.profileImage);
-    // if (dto.removeProfileImage != null) formData.append('RemoveProfileImage', String(dto.removeProfileImage));
 
     return this.http.put<TeamMember>(`${endpoints.teamMembers}/${id}`, formData, { withCredentials: true })
       .pipe(

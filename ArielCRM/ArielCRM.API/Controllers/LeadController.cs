@@ -10,6 +10,7 @@ namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/leads")]
+    [Authorize]
     public class LeadsController(ILeadService leadService, ILogger<LeadsController> logger, IHubContext<TeamsHub> hubContext, INotificationService notificationService) : ControllerBase
     {
         private readonly INotificationService _notificationService = notificationService;

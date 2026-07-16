@@ -9,6 +9,7 @@ export class AuthState {
     private _teamMembers = signal<TeamMember[]>([]);
 
     logoUrl = signal('/ariel-logo.png');
+    crmLogo = signal('/crm.png');
     user = computed(() => this._user());
     isValidating = computed(() => this._isValidating());
 

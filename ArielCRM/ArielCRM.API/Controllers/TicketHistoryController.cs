@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace ArielCRM.API.Controllers
 {
     [ApiController]
-    [Authorize]
     [Route("api/ticket-history")]
+    [Authorize]
     public class TicketHistoryController(ITicketHistoryService service, ILogger<TicketHistoryController> logger) : ControllerBase
     {
         [HttpGet]

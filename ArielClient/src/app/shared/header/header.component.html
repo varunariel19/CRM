@@ -2,12 +2,14 @@
 
   <div class="left-section">
 
-    <div class="logo">
-      CRM
-    </div>
+    <div class="logo-stack">
+      <div class="logo">
+        <img [src]="CrmLogo" alt="CRM Logo" class="brand-logo" />
+      </div>
 
-    <div class="brand">
-      <img [src]="LogoUrl" alt="Ariel CRM Logo" class="brand-logo" />
+      <div class="brand">
+        <img [src]="LogoUrl" alt="Ariel CRM Logo" class="ariel-logo" />
+      </div>
     </div>
 
     <button class="toggle-btn" type="button" (click)="onToggleSidebar()">

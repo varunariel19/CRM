@@ -57,7 +57,7 @@ export class HistoryService {
         if (filter.page) params = params.set('page', filter.page.toString());
         if (filter.pageSize) params = params.set('pageSize', filter.pageSize.toString());
 
-        return this.http.get<PaginatedHistoryDto>(this.baseUrl, { params });
+        return this.http.get<PaginatedHistoryDto>(this.baseUrl, { params  , withCredentials : true});
     }
 
     delete(id: string): Observable<void> {

@@ -130,17 +130,4 @@ export class TaskManageService {
             { withCredentials: true }
         );
     }
-
-    // handleAddComment(comment: any) {
-    //     return this.http.post(`${apiEndPoints.addComment}/${comment.taskId}`, { comment });
-    // }
-
-    // handleGetAllComments(taskId: string) {
-    //     return this.http.get(`${apiEndPoints.allComments}/${taskId}`);
-    // }
-
-    // handleUpdateComment(updates: any) {
-    //     return this.http.post(apiEndPoints.editComment, updates);
-    // }
-
 }

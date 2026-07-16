@@ -14,7 +14,7 @@ export class TicketService {
 
 
     getAllTickets() {
-        return this.http.get<Ticket[]>(this.apiUrl);
+        return this.http.get<Ticket[]>(this.apiUrl , {withCredentials : true});
     }
 
     searchTickets(searchTerm: string = ''): Observable<Ticket[]> {

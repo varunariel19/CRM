@@ -1,15 +1,9 @@
-/* ══════════════════════════════════════════════════════════
-   WRAPPER
-══════════════════════════════════════════════════════════ */
 .pipeline-wrapper {
   padding: 16px;
   background: var(--page-bg);
   min-height: 100vh;
 }
 
-/* ══════════════════════════════════════════════════════════
-   HEADER
-══════════════════════════════════════════════════════════ */
 .pipeline-header {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -81,9 +75,6 @@
   background: var(--surface-muted);
 }
 
-/* ══════════════════════════════════════════════════════════
-   FILTER BAR
-══════════════════════════════════════════════════════════ */
 .filter-bar {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -218,25 +209,25 @@
   border-color: rgba(245, 158, 11, 0.25);
 }
 
-/* ══════════════════════════════════════════════════════════
-   BOARD
-══════════════════════════════════════════════════════════ */
 .pipeline-board {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
+   align-items: start; 
 }
 
-/* ══════════════════════════════════════════════════════════
-   COLUMN
-══════════════════════════════════════════════════════════ */
+
 .pipeline-column {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   overflow: hidden;
-  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;                   
+  max-height: calc(100vh - 320px);      
 }
+
 
 .column-header {
   height: 56px;
@@ -245,6 +236,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0; 
 }
 
 .column-title {
@@ -283,17 +275,28 @@
   font-weight: 500;
 }
 
-/* ══════════════════════════════════════════════════════════
-   DEAL LIST (task list)
-══════════════════════════════════════════════════════════ */
+
 .deal-list {
   padding: 12px;
-  min-height: 540px;
+  flex: 1;
+  min-height: 0;     
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-/* ══════════════════════════════════════════════════════════
-   TASK CARD
-══════════════════════════════════════════════════════════ */
+
+.deal-list::-webkit-scrollbar {
+  width: 6px;
+}
+.deal-list::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 999px;
+}
+.deal-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+
 .deal-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
@@ -476,9 +479,6 @@
   font-size: 13px;
 }
 
-/* ══════════════════════════════════════════════════════════
-   MODAL
-══════════════════════════════════════════════════════════ */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -647,9 +647,7 @@
   opacity: 0.88;
 }
 
-/* ══════════════════════════════════════════════════════════
-   RESPONSIVE
-══════════════════════════════════════════════════════════ */
+
 @media (max-width: 1400px) {
   .pipeline-board {
     grid-template-columns: 1fr 1fr;

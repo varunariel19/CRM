@@ -124,7 +124,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   searchedUsers = computed(() => {
     const term = this.search().trim().toLowerCase();
     if (!term || this.isCreatingGroup()) return [];
-    return this.availableUsers()  
+    return this.availableUsers()
       .filter(user => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term))
       .slice(0, 8);
   });
@@ -609,6 +609,8 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   isUserOnline(conversation: TeamConversation): boolean {
     if (conversation.isGroup) return false;
     const other = this.getOtherMember(conversation);
+    const me = this.authState.userId()
+    if (conversation.members.length == 1 && conversation.members[0].id == me) return true;
     return other ? this.onlineUserIds().has(other.id) : false;
   }
 

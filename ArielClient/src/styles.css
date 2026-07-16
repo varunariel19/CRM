@@ -75,6 +75,7 @@
 body.theme-light {
   --remaining-bg: #0d1b3e;
   --wrapper-bg: #e5e5e56c;
+  --composer-bg : #FFFFFF;
   --menu-text: #c8d8f0;
   --hover-bg: rgba(255, 255, 255, 0.10);
   --active-bg: #1565c0;
@@ -149,6 +150,7 @@ body.theme-light {
 body.theme-dark {
   --remaining-bg: #111111;
   --wrapper-bg: #0e0e0ece;
+  --composer-bg : #1e1f22;
   --menu-text: #a0a0a0;
   --hover-bg: rgba(255, 255, 255, 0.07);
   --active-bg: #2563eb;

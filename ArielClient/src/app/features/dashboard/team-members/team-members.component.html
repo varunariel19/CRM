@@ -163,15 +163,7 @@
           </svg>
           <span class="tm-badge tm-badge--dept">{{ globalState.getDepartmentName(member.departmentId) }}</span>
         </div>
-        <div class="tm-card__row tm-card__date">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          <span>Joined {{ formatDate(member.createdAt) }}</span>
-        </div>
+
       </div>
     </div>
   </div>
@@ -185,7 +177,6 @@
           <th>Email</th>
           <th>Department</th>
           <th>Designation</th>
-          <th>Joined</th>
           @if(perm.teamMembers.canEditOrDel()) {
           <th>Actions</th>
           }
@@ -507,17 +498,11 @@
 </div>
 
 <!-- DELETE CONFIRMATION MODAL -->
-<app-deletion-modal
-  [isOpen]="showDeleteModal() && !!memberToDelete()"
+<app-deletion-modal [isOpen]="showDeleteModal() && !!memberToDelete()"
   [title]="'Remove ' + memberToDelete()?.name + '?'"
   subtitle="This will permanently remove this member and their access. This action cannot be undone."
-  [confirmPhrase]="DELETE_CONFIRM_PHRASE"
-  [isProcessing]="isDeletingMember()"
-  confirmButtonText="Remove member"
-  processingText="Removing…"
-  (confirmed)="confirmDeleteMember()"
-  (cancelled)="closeDeleteModal()"
-/>
+  [confirmPhrase]="DELETE_CONFIRM_PHRASE" [isProcessing]="isDeletingMember()" confirmButtonText="Remove member"
+  processingText="Removing…" (confirmed)="confirmDeleteMember()" (cancelled)="closeDeleteModal()" />
 
 <!-- PROFILE MODAL -->
 <div *ngIf="showProfileModal() && selectedMember()" class="tm-overlay" (click)="closeProfile()">

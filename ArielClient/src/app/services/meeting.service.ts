@@ -9,7 +9,7 @@ export class MeetingService {
     private http = inject(HttpClient);
 
     getAllMeetings(): Observable<Meeting[]> {
-        return this.http.get<Meeting[] | { data: Meeting[] }>(endpoints.meetings).pipe(
+        return this.http.get<Meeting[] | { data: Meeting[] }>(endpoints.meetings , {withCredentials : true}).pipe(
             map((response) => Array.isArray(response) ? response : response.data ?? [])
         );
     }

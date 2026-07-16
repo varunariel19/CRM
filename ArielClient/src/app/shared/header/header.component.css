@@ -16,35 +16,40 @@
   align-items: center;
 }
 
-.logo {
-  width: 100px;
-  height: 45px;
-
-  border-radius: 12px;
-
-  background: var(--active-bg);
-
+.logo-stack {
+  position: relative; /* anchor point for the absolutely-positioned Ariel logo */
   display: flex;
   align-items: center;
   justify-content: center;
-
-  font-weight: 700;
-  font-size: 14px;
-
-  color: var(--on-primary);
 }
 
-.brand {
+.logo {
   display: flex;
   align-items: center;
+  max-width: 120px; /* bigger — adjust to taste */
+  height: 50px;
   justify-content: center;
-  padding: 10px 1px;
-  width: 100%;
 }
 
 .brand-logo {
-  max-width: 120px;
   width: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.brand {
+  position: absolute;
+  right : -40px;
+  bottom: 0px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ariel-logo {
+  width: auto;
+  max-width: 40px; /* small — adjust to taste */
   height: auto;
   object-fit: contain;
   display: block;
@@ -204,31 +209,24 @@
   color: var(--on-primary);
 }
 
-
 /* HEADER BUTTON */
 
 .toggle-btn {
-  width: 100px;
+  width: 40px;
   height: 42px;
-
   border: none;
   outline: none;
-
   border-radius: 12px;
-
+  margin-left: 40px;
   background: var(--hover-bg);
-
   color: var(--menu-text);
-
   cursor: pointer;
-
   transition: 0.2s ease;
 }
 
 .toggle-btn:hover {
   background: var(--active-bg);
 }
-
 
 .avatar {
   width: 40px;
@@ -241,7 +239,6 @@
   font-weight: 600;
   text-transform: uppercase;
 }
-
 
 .ab-badge {
   position: absolute;
@@ -259,7 +256,6 @@
   justify-content: center;
   padding: 0 3px;
 }
-
 
 /* LOGOUT CONFIRMATION MODAL */
 
@@ -365,11 +361,21 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.92); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

@@ -16,7 +16,7 @@ import { DeletionModalComponent } from '../../../shared/modals/deletion-modal/de
 @Component({
   selector: 'app-team-members',
   standalone: true,
-  imports: [CommonModule, FormsModule, UserProfileComponent , DeletionModalComponent],
+  imports: [CommonModule, FormsModule, UserProfileComponent, DeletionModalComponent],
   templateUrl: './team-members.component.html',
   styleUrl: './team-members.component.css',
 })
@@ -82,14 +82,11 @@ export class TeamMembersComponent implements OnInit {
 
   showDeleteModal = signal(false);
   memberToDelete = signal<TeamMember | null>(null);
-  deleteConfirmText = signal('');
   isDeletingMember = signal(false);
 
   readonly DELETE_CONFIRM_PHRASE = 'DELETE MEMBER';
 
-  get isDeleteConfirmed(): boolean {
-    return this.deleteConfirmText().trim().toUpperCase() === this.DELETE_CONFIRM_PHRASE;
-  }
+
 
   get editDesignations() {
     if (!this.editMember?.departmentId) return [];
@@ -258,18 +255,12 @@ export class TeamMembersComponent implements OnInit {
     event.stopPropagation();
     this.showProfileModal.set(false);
     this.memberToDelete.set(member);
-    this.deleteConfirmText.set('');
     this.showDeleteModal.set(true);
   }
 
   closeDeleteModal(): void {
     this.showDeleteModal.set(false);
     this.memberToDelete.set(null);
-    this.deleteConfirmText.set('');
-  }
-
-  onDeleteConfirmInput(value: string): void {
-    this.deleteConfirmText.set(value);
   }
 
 
@@ -280,7 +271,7 @@ export class TeamMembersComponent implements OnInit {
 
   confirmDeleteMember(): void {
     const member = this.memberToDelete();
-    if (!member || !this.isDeleteConfirmed) return;
+    if (!member) return;
 
     this.isDeletingMember.set(true);
     this.teamService.handleDeleteTeamMember(member.id).subscribe({
@@ -288,7 +279,7 @@ export class TeamMembersComponent implements OnInit {
         this.isDeletingMember.set(false);
         this.toast.success(`${member.name} has been removed.`);
         this.closeDeleteModal();
-        this.showProfileModal.set(false); 
+        this.showProfileModal.set(false);
       },
       error: () => {
         this.isDeletingMember.set(false);
@@ -296,7 +287,6 @@ export class TeamMembersComponent implements OnInit {
       },
     });
   }
-
 
 
 

@@ -1,5 +1,6 @@
 ﻿using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArielCRM.API.Controllers
@@ -7,6 +8,7 @@ namespace ArielCRM.API.Controllers
 
         [ApiController]
         [Route("api/[controller]")]
+        [Authorize]
         public class TicketsController(ITicketService service, ILogger<TicketsController> logger) : ControllerBase
         {
             private readonly ITicketService _service = service;

@@ -1,11 +1,13 @@
 ﻿using ArielCRM.Application.Interfaces;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class MeetingsController(IMeetingService service, ILogger<MeetingsController> logger) : ControllerBase
     {
         private readonly IMeetingService _service = service;

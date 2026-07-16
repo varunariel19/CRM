@@ -1,12 +1,14 @@
 ﻿using ArielCRM.Application.Interfaces;
 using ArielCRM.DataLayer.Enums;
 using ArielCRM.Infrastructure.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArielCRM.API.Controllers
 {
     [ApiController]
     [Route("api/notes")]
+    [Authorize]
     public class NotesController(INoteService service) : ControllerBase
     {
         private readonly INoteService _service = service;

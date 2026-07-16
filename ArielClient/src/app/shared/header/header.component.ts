@@ -38,6 +38,10 @@ export class HeaderComponent  {
     return this.authState.logoUrl();
   }
 
+get CrmLogo() {
+     return this.authState.crmLogo();
+  }
+
   get isDarkTheme() {
     return this.themeService.isDark();
   }
