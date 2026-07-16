@@ -59,10 +59,26 @@
     <app-profile-section (close)="showProfile.set(false)" />
     }
 
-    <button class="logout-btn" type="button" aria-label="Logout" title="Logout" (click)="logout()">
+    <button class="logout-btn" type="button" aria-label="Logout" title="Logout" (click)="openLogoutConfirm()">
       <i class="fa-solid fa-right-from-bracket"></i>
     </button>
 
   </div>
 
 </header>
+
+@if(showLogoutConfirm()) {
+<div class="modal-overlay" (click)="cancelLogout()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <div class="modal-icon">
+      <i class="fa-solid fa-right-from-bracket"></i>
+    </div>
+    <h3 class="modal-title">Confirm Logout</h3>
+    <p class="modal-message">Are you sure you want to log out of your account?</p>
+    <div class="modal-actions">
+      <button class="modal-btn cancel-btn" type="button" (click)="cancelLogout()">Cancel</button>
+      <button class="modal-btn confirm-btn" type="button" (click)="confirmLogout()">Logout</button>
+    </div>
+  </div>
+</div>
+}

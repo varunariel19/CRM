@@ -32,9 +32,12 @@ namespace ArielCRM.DataLayer.Entities
         public string[] SeenByIds { get; set; } = [];
 
         [Column("content")]
-        [MaxLength(4000)]
+        [MaxLength(8000)]
         public string? Content { get; set; } = string.Empty;
 
+        [Column("iv")]
+        [MaxLength(100)]
+        public string? Iv { get; set; } = string.Empty;
 
         [Column("is_edited")]
         public bool IsEdited { get; set; } = false;
@@ -52,10 +55,11 @@ namespace ArielCRM.DataLayer.Entities
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
 
-
         [Column("schedule_at")]
         public DateTime? ScheduledAt { get; set; }
 
-        public ICollection<TeamMessageAttachment> Attachments { get; set; } = new List<TeamMessageAttachment>();
+        public ICollection<TeamMessageAttachment> Attachments { get; set; } = [];
+
+        public ICollection<TeamMessageKey> RecipientKeys { get; set; } = [];
     }
 }

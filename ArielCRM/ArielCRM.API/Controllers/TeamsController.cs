@@ -50,7 +50,7 @@ namespace ArielCRM.API.Controllers
                     .ToListAsync();
 
                 var users = await LoadUsers(conversations.SelectMany(c => c.Members));
-                return Ok(conversations.Select(c => MapConversation(c, users)).ToList());
+                return Ok(conversations.Select(c => MapConversation(c, users, UserId)).ToList());
             }
             catch (Exception ex)
             {
@@ -74,6 +74,7 @@ namespace ArielCRM.API.Controllers
                     .AsNoTracking()
                     .Include(m => m.Sender)
                     .Include(m => m.Attachments)
+                    .Include(m => m.RecipientKeys)
                     .Where(m => m.ConversationId == conversationId);
 
                 if (!string.IsNullOrEmpty(before))
@@ -92,7 +93,7 @@ namespace ArielCRM.API.Controllers
                     .OrderByDescending(m => m.CreatedAt)
                     .Take(take)
                     .OrderBy(m => m.CreatedAt)
-                    .Select(m => MapMessage(m))
+                    .Select(m => MapMessage(m, UserId))
                     .ToListAsync();
 
                 return Ok(messages);
@@ -112,9 +113,11 @@ namespace ArielCRM.API.Controllers
                 var conversation = await db.TeamConversations.FirstOrDefaultAsync(c => c.Id == conversationId);
                 if (conversation is null || !conversation.Members.Contains(UserId)) return Forbid();
 
+
                 var message = await db.TeamMessages
                     .Include(m => m.Sender)
                     .Include(m => m.Attachments)
+                    .Include(m => m.RecipientKeys)
                     .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == conversationId);
 
                 if (message is null) return NotFound();
@@ -125,15 +128,33 @@ namespace ArielCRM.API.Controllers
                 if (content.Length == 0) return BadRequest(new { message = "Message cannot be empty." });
                 if (content.Length > 4000) return BadRequest(new { message = "Message is too long." });
 
+                if (!ValidateRecipientKeys(dto.RecipientKeys, conversation.Members, out var keyValidationError))
+                    return BadRequest(new { message = keyValidationError });
+
                 message.Content = content;
+                message.Iv = string.IsNullOrWhiteSpace(dto.Iv) ? null : dto.Iv.Trim();
                 message.IsEdited = true;
                 message.UpdatedAt = DateTime.UtcNow;
 
+                var existingRecipientKeys = message.RecipientKeys.ToList();
+                db.TeamMessageKeys.RemoveRange(existingRecipientKeys);
+                message.RecipientKeys.Clear();
+                foreach (var key in dto.RecipientKeys)
+                {
+                    message.RecipientKeys.Add(new TeamMessageKey
+                    {
+                        RecipientId = key.RecipientId,
+                        EncryptedAesKey = key.EncryptedAesKey.Trim(),
+                        CreatedAt = message.UpdatedAt.Value
+                    });
+                }
+
                 await db.SaveChangesAsync();
 
-                var mapped = MapMessage(message);
-                await hubContext.Clients.Group(conversationId).SendAsync("MessageEdited", mapped);
-                return Ok(mapped);
+                foreach (var memberId in conversation.Members)
+                    await hubContext.Clients.User(memberId).SendAsync("MessageEdited", MapMessage(message, memberId));
+
+                return Ok(MapMessage(message, UserId));
             }
             catch (Exception ex)
             {
@@ -152,6 +173,7 @@ namespace ArielCRM.API.Controllers
                 var message = await db.TeamMessages
                     .Include(m => m.Sender)
                     .Include(m => m.Attachments)
+                    .Include(m => m.RecipientKeys)
                     .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == conversationId);
 
                 if (message is null) return NotFound();
@@ -163,7 +185,7 @@ namespace ArielCRM.API.Controllers
 
                 await db.SaveChangesAsync();
 
-                var mapped = MapMessage(message);
+                var mapped = MapMessage(message, UserId);
                 await hubContext.Clients.Group(conversationId).SendAsync("MessageDeleted", mapped);
                 return NoContent();
             }
@@ -265,6 +287,20 @@ namespace ArielCRM.API.Controllers
                 }
 
                 var targetConversation = await db.TeamConversations.FirstAsync(c => c.Id == conversationId);
+                if (content.Length > 0 && !ValidateRecipientKeys(dto.RecipientKeys, targetConversation.Members, out var keyValidationError))
+                    return BadRequest(new { message = keyValidationError });
+
+                message.Iv = string.IsNullOrWhiteSpace(dto.Iv) ? null : dto.Iv.Trim();
+                foreach (var key in dto.RecipientKeys)
+                {
+                    message.RecipientKeys.Add(new TeamMessageKey
+                    {
+                        RecipientId = key.RecipientId,
+                        EncryptedAesKey = key.EncryptedAesKey.Trim(),
+                        CreatedAt = now
+                    });
+                }
+
                 targetConversation.LastMessageAt = now;
 
                 db.TeamMessages.Add(message);
@@ -274,16 +310,20 @@ namespace ArielCRM.API.Controllers
                     .AsNoTracking()
                     .Include(m => m.Sender)
                     .Include(m => m.Attachments)
+                    .Include(m => m.RecipientKeys)
                     .FirstAsync(m => m.Id == message.Id);
 
-                var mappedMessage = MapMessage(savedMessage);
+                var mappedMessage = MapMessage(savedMessage, UserId);
 
                 var created = await BaseConversationQuery().FirstAsync(c => c.Id == conversationId);
                 var users = await LoadUsers(created.Members);
-                var mappedConversation = MapConversation(created, users);
+                var mappedConversation = MapConversation(created, users, UserId);
 
-                await hubContext.Clients.Users(created.Members).SendAsync("ConversationChanged", mappedConversation);
-                await hubContext.Clients.Users(created.Members).SendAsync("MessageReceived", mappedMessage);
+                foreach (var memberId in created.Members)
+                {
+                    await hubContext.Clients.User(memberId).SendAsync("ConversationChanged", MapConversation(created, users, memberId));
+                    await hubContext.Clients.User(memberId).SendAsync("MessageReceived", MapMessage(savedMessage, memberId));
+                }
 
                 return Ok(mappedConversation);
             }
@@ -320,7 +360,7 @@ namespace ArielCRM.API.Controllers
 
                 var created = await BaseConversationQuery().FirstAsync(c => c.Id == conversation.Id);
                 var users = await LoadUsers(created.Members);
-                var mapped = MapConversation(created, users);
+                var mapped = MapConversation(created, users, UserId);
                 await hubContext.Clients.Users(created.Members).SendAsync("ConversationChanged", mapped);
                 return Ok(mapped);
             }
@@ -350,9 +390,10 @@ namespace ArielCRM.API.Controllers
 
                 var updated = await BaseConversationQuery().FirstAsync(c => c.Id == conversationId);
                 var users = await LoadUsers(updated.Members);
-                var mapped = MapConversation(updated, users);
-                await hubContext.Clients.Users(updated.Members).SendAsync("ConversationChanged", mapped);
-                return Ok(mapped);
+                foreach (var memberId in updated.Members)
+                    await hubContext.Clients.User(memberId).SendAsync("ConversationChanged", MapConversation(updated, users, memberId));
+
+                return Ok(MapConversation(updated, users, UserId));
             }
             catch (Exception ex)
             {
@@ -376,7 +417,8 @@ namespace ArielCRM.API.Controllers
                 if (attachments.Count > MaxAttachmentCount) return BadRequest(new { message = $"Attach up to {MaxAttachmentCount} files per message." });
                 if (attachments.Any(a => a.SizeBytes > MaxAttachmentBytes)) return BadRequest(new { message = "Each attachment must be 50 MB or smaller." });
                 if (attachments.Any(a => !IsValidAttachmentUrl(a.FileUrl))) return BadRequest(new { message = "One or more attachment URLs are invalid." });
-
+                if (content.Length > 0 && !ValidateRecipientKeys(dto.RecipientKeys, conversation.Members, out var scheduledKeyValidationError))
+                    return BadRequest(new { message = scheduledKeyValidationError });
                 var now = DateTime.UtcNow;
                 var isScheduled = dto.ScheduledAt is not null && dto.ScheduledAt > now;
 
@@ -387,6 +429,7 @@ namespace ArielCRM.API.Controllers
                         ConversationId = conversationId,
                         SenderId = UserId,
                         Content = content,
+                        Iv = string.IsNullOrWhiteSpace(dto.Iv) ? null : dto.Iv.Trim(),
                         ScheduledAt = dto.ScheduledAt!.Value,
                         Status = "Pending",
                         CreatedAt = now
@@ -406,6 +449,17 @@ namespace ArielCRM.API.Controllers
                         });
                     }
 
+                    foreach (var key in dto.RecipientKeys)
+                    {
+                        scheduled.Keys.Add(new ScheduledTeamMessageKey
+                        {
+                            RecipientId = key.RecipientId,
+                            EncryptedAesKey = key.EncryptedAesKey.Trim(),
+                            CreatedAt = now
+                        });
+                    }
+
+
                     db.ScheduledTeamMessages.Add(scheduled);
                     await db.SaveChangesAsync();
 
@@ -414,8 +468,11 @@ namespace ArielCRM.API.Controllers
                     scheduled.JobId = jobId;
                     await db.SaveChangesAsync();
 
-                    return Accepted(MapScheduledMessage(scheduled));
+                    return Accepted(MapScheduledMessage(scheduled, scheduled.SenderId));
                 }
+
+                if (content.Length > 0 && !ValidateRecipientKeys(dto.RecipientKeys, conversation.Members, out var keyValidationError))
+                    return BadRequest(new { message = keyValidationError });
 
                 var message = new TeamMessage
                 {
@@ -423,6 +480,7 @@ namespace ArielCRM.API.Controllers
                     SenderId = UserId,
                     SeenByIds = [UserId],
                     Content = content,
+                    Iv = string.IsNullOrWhiteSpace(dto.Iv) ? null : dto.Iv.Trim(),
                     CreatedAt = now,
                     UpdatedAt = now
                 };
@@ -441,6 +499,16 @@ namespace ArielCRM.API.Controllers
                     });
                 }
 
+                foreach (var key in dto.RecipientKeys)
+                {
+                    message.RecipientKeys.Add(new TeamMessageKey
+                    {
+                        RecipientId = key.RecipientId,
+                        EncryptedAesKey = key.EncryptedAesKey.Trim(),
+                        CreatedAt = now
+                    });
+                }
+
                 conversation.LastMessageAt = now;
                 db.TeamMessages.Add(message);
                 await db.SaveChangesAsync();
@@ -449,17 +517,18 @@ namespace ArielCRM.API.Controllers
                     .AsNoTracking()
                     .Include(m => m.Sender)
                     .Include(m => m.Attachments)
+                    .Include(m => m.RecipientKeys)
                     .FirstAsync(m => m.Id == message.Id);
 
-                var mapped = MapMessage(saved);
-                await hubContext.Clients.Users(conversation.Members).SendAsync("MessageReceived", mapped);
+                foreach (var memberId in conversation.Members)
+                    await hubContext.Clients.User(memberId).SendAsync("MessageReceived", MapMessage(saved, memberId));
 
                 var recipientIds = conversation.Members.Where(id => id != UserId).ToList();
                 if (recipientIds.Count > 0)
                 {
                     var senderName = saved.Sender?.Name ?? "Someone";
                     var preview = content.Length > 0
-                        ? (content.Length > 80 ? content[..80] + "..." : content)
+                        ? "Sent a message"
                         : $"Sent {attachments.Count} attachment(s)";
 
                     await notificationService.CreateAsync(new CreateNotificationDto
@@ -473,7 +542,7 @@ namespace ArielCRM.API.Controllers
                     });
                 }
 
-                return Ok(mapped);
+                return Ok(MapMessage(saved, UserId));
             }
             catch (Exception ex)
             {
@@ -492,6 +561,7 @@ namespace ArielCRM.API.Controllers
                 var message = await db.TeamMessages
                     .Include(m => m.Sender)
                     .Include(m => m.Attachments)
+                    .Include(m => m.RecipientKeys)
                     .FirstOrDefaultAsync(m => m.Id == messageId && m.ConversationId == conversationId);
 
                 if (message is null) return NotFound();
@@ -507,9 +577,10 @@ namespace ArielCRM.API.Controllers
 
                 await db.SaveChangesAsync();
 
-                var mapped = MapMessage(message);
-                await hubContext.Clients.Group(conversationId).SendAsync("MessageRestored", mapped);
-                return Ok(mapped);
+                foreach (var memberId in conversation.Members)
+                    await hubContext.Clients.User(memberId).SendAsync("MessageRestored", MapMessage(message, memberId));
+
+                return Ok(MapMessage(message, UserId));
             }
             catch (Exception ex)
             {
@@ -573,6 +644,7 @@ namespace ArielCRM.API.Controllers
 
                 var scheduled = await db.ScheduledTeamMessages
                     .AsNoTracking()
+                    .Include(m => m.Keys)
                     .Where(m => m.ConversationId == conversationId
                              && m.SenderId == userId
                              && m.Status == "Pending")
@@ -583,6 +655,8 @@ namespace ArielCRM.API.Controllers
                         ConversationId = m.ConversationId,
                         SenderId = m.SenderId,
                         Content = m.Content ?? string.Empty,
+                        Iv = m.Iv,
+                        EncryptedAesKey = m.Keys.FirstOrDefault(k => k.RecipientId == userId)!.EncryptedAesKey,
                         ScheduledAt = m.ScheduledAt,
                         Status = m.Status.ToString(),
                         JobId = m.JobId,
@@ -598,8 +672,7 @@ namespace ArielCRM.API.Controllers
                             SizeBytes = a.SizeBytes,
                             CreatedAt = a.CreatedAt,
                         }).ToList(),
-                    })
-                    .ToListAsync();
+                    }).ToListAsync();
 
                 return Ok(scheduled);
             }
@@ -648,7 +721,8 @@ namespace ArielCRM.API.Controllers
         private IQueryable<TeamConversation> BaseConversationQuery() => db.TeamConversations
             .AsNoTracking()
             .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1)).ThenInclude(m => m.Sender)
-            .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1)).ThenInclude(m => m.Attachments);
+            .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1)).ThenInclude(m => m.Attachments)
+            .Include(c => c.Messages.OrderByDescending(m => m.CreatedAt).Take(1)).ThenInclude(m => m.RecipientKeys);
 
         private Task<bool> IsMember(string conversationId) => db.TeamConversations
             .AnyAsync(c => c.Id == conversationId && c.Members.Contains(UserId));
@@ -664,12 +738,13 @@ namespace ArielCRM.API.Controllers
                     Id = u.Id,
                     Name = u.Name,
                     Email = u.Email,
-                    ProfileImage = u.ProfileImage
+                    ProfileImage = u.ProfileImage,
+                    PublicKey = u.EncryptionKey == null ? null : u.EncryptionKey.PublicKey
                 })
                 .ToDictionaryAsync(u => u.Id);
         }
 
-        private static TeamConversationDto MapConversation(TeamConversation conversation, IReadOnlyDictionary<string, TeamUserDto> users) => new()
+        private static TeamConversationDto MapConversation(TeamConversation conversation, IReadOnlyDictionary<string, TeamUserDto> users, string recipientId) => new()
         {
             Id = conversation.Id,
             Name = conversation.Name,
@@ -683,14 +758,15 @@ namespace ArielCRM.API.Controllers
                     Id = user.Id,
                     Name = user.Name,
                     Email = user.Email,
-                    ProfileImage = user.ProfileImage
+                    ProfileImage = user.ProfileImage,
+                    PublicKey = user.PublicKey
                 } : new TeamConversationMemberDto { Id = id, Name = id })
                 .OrderBy(m => m.Name)],
-            LastMessage = conversation.Messages.OrderByDescending(m => m.CreatedAt).Select(MapMessage).FirstOrDefault()
+            LastMessage = conversation.Messages.OrderByDescending(m => m.CreatedAt).Select(m => MapMessage(m, recipientId)).FirstOrDefault()
         };
 
 
-        private static TeamMessageDto MapMessage(TeamMessage message) => new()
+        private static TeamMessageDto MapMessage(TeamMessage message, string recipientId) => new()
         {
             Id = message.Id,
             ConversationId = message.ConversationId,
@@ -699,6 +775,8 @@ namespace ArielCRM.API.Controllers
             SenderName = message.Sender.Name,
             SenderProfileImage = message.Sender.ProfileImage,
             Content = message.IsDeleted ? string.Empty : (message.Content ?? ""),
+            Iv = message.IsDeleted ? null : message.Iv,
+            EncryptedAesKey = message.IsDeleted ? null : message.RecipientKeys.FirstOrDefault(k => k.RecipientId == recipientId)?.EncryptedAesKey,
             CreatedAt = message.CreatedAt,
             UpdatedAt = message.UpdatedAt,
             IsDeleted = message.IsDeleted,
@@ -717,6 +795,29 @@ namespace ArielCRM.API.Controllers
             CreatedAt = a.CreatedAt
         })]
         };
+
+        private static bool ValidateRecipientKeys(
+            List<RecipientKeyDto> recipientKeys,
+            IEnumerable<string> memberIds,
+            out string error)
+        {
+            var members = memberIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().OrderBy(id => id).ToArray();
+            var keys = recipientKeys
+                .Where(k => !string.IsNullOrWhiteSpace(k.RecipientId) && !string.IsNullOrWhiteSpace(k.EncryptedAesKey))
+                .GroupBy(k => k.RecipientId)
+                .Select(g => g.First())
+                .OrderBy(k => k.RecipientId)
+                .ToArray();
+
+            if (keys.Length != members.Length || !keys.Select(k => k.RecipientId).SequenceEqual(members))
+            {
+                error = "Encrypted messages must include one recipient key for every conversation member.";
+                return false;
+            }
+
+            error = string.Empty;
+            return true;
+        }
 
 
         private async Task<string> ScheduleDelayedMessageAsync(ScheduledTeamMessage scheduled, TeamConversation conversation)
@@ -746,27 +847,29 @@ namespace ArielCRM.API.Controllers
         }
 
 
-        private static ScheduledTeamMessageDto MapScheduledMessage(ScheduledTeamMessage s) => new()
+        private static ScheduledTeamMessageDto MapScheduledMessage(ScheduledTeamMessage s, string currentUserId) => new()
         {
             Id = s.Id,
             ConversationId = s.ConversationId,
             SenderId = s.SenderId,
             Content = s.Content ?? string.Empty,
+            Iv = s.Iv,
+            EncryptedAesKey = s.Keys.FirstOrDefault(k => k.RecipientId == currentUserId)?.EncryptedAesKey,
             ScheduledAt = s.ScheduledAt,
             Status = s.Status,
             JobId = s.JobId,
             CreatedAt = s.CreatedAt,
             Attachments = [.. s.Attachments.OrderBy(a => a.CreatedAt).Select(a => new TeamMessageAttachmentDto
-            {
-                Id = a.Id,
-                FileName = a.FileName,
-                FileUrl = a.FileUrl,
-                UploadId = a.UploadId,
-                ContentType = a.ContentType,
-                AttachmentType = a.AttachmentType,
-                SizeBytes = a.SizeBytes,
-                CreatedAt = a.CreatedAt
-            })]
+    {
+        Id = a.Id,
+        FileName = a.FileName,
+        FileUrl = a.FileUrl,
+        UploadId = a.UploadId,
+        ContentType = a.ContentType,
+        AttachmentType = a.AttachmentType,
+        SizeBytes = a.SizeBytes,
+        CreatedAt = a.CreatedAt
+    })]
         };
 
 

@@ -68,6 +68,26 @@ namespace ArielCRM.API.Controllers
 
 
 
+        [HttpPost("encryption-key")]
+        [Authorize]
+        public async Task<IActionResult> SaveEncryptionKey([FromBody] UserEncryptionKeyDto dto)
+        {
+            try
+            {
+                if (!ModelState.IsValid) return BadRequest(ModelState);
+
+                var result = await _authService.SaveEncryptionKeyAsync(HttpContext, dto);
+
+                if (!result) return BadRequest(new { message = "Encryption key already exists for this user." });
+
+                return Ok(new { message = "Encryption key saved successfully." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while saving the encryption key.", error = ex.Message });
+            }
+        }
+
     }
 
 

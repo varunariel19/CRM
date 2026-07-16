@@ -164,6 +164,7 @@ namespace ArielCRM.Application.Services
                 ProfileImage = x.ProfileImage,
                 Name = x.Name,
                 AccessLevelId = x.AccessLevelId,
+                PublicKey = x.EncryptionKey?.PublicKey,
                 Email = x.Email,
                 Access = x.AccessLevel.Access,
                 DepartmentId = x.DepartmentId,

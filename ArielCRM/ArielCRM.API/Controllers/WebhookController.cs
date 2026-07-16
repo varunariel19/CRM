@@ -22,6 +22,7 @@ namespace ArielCRM.API.Controllers
 
                 var scheduled = await db.ScheduledTeamMessages
                     .Include(s => s.Attachments)
+                    .Include(s => s.Keys)              // ADD — need the wrapped keys to carry over
                     .FirstOrDefaultAsync(s => s.Id == dto.MessageId);
 
                 if (scheduled is null)
@@ -56,6 +57,7 @@ namespace ArielCRM.API.Controllers
                     SenderId = scheduled.SenderId,
                     SeenByIds = [scheduled.SenderId],
                     Content = scheduled.Content ?? string.Empty,
+                    Iv = scheduled.Iv,                 // ADD — carry over the IV
                     CreatedAt = now,
                     UpdatedAt = now
                 };
@@ -74,6 +76,17 @@ namespace ArielCRM.API.Controllers
                     });
                 }
 
+                // ADD — copy each recipient's wrapped AES key onto the new live message
+                foreach (var key in scheduled.Keys)
+                {
+                    message.RecipientKeys.Add(new TeamMessageKey
+                    {
+                        RecipientId = key.RecipientId,
+                        EncryptedAesKey = key.EncryptedAesKey,
+                        CreatedAt = now
+                    });
+                }
+
                 conversation.LastMessageAt = now;
                 db.TeamMessages.Add(message);
 
@@ -87,11 +100,16 @@ namespace ArielCRM.API.Controllers
                     .AsNoTracking()
                     .Include(m => m.Sender)
                     .Include(m => m.Attachments)
+                    .Include(m => m.RecipientKeys)     // ADD — needed for per-recipient mapping
                     .FirstAsync(m => m.Id == message.Id);
 
-                var mapped = MapMessage(saved);
+                // CHANGED — send each member their own DTO with their own EncryptedAesKey,
+                // instead of one shared `mapped` object for everyone
+                foreach (var memberId in conversation.Members)
+                {
+                    await hubContext.Clients.User(memberId).SendAsync("MessageReceived", MapMessage(saved, memberId));
+                }
 
-                await hubContext.Clients.Users(conversation.Members).SendAsync("MessageReceived", mapped);
                 await hubContext.Clients.Users(conversation.Members).SendAsync(
                     "ScheduledMessageDelivered",
                     conversation.Id,
@@ -107,7 +125,8 @@ namespace ArielCRM.API.Controllers
         }
 
 
-        private static TeamMessageDto MapMessage(TeamMessage message) => new()
+        // CHANGED — now takes recipientId, same signature as TeamsController.MapMessage
+        private static TeamMessageDto MapMessage(TeamMessage message, string recipientId) => new()
         {
             Id = message.Id,
             ConversationId = message.ConversationId,
@@ -116,6 +135,8 @@ namespace ArielCRM.API.Controllers
             SenderName = message.Sender.Name,
             SenderProfileImage = message.Sender.ProfileImage,
             Content = message.IsDeleted ? string.Empty : (message.Content ?? ""),
+            Iv = message.IsDeleted ? null : message.Iv,                                                              // ADD
+            EncryptedAesKey = message.IsDeleted ? null : message.RecipientKeys.FirstOrDefault(k => k.RecipientId == recipientId)?.EncryptedAesKey, // ADD
             CreatedAt = message.CreatedAt,
             UpdatedAt = message.UpdatedAt,
             IsDeleted = message.IsDeleted,

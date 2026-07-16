@@ -31,6 +31,14 @@ export interface AttachmentPayload {
   sizeBytes: number;
 }
 
+export interface MessageEncryptionPayload {
+  iv?: string;
+  recipientKeys?: Array<{
+    recipientId: string;
+    encryptedAesKey: string;
+  }>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TeamsService {
   private http = inject(HttpClient);
@@ -83,10 +91,15 @@ export class TeamsService {
     });
   }
 
-  createDirect(userId: string, content: string, attachments: AttachmentPayload[] = []): Observable<TeamConversation> {
+  createDirect(
+    userId: string,
+    content: string,
+    attachments: AttachmentPayload[] = [],
+    encryption?: MessageEncryptionPayload
+  ): Observable<TeamConversation> {
     return this.http.post<TeamConversation>(
       endpoints.teams.direct,
-      { userId, firstMessage: content, attachments },
+      { userId, firstMessage: content, attachments, iv: encryption?.iv, recipientKeys: encryption?.recipientKeys ?? [] },
       { withCredentials: true }
     );
   }
@@ -99,10 +112,16 @@ export class TeamsService {
     return this.http.post<TeamConversation>(endpoints.teams.addMembers(conversationId), { memberIds }, { withCredentials: true });
   }
 
-  sendMessage(conversationId: string, body: string, attachments: AttachmentPayload[] = [], scheduledAt?: string) {
+  sendMessage(
+    conversationId: string,
+    body: string,
+    attachments: AttachmentPayload[] = [],
+    scheduledAt?: string,
+    encryption?: MessageEncryptionPayload
+  ) {
     return this.http.post<TeamMessage | ScheduledTeamMessage>(
       endpoints.teams.sendMessage(conversationId),
-      { body, attachments, scheduledAt },
+      { body, attachments, scheduledAt, iv: encryption?.iv, recipientKeys: encryption?.recipientKeys ?? [] },
       { withCredentials: true, observe: 'response' }
     );
   }
@@ -178,8 +197,12 @@ export class TeamsService {
     await this.connection?.invoke('SendTyping', conversationId, isTyping);
   }
 
-  editMessage(conversationId: string, messageId: string, content: string) {
-    return this.http.put<TeamMessage>(endpoints.teams.editMessage(conversationId, messageId), { content }, { withCredentials: true });
+  editMessage(conversationId: string, messageId: string, content: string, encryption?: MessageEncryptionPayload) {
+    return this.http.put<TeamMessage>(
+      endpoints.teams.editMessage(conversationId, messageId),
+      { content, iv: encryption?.iv, recipientKeys: encryption?.recipientKeys ?? [] },
+      { withCredentials: true }
+    );
   }
 
   deleteMessage(conversationId: string, messageId: string) {

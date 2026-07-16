@@ -28,22 +28,21 @@ namespace ArielCRM.DataLayer.Entities
         public User Sender { get; set; } = null!;
 
         [Column("content")]
-        [MaxLength(4000)]
+        [MaxLength(8000)]
         public string? Content { get; set; } = string.Empty;
+
+        [Column("iv")]
+        [MaxLength(100)]
+        public string? Iv { get; set; }
 
         [Required]
         [Column("scheduled_at")]
         public DateTime ScheduledAt { get; set; }
 
-        /// <summary>
-        /// The BullMQ job ID returned by the Node scheduler. Used to cancel
-        /// or reschedule via DELETE/PATCH /jobs/{id} on the scheduling service.
-        /// </summary>
         [Column("job_id")]
         [MaxLength(100)]
         public string? JobId { get; set; }
 
-        /// <summary>Pending, Sent, Cancelled, or Failed.</summary>
         [Required]
         [Column("status")]
         [MaxLength(20)]
@@ -53,7 +52,6 @@ namespace ArielCRM.DataLayer.Entities
         [MaxLength(1000)]
         public string? FailureReason { get; set; }
 
-        /// <summary>Set once the .NET webhook fires and the real TeamMessage is created.</summary>
         [Column("sent_message_id")]
         [MaxLength(50)]
         public string? SentMessageId { get; set; }
@@ -69,5 +67,7 @@ namespace ArielCRM.DataLayer.Entities
         public DateTime? CancelledAt { get; set; }
 
         public ICollection<ScheduledTeamMessageAttachment> Attachments { get; set; } = [];
+
+        public ICollection<ScheduledTeamMessageKey> Keys { get; set; } = [];
     }
 }

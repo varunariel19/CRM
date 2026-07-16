@@ -44,6 +44,11 @@ namespace ArielCRM.Infrastructure.Data
 
         public DbSet<NotificationRecipient> NotificationRecipients { get; set; }
 
+        public DbSet<UserEncryptionKey> UserEncryptionKeys { get; set; }
+
+        public DbSet<TeamMessageKey> TeamMessageKeys { get; set; }
+
+        public DbSet<ScheduledTeamMessageKey> ScheduledTeamMessageKeys { get; set; }
 
 
 
@@ -91,6 +96,10 @@ namespace ArielCRM.Infrastructure.Data
 
             modelBuilder.Entity<ActivityLog>()
                 .Property(a => a.RelatedTo).HasConversion<string>().HasMaxLength(55);
+
+            modelBuilder.Entity<TeamMessageKey>()
+            .HasIndex(k => new { k.MessageId, k.RecipientId })
+            .IsUnique();
 
             // ── Relationships ─────────────────────────
 
@@ -267,6 +276,25 @@ namespace ArielCRM.Infrastructure.Data
             modelBuilder.Entity<UserEncryptionKey>()
                 .HasIndex(k => k.UserId)
                 .IsUnique();
+
+
+            modelBuilder.Entity<TeamMessageKey>(entity =>
+            {
+                entity.HasOne(k => k.Message)
+                    .WithMany(m => m.RecipientKeys)
+                    .HasForeignKey(k => k.MessageId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ScheduledTeamMessageKey>(entity =>
+            {
+                entity.HasOne(k => k.ScheduledMessage)
+                    .WithMany(s => s.Keys)
+                    .HasForeignKey(k => k.ScheduledMessageId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+
 
             // ── Indexes ───────────────────────────────
 

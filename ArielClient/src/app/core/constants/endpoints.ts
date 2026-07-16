@@ -11,6 +11,7 @@ export const endpoints = {
     login: `${BASE_URL}/api/auth/login`,
     logout: `${BASE_URL}/api/auth/logout`,
     authenticate: `${BASE_URL}/api/auth/me`,
+    saveEncryptionKey: `${BASE_URL}/api/auth/encryption-key`,
 
     // user
     user: `${BASE_URL}/api/user`,
@@ -126,6 +127,4 @@ export const appwrite = {
 export enum Routes {
     signIn = "/sign-in",
     dashboard = "/dashboard",
-    saveEncryptionKey  = "/api/users/encryption-key",
-
 }

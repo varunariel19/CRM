@@ -12,10 +12,15 @@ export class E2eKeyService {
     private readonly SALT_LENGTH = 16;
     private readonly NONCE_LENGTH = 12;
 
+    private readonly DB_NAME = 'e2e-key-store';
+    private readonly STORE_NAME = 'private-keys';
+    private readonly DB_VERSION = 1;
+
     private privateKey: CryptoKey | null = null;
+    private dbPromise: Promise<IDBDatabase> | null = null;
 
-
-    async generateAndEncryptKeyPair(password: string): Promise<SignupKeyMaterial> {
+    async generateAndEncryptKeyPair(password: string, userId: string): Promise<SignupKeyMaterial> {
+        
         const keyPair = await crypto.subtle.generateKey(
             {
                 name: 'RSA-OAEP',
@@ -44,6 +49,8 @@ export class E2eKeyService {
 
         this.privateKey = keyPair.privateKey;
 
+        await this.savePrivateKeyToIndexedDb(userId, keyPair.privateKey);
+
         return {
             publicKeyBase64: this.arrayBufferToBase64(publicKeyBytes),
             encryptedPrivateKeyBase64: this.arrayBufferToBase64(packed),
@@ -54,7 +61,8 @@ export class E2eKeyService {
     async decryptPrivateKey(
         password: string,
         encryptedPrivateKeyBase64: string,
-        saltBase64: string
+        saltBase64: string,
+        userId: string
     ): Promise<void> {
         const salt = this.base64ToArrayBuffer(saltBase64);
         const packed = this.base64ToArrayBuffer(encryptedPrivateKeyBase64);
@@ -77,15 +85,80 @@ export class E2eKeyService {
             true,
             ['decrypt']
         );
+
+        await this.savePrivateKeyToIndexedDb(userId, this.privateKey);
+    }
+
+
+    async tryRestoreFromIndexedDb(userId: string): Promise<boolean> {
+        const key = await this.loadPrivateKeyFromIndexedDb(userId);
+        if (key) {
+            this.privateKey = key;
+            return true;
+        }
+        return false;
     }
 
     getPrivateKey(): CryptoKey | null {
         return this.privateKey;
     }
 
-    clearPrivateKey(): void {
+    async clearPrivateKey(userId: string): Promise<void> {
         this.privateKey = null;
+        await this.clearPrivateKeyFromIndexedDb(userId);
     }
+
+
+    private openDb(): Promise<IDBDatabase> {
+        if (this.dbPromise) return this.dbPromise;
+
+        this.dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
+
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+                    db.createObjectStore(this.STORE_NAME);
+                }
+            };
+
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+
+        return this.dbPromise;
+    }
+
+    private async savePrivateKeyToIndexedDb(userId: string, key: CryptoKey): Promise<void> {
+        const db = await this.openDb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            tx.objectStore(this.STORE_NAME).put(key, userId);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    private async loadPrivateKeyFromIndexedDb(userId: string): Promise<CryptoKey | null> {
+        const db = await this.openDb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE_NAME, 'readonly');
+            const request = tx.objectStore(this.STORE_NAME).get(userId);
+            request.onsuccess = () => resolve((request.result as CryptoKey) ?? null);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    private async clearPrivateKeyFromIndexedDb(userId: string): Promise<void> {
+        const db = await this.openDb();
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(this.STORE_NAME, 'readwrite');
+            tx.objectStore(this.STORE_NAME).delete(userId);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
 
     private async deriveKeyFromPassword(password: string, salt: Uint8Array): Promise<CryptoKey> {
         const passwordKey = await crypto.subtle.importKey(

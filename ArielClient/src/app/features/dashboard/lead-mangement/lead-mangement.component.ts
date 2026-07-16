@@ -174,6 +174,7 @@ export class LeadManagementComponent implements OnInit {
     private route: ActivatedRoute,
     private leadService: LeadService,
   ) {
+    
     effect(() => {
       const id = this.deepLink.pendingLeadId();
       if (id) {

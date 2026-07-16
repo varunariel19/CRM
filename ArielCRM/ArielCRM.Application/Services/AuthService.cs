@@ -1,4 +1,5 @@
 ﻿using ArielCRM.Application.Interfaces;
+using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using Microsoft.AspNetCore.Authentication;
@@ -68,8 +69,7 @@ namespace ArielCRM.Application.Services
                 Description = p.Permission.Description
             })]
                 },
-                // E2E key material — client uses password (still in memory from login form)
-                // + salt to derive the KDF key and decrypt the private key locally.
+
                 EncryptionKey = user.EncryptionKey is null ? null : new UserEncryptionKeyDto
                 {
                     PublicKey = user.EncryptionKey.PublicKey,
@@ -125,5 +125,31 @@ namespace ArielCRM.Application.Services
                 }
             };
         }
+
+
+        public async Task<bool> SaveEncryptionKeyAsync(HttpContext context, UserEncryptionKeyDto dto)
+        {
+          
+            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return false;
+
+            var existing = await _repo.GetByUserIdAsync(userId);
+            if (existing is not null && existing.EncryptionKey is not null) return false;
+
+            var entity = new UserEncryptionKey
+            {
+                UserId = userId,
+                PublicKey = dto.PublicKey,
+                EncryptedPrivateKey = dto.EncryptedPrivateKey,
+                Salt = dto.Salt,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _repo.AddEncryptionKeyAsync(entity);
+            return true;
+        }
+
+
+
     }
 }

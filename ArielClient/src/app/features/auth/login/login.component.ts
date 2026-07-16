@@ -5,7 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../services/auth.service';
 import { AuthState } from '../../../state/auth.state';
 import { Router } from '@angular/router';
-import { Routes } from '../../../core/constants/endpoints';
+import { endpoints, Routes } from '../../../core/constants/endpoints';
 import { LoaderService } from '../../../core/services/loader.service';
 import { E2eKeyService } from '../../../core/services/E2eKey.service';
 
@@ -81,7 +81,7 @@ export class LoginComponent {
     this.authService.login({ email: this.email, password: this.password }).subscribe({
       next: async (user: any) => {
         try {
-          // await this.setupOrUnlockEncryptionKey(user);
+          await this.setupOrUnlockEncryptionKey(user);
         } catch (e) {
           console.error('E2E key setup/unlock failed:', e);
           this.errorMsg = 'Login succeeded, but secure messaging could not be unlocked.';
@@ -108,18 +108,19 @@ export class LoginComponent {
 
   private async setupOrUnlockEncryptionKey(user: any): Promise<void> {
     if (!user?.encryptionKey) {
-      const keyMaterial = await this.e2eKeyService.generateAndEncryptKeyPair(this.password);
+      const keyMaterial = await this.e2eKeyService.generateAndEncryptKeyPair(this.password, user.id);
 
-      await this.http.post(Routes.saveEncryptionKey, {
+      await this.http.post(endpoints.saveEncryptionKey, {
         publicKey: keyMaterial.publicKeyBase64,
         encryptedPrivateKey: keyMaterial.encryptedPrivateKeyBase64,
         salt: keyMaterial.saltBase64,
-      }).toPromise();
+      }, { withCredentials: true }).toPromise();
     } else {
       await this.e2eKeyService.decryptPrivateKey(
         this.password,
         user.encryptionKey.encryptedPrivateKey,
-        user.encryptionKey.salt
+        user.encryptionKey.salt,
+        user.id
       );
     }
   }
@@ -136,6 +137,6 @@ export class LoginComponent {
   }
 
   socialLogin(provider: string): void {
-    alert(`Redirecting to ${provider} login...`);
+    alert(`This login method is not available !`);
   }
 }

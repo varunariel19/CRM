@@ -31,6 +31,7 @@ export interface TeamMember {
   designationId: string;
   access: number;
   accessLevelId : string;
+  publicKey?: string | null;
   createdAt: string;
 }
 

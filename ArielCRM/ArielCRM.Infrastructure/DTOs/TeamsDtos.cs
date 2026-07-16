@@ -8,6 +8,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public string Name { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? ProfileImage { get; set; }
+        public string? PublicKey { get; set; }
     }
 
     public class TeamConversationMemberDto : TeamUserDto
@@ -26,6 +27,8 @@ namespace ArielCRM.Infrastructure.DTOs
         public string SenderName { get; set; } = string.Empty;
         public string? SenderProfileImage { get; set; }
         public string Content { get; set; } = string.Empty;
+        public string? Iv { get; set; }
+        public string? EncryptedAesKey { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public bool IsScheduled { get; set; }
@@ -61,6 +64,8 @@ namespace ArielCRM.Infrastructure.DTOs
     {
         public string UserId { get; set; } = string.Empty;
         public string? FirstMessage { get; set; }
+        public string? Iv { get; set; }
+        public List<RecipientKeyDto> RecipientKeys { get; set; } = [];
         public List<AttachmentPayloadDto> Attachments { get; set; } = [];
     }
 
@@ -70,10 +75,22 @@ namespace ArielCRM.Infrastructure.DTOs
         public List<string> MemberIds { get; set; } = [];
     }
 
+
+    public class RecipientKeyDto
+    {
+        public string RecipientId { get; set; } = string.Empty;
+        public string EncryptedAesKey { get; set; } = string.Empty;
+    }
+
     public class SendTeamMessageDto
     {
         public string? Body { get; set; }
-        public List<AttachmentPayloadDto> Attachments { get; set; } = [];
+
+        public string? Iv { get; set; }
+
+        public List<RecipientKeyDto> RecipientKeys { get; set; } = [];
+
+        public List<AttachmentPayloadDto>? Attachments { get; set; }
         public DateTime? ScheduledAt { get; set; }
     }
 
@@ -85,12 +102,16 @@ namespace ArielCRM.Infrastructure.DTOs
     public class EditTeamMessageDto
     {
         public string Content { get; set; } = string.Empty;
+        public string? Iv { get; set; }
+        public List<RecipientKeyDto> RecipientKeys { get; set; } = [];
     }
 
 
     public class ScheduledTeamMessageDto
     {
         public string Id { get; set; } = string.Empty;
+        public string? Iv { get; set; }                 
+        public string? EncryptedAesKey { get; set; }
         public string ConversationId { get; set; } = string.Empty;
         public string SenderId { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;

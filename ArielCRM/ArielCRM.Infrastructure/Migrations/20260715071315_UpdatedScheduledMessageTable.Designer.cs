@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ArielCRM.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ArielCRM.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260715071315_UpdatedScheduledMessageTable")]
+    partial class UpdatedScheduledMessageTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1163,43 +1166,6 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.ToTable("scheduled_team_message_attachments");
                 });
 
-            modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessageKey", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("EncryptedAesKey")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("encrypted_aes_key");
-
-                    b.Property<string>("RecipientId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("recipient_id");
-
-                    b.Property<string>("ScheduledMessageId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("scheduled_message_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RecipientId");
-
-                    b.HasIndex("ScheduledMessageId");
-
-                    b.ToTable("scheduled_team_message_keys");
-                });
-
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TeamConversation", b =>
                 {
                     b.Property<string>("Id")
@@ -1400,9 +1366,14 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("recipient_id");
 
+                    b.Property<string>("ScheduledTeamMessageId")
+                        .HasColumnType("character varying(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("RecipientId");
+
+                    b.HasIndex("ScheduledTeamMessageId");
 
                     b.HasIndex("MessageId", "RecipientId")
                         .IsUnique();
@@ -1998,25 +1969,6 @@ namespace ArielCRM.Infrastructure.Migrations
                     b.Navigation("ScheduledMessage");
                 });
 
-            modelBuilder.Entity("ArielCRM.DataLayer.Entities.ScheduledTeamMessageKey", b =>
-                {
-                    b.HasOne("ArielCRM.DataLayer.Entities.User", "Recipient")
-                        .WithMany()
-                        .HasForeignKey("RecipientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ArielCRM.DataLayer.Entities.ScheduledTeamMessage", "ScheduledMessage")
-                        .WithMany("Keys")
-                        .HasForeignKey("ScheduledMessageId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Recipient");
-
-                    b.Navigation("ScheduledMessage");
-                });
-
             modelBuilder.Entity("ArielCRM.DataLayer.Entities.TeamConversation", b =>
                 {
                     b.HasOne("ArielCRM.DataLayer.Entities.User", "CreatedBy")
@@ -2071,6 +2023,10 @@ namespace ArielCRM.Infrastructure.Migrations
                         .HasForeignKey("RecipientId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("ArielCRM.DataLayer.Entities.ScheduledTeamMessage", null)
+                        .WithMany("Keys")
+                        .HasForeignKey("ScheduledTeamMessageId");
 
                     b.Navigation("Message");
 

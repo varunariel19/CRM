@@ -11,6 +11,7 @@ import { NotificationState } from '../../../state/notification.state';
 import { DeepLinkService } from '../../../core/services/deepLink.service';
 import { TeamState } from '../../../state/team.state';
 import { UserProfileComponent } from '../../../components/items/user-profile/user-profile.component';
+import { EncryptedTeamMessagePayload, MessageCryptoService } from '../../../core/services/message-crypto.service';
 
 
 export interface PendingAttachment {
@@ -32,6 +33,8 @@ export interface ScheduledTeamMessage {
   conversationId: string;
   senderId: string;
   content: string;
+  iv?: string | null;
+  encryptedAesKey?: string | null;
   scheduledAt: string;
   status: 'Pending' | 'Sent' | 'Cancelled' | 'Failed';
   jobId: string | null;
@@ -57,6 +60,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   private notificationState = inject(NotificationState);
   private deepLink = inject(DeepLinkService);
   private location = inject(Location);
+  private messageCrypto = inject(MessageCryptoService);
 
   private lastScrolledMessageCount = -1;
   private pendingScrollConversationId: string | null = null;
@@ -120,7 +124,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   searchedUsers = computed(() => {
     const term = this.search().trim().toLowerCase();
     if (!term || this.isCreatingGroup()) return [];
-    return this.availableUsers()
+    return this.availableUsers()  
       .filter(user => user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term))
       .slice(0, 8);
   });
@@ -165,20 +169,20 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   ngOnInit(): void {
     this.notificationState.showMessageNotification.set(false);
 
-    this.teamsService.loadConversations().subscribe(conversations => {
-      this.teamsService.conversations.set(conversations);
-      this.preloadImageUrls(conversations.map(c => this.getConversationProfileImage(c)));
+    this.teamsService.loadConversations().subscribe(async conversations => {
+      const decrypted = await Promise.all(conversations.map(c => this.decryptConversation(c)));
+      this.teamsService.conversations.set(decrypted);
+      this.preloadImageUrls(decrypted.map(c => this.getConversationProfileImage(c)));
     });
 
     this.teamsService.connect({
       onMessage: message => this.receiveMessage(message),
       onConversation: conversation => this.upsertConversation(conversation),
       onSeen: (conversationId, messageIds, seenById) => this.applyMessagesSeen(conversationId, messageIds, seenById),
-      onMessageEdited: message => this.applyMessageEdited(message),
+      onMessageEdited: async message => this.applyMessageEdited(await this.decryptMessage(message)),
       onMessageDeleted: message => this.applyMessageDeleted(message),
-      onMessageRestored: message => this.applyMessageRestored(message),
+      onMessageRestored: async message => this.applyMessageRestored(await this.decryptMessage(message)),
       onScheduledDelivered: (conversationId, scheduledMessageId) => this.applyScheduledMessageDelivered(conversationId, scheduledMessageId)
-      // no lead handlers here — kept in leads component instead
     }).catch(err => console.error('Teams realtime connection failed', err));
   }
 
@@ -284,13 +288,14 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.messages.set([]);
     this.isLoadingMessages.set(true);
     this.teamsService.loadMessages(conversation.id, undefined, this.PAGE_SIZE).subscribe({
-      next: messages => {
-        this.messages.set(messages);
-        this.messagesCache.set(conversation.id, messages);
-        this.hasMoreMessages.set(messages.length === this.PAGE_SIZE);
+      next: async messages => {
+        const decrypted = await Promise.all(messages.map(m => this.decryptMessage(m)));
+        this.messages.set(decrypted);
+        this.messagesCache.set(conversation.id, decrypted);
+        this.hasMoreMessages.set(decrypted.length === this.PAGE_SIZE);
         this.isLoadingMessages.set(false);
         this.preloadImageUrls(
-          messages.flatMap(m => m.attachments.filter(a => a.attachmentType === 'image').map(a => a.fileUrl))
+          decrypted.flatMap(m => m.attachments.filter(a => a.attachmentType === 'image').map(a => a.fileUrl))
         );
         this.scrollToBottom();
         setTimeout(() => this.scrollToBottom(), 150);
@@ -303,10 +308,13 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   loadScheduledMessages(conversationId: string): void {
     this.isLoadingScheduled.set(true);
     this.teamsService.loadScheduledMessages(conversationId).subscribe({
-      next: scheduled => {
+      next: async scheduled => {
+        const decrypted = await Promise.all(
+          scheduled.map(async s => ({ ...s, content: (await this.decryptMessage(s as any)).content }))
+        );
         this.scheduledMessages.update(map => ({
           ...map,
-          [conversationId]: [...scheduled].sort(
+          [conversationId]: decrypted.sort(
             (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
           ),
         }));
@@ -346,10 +354,11 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     this.isLoadingMoreMessages.set(true);
     this.teamsService.loadMessages(conversationId, oldestMessageId, this.PAGE_SIZE).subscribe({
-      next: older => {
-        this.messages.update(current => [...older, ...current]);
+      next: async older => {
+        const decrypted = await Promise.all(older.map(m => this.decryptMessage(m)));
+        this.messages.update(current => [...decrypted, ...current]);
         this.messagesCache.set(conversationId, this.messages());
-        this.hasMoreMessages.set(older.length === this.PAGE_SIZE);
+        this.hasMoreMessages.set(decrypted.length === this.PAGE_SIZE);
         this.isLoadingMoreMessages.set(false);
 
         if (scroller) {
@@ -422,7 +431,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     });
   }
 
-  sendMessage(event: { content: string; attachments: PendingAttachment[]; scheduledAt?: string }): void {
+  async sendMessage(event: { content: string; attachments: PendingAttachment[]; scheduledAt?: string }): Promise<void> {
     const content = event.content.trim();
     const attachments = event.attachments;
     const scheduledAt = event.scheduledAt;
@@ -441,12 +450,22 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
     if (pending) {
       this.isSending.set(true);
-      this.teamsService.createDirect(pending.id, content, attachmentPayload).subscribe({
-        next: conversation => {
+      let encrypted: EncryptedTeamMessagePayload | undefined;
+      try {
+        if (content) encrypted = await this.encryptForMembers(content, this.buildPendingDirectMembers(pending));
+      } catch (error) {
+        console.error('Message encryption failed', error);
+        this.isSending.set(false);
+        return;
+      }
+
+      this.teamsService.createDirect(pending.id, encrypted?.body ?? content, attachmentPayload, encrypted).subscribe({
+        next: async conversation => {
           attachments.forEach(a => this.revokePreview(a));
           this.pendingDirect.set(null);
-          this.upsertConversation(conversation);
-          this.selectConversation(conversation);
+          const decryptedConversation = await this.decryptConversation(conversation);
+          this.upsertConversation(decryptedConversation);
+          this.selectConversation(decryptedConversation);
           this.isSending.set(false);
         },
         error: () => this.isSending.set(false),
@@ -458,13 +477,23 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     if (!conversationId) return;
 
     this.isSending.set(true);
+    let encrypted: EncryptedTeamMessagePayload | undefined;
+    try {
+      const conversation = this.selectedConversation();
+      if (content && conversation) encrypted = await this.encryptForMembers(content, conversation.members);
+    } catch (error) {
+      console.error('Message encryption failed', error);
+      this.isSending.set(false);
+      return;
+    }
 
     if (scheduledAt) {
-      this.teamsService.sendMessage(conversationId, content, attachmentPayload, scheduledAt).subscribe({
-        next: res => {
+      this.teamsService.sendMessage(conversationId, encrypted?.body ?? content, attachmentPayload, scheduledAt, encrypted).subscribe({
+        next: async res => {
           attachments.forEach(a => this.revokePreview(a));
           this.isSending.set(false);
-          this.addScheduledMessage(res.body as ScheduledTeamMessage);
+          const decrypted = await this.decryptMessage(res.body as any);
+          this.addScheduledMessage({ ...(res.body as ScheduledTeamMessage), content: decrypted.content });
         },
         error: () => this.isSending.set(false),
       });
@@ -474,15 +503,15 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     const optimisticId = `pending-${crypto.randomUUID()}`;
     const optimisticMessage = this.buildOptimisticMessage(optimisticId, conversationId, content, attachments);
     this.messages.update(messages => [...messages, optimisticMessage]);
-    this.messagesCache.set(conversationId, this.messages()); // ← sync cache
+    this.messagesCache.set(conversationId, this.messages());
     this.queueScroll(conversationId);
     this.teamsService.sendTyping(conversationId, false);
 
-    this.teamsService.sendMessage(conversationId, content, attachmentPayload).subscribe({
-      next: res => {
+    this.teamsService.sendMessage(conversationId, encrypted?.body ?? content, attachmentPayload, undefined, encrypted).subscribe({
+      next: async res => {
         attachments.forEach(a => this.revokePreview(a));
         this.isSending.set(false);
-        const saved = res.body as TeamMessage;
+        const saved = await this.decryptMessage(res.body as TeamMessage);
         this.replaceOptimisticMessage(optimisticId, saved);
         this.receiveMessage(saved);
       },
@@ -629,7 +658,7 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
 
   undoDelete(msg: TeamMessage): void {
     this.teamsService.restoreMessage(msg.conversationId, msg.id).subscribe({
-      next: updated => this.applyMessageRestored(updated),
+      next: async updated => this.applyMessageRestored(await this.decryptMessage(updated)),
       error: () => { }
     });
   }
@@ -685,13 +714,22 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.editingMessageContent.set('');
   }
 
-  saveEditMessage(msg: TeamMessage) {
+  async saveEditMessage(msg: TeamMessage): Promise<void> {
     const content = this.editingMessageContent().trim();
     if (!content) return;
 
-    this.teamsService.editMessage(msg.conversationId, msg.id, content).subscribe({
-      next: updated => {
-        this.applyMessageEdited(updated);
+    let encrypted: EncryptedTeamMessagePayload | undefined;
+    try {
+      const conversation = this.conversations().find(c => c.id === msg.conversationId);
+      if (conversation) encrypted = await this.encryptForMembers(content, conversation.members);
+    } catch (error) {
+      console.error('Message encryption failed', error);
+      return;
+    }
+
+    this.teamsService.editMessage(msg.conversationId, msg.id, encrypted?.body ?? content, encrypted).subscribe({
+      next: async updated => {
+        this.applyMessageEdited(await this.decryptMessage(updated));
         this.cancelEditMessage();
       },
       error: () => { }
@@ -724,6 +762,52 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
   trackByAttachment = (_: number, attachment: TeamMessageAttachment | PendingAttachment) => attachment.id;
   trackByScheduled = (_: number, message: ScheduledTeamMessage) => message.id;
 
+
+  private async encryptForMembers(content: string, members: Array<TeamConversationMember | TeamUser>): Promise<EncryptedTeamMessagePayload> {
+    const recipients = members.map(member => ({
+      recipientId: member.id,
+      publicKeyBase64: member.publicKey ?? '',
+    }));
+
+    const missing = recipients.filter(recipient => !recipient.publicKeyBase64);
+    if (missing.length) {
+      throw new Error(`Missing public encryption key for ${missing.map(m => m.recipientId).join(', ')}`);
+    }
+
+    return this.messageCrypto.encryptForRecipients(content, recipients);
+  }
+
+  private buildPendingDirectMembers(pending: TeamUser): TeamUser[] {
+    const me = this.users().find(user => user.id === this.currentUserId());
+    return [me, pending]
+      .filter((user): user is TeamUser => !!user)
+      .filter((user, index, users) => users.findIndex(item => item.id === user.id) === index);
+  }
+
+  private async decryptConversation(conversation: TeamConversation): Promise<TeamConversation> {
+    if (!conversation.lastMessage) return conversation;
+    return {
+      ...conversation,
+      lastMessage: await this.decryptMessage(conversation.lastMessage),
+    };
+  }
+
+  private async decryptMessage(message: TeamMessage): Promise<TeamMessage> {
+    if (!message.content || !message.iv || !message.encryptedAesKey || message.isDeleted) return message;
+
+    try {
+      const content = await this.messageCrypto.decryptMessage({
+        ciphertextBase64: message.content,
+        ivBase64: message.iv,
+        encryptedAesKeyBase64: message.encryptedAesKey,
+      });
+
+      return { ...message, content, iv: null, encryptedAesKey: null };
+    } catch (error) {
+      console.error('Message decryption failed', error);
+      return { ...message, content: '[Unable to decrypt message]' };
+    }
+  }
 
   private preloadImageUrls(urls: (string | null | undefined)[]): void {
     for (const url of urls) {
@@ -786,40 +870,44 @@ export class TeamsComponent implements OnInit, AfterViewChecked, OnDestroy {
     ));
   }
 
-private receiveMessage(message: TeamMessage): void {
-  if (message.conversationId === this.selectedConversationId()) {
-    this.notificationState.playMessageReceivedSound();
+  private async receiveMessage(message: TeamMessage): Promise<void> {
+    message = await this.decryptMessage(message);
 
-    this.messages.update(messages => {
-      const withoutPending = messages.filter(existing =>
-        !existing.id.startsWith('pending-') || existing.content !== message.content
-      );
-      return withoutPending.some(m => m.id === message.id) ? withoutPending : [...withoutPending, message];
-    });
-    this.messagesCache.set(message.conversationId, this.messages());
-    this.queueScroll(message.conversationId);
-    this.markConversationRead(message.conversationId);
-  } else {
-    const cached = this.messagesCache.get(message.conversationId);
-    if (cached) {
-      const withoutPending = cached.filter(existing =>
-        !existing.id.startsWith('pending-') || existing.content !== message.content
-      );
-      const updated = withoutPending.some(m => m.id === message.id)
-        ? withoutPending
-        : [...withoutPending, message];
-      this.messagesCache.set(message.conversationId, updated);
+    if (message.conversationId === this.selectedConversationId()) {
+      this.notificationState.playMessageReceivedSound();
+
+      this.messages.update(messages => {
+        const withoutPending = messages.filter(existing =>
+          !existing.id.startsWith('pending-') || existing.content !== message.content
+        );
+        return withoutPending.some(m => m.id === message.id) ? withoutPending : [...withoutPending, message];
+      });
+      this.messagesCache.set(message.conversationId, this.messages());
+      this.queueScroll(message.conversationId);
+      this.markConversationRead(message.conversationId);
+    } else {
+      const cached = this.messagesCache.get(message.conversationId);
+      if (cached) {
+        const withoutPending = cached.filter(existing =>
+          !existing.id.startsWith('pending-') || existing.content !== message.content
+        );
+        const updated = withoutPending.some(m => m.id === message.id)
+          ? withoutPending
+          : [...withoutPending, message];
+        this.messagesCache.set(message.conversationId, updated);
+      }
     }
+
+    this.teamsService.conversations.update(conversations => conversations.map(c =>
+      c.id === message.conversationId
+        ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
+        : c
+    ).sort((a, b) => this.sortByRecent(a, b)));
   }
 
-  this.teamsService.conversations.update(conversations => conversations.map(c =>
-    c.id === message.conversationId
-      ? { ...c, lastMessage: message, lastMessageAt: message.createdAt }
-      : c
-  ).sort((a, b) => this.sortByRecent(a, b)));
-}
+  private async upsertConversation(conversation: TeamConversation): Promise<void> {
+    conversation = await this.decryptConversation(conversation);
 
-  private upsertConversation(conversation: TeamConversation): void {
     this.teamsService.conversations.update(conversations => {
       const exists = conversations.some(c => c.id === conversation.id);
       const next = exists
@@ -977,10 +1065,11 @@ private receiveMessage(message: TeamMessage): void {
     this.prefetchInFlight.add(conversationId);
 
     this.teamsService.loadMessages(conversationId, undefined, this.PAGE_SIZE).subscribe({
-      next: messages => {
-        this.messagesCache.set(conversationId, messages);
+      next: async messages => {
+        const decrypted = await Promise.all(messages.map(m => this.decryptMessage(m)));
+        this.messagesCache.set(conversationId, decrypted);
         this.preloadImageUrls(
-          messages.flatMap(m => m.attachments.filter(a => a.attachmentType === 'image').map(a => a.fileUrl))
+          decrypted.flatMap(m => m.attachments.filter(a => a.attachmentType === 'image').map(a => a.fileUrl))
         );
         this.prefetchInFlight.delete(conversationId);
       },

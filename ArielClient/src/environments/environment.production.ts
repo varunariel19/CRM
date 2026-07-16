@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  baseUrl: 'https://crm-oyts.onrender.com',
+  baseUrl: 'https://crm-production-0dc9.up.railway.app',
 
   ai: {
     url: 'https://api.groq.com/openai/v1/chat/completions',

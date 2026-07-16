@@ -21,7 +21,7 @@ export class AuthService {
         private http: HttpClient,
         private router: Router,
         private authState: AuthState,
-        private loaderService  : LoaderService,
+        private loaderService: LoaderService,
         private teamsService: TeamsService,
     ) { }
 
@@ -74,7 +74,7 @@ export class AuthService {
                 return of(false);
             }),
             finalize(() => {
-                 this.authState.setValidating(false); 
+                this.authState.setValidating(false);
             })
         );
     }

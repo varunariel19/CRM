@@ -40,5 +40,8 @@ namespace ArielCRM.Infrastructure.DTOs
         public string PublicKey { get; set; } = string.Empty;
         public string EncryptedPrivateKey { get; set; } = string.Empty;
         public string Salt { get; set; } = string.Empty;
+        public string Email {get; set; } = string.Empty;
     }
+
+    
 }

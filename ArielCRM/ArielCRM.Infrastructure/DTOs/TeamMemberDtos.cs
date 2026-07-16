@@ -17,6 +17,7 @@ namespace ArielCRM.Infrastructure.DTOs
         public int Access { get; set; }
 
         public string AccessLevelId { get; set; } = string.Empty;
+        public string? PublicKey { get; set; }
 
         public string DepartmentId { get; set; } = string.Empty;
         public string DesignationId { get; set; } = string.Empty;

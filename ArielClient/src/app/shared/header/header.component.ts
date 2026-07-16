@@ -21,6 +21,7 @@ export class HeaderComponent  {
 
   showSettings = signal(false);
   showProfile = signal(false);
+  showLogoutConfirm = signal(false);
 
   private authState = inject(AuthState);
   globalState = inject(GlobalState);
@@ -52,7 +53,16 @@ export class HeaderComponent  {
     this.toggleSidebar.emit();
   }
 
-  logout(): void {
+  openLogoutConfirm(): void {
+    this.showLogoutConfirm.set(true);
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm.set(false);
+  }
+
+  confirmLogout(): void {
+    this.showLogoutConfirm.set(false);
     this.authService.logout();
   }
 }

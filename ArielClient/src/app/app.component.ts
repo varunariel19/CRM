@@ -33,7 +33,7 @@ export class App implements OnInit {
             };
             this.notificationState.add(notification);
             this.notificationState.show(notification);
-            this.notificationState.showMainMessageNotification(notification.message, notification.title);
+            // this.notificationState.showMainMessageNotification(notification.message, notification.title);
           },
 
         })
@@ -46,6 +46,8 @@ export class App implements OnInit {
       }
     });
   }
+
+  
   ngOnInit(): void {
     this.requestNotificationPermission();
   }

@@ -3,6 +3,7 @@ export interface TeamUser {
   name: string;
   email: string;
   profileImage?: string | null;
+  publicKey?: string | null;
 }
 
 export interface TeamConversationMember extends TeamUser {
@@ -29,6 +30,8 @@ export interface TeamMessage {
   senderName: string;
   senderProfileImage?: string | null;
   content: string;
+  iv?: string | null;
+  encryptedAesKey?: string | null;
   createdAt: string;
   updatedAt: string;
   attachments: TeamMessageAttachment[];

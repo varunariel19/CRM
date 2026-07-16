@@ -259,3 +259,117 @@
   justify-content: center;
   padding: 0 3px;
 }
+
+
+/* LOGOUT CONFIRMATION MODAL */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 16px;
+
+  background: var(--remaining-bg);
+  color: var(--menu-text);
+
+  border-radius: 16px;
+  padding: 28px 24px 24px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  animation: scaleIn 0.15s ease;
+}
+
+.modal-icon {
+  width: 56px;
+  height: 56px;
+
+  border-radius: 50%;
+
+  background: var(--hover-bg);
+  color: var(--danger-text);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.modal-message {
+  font-size: 14px;
+  color: var(--placeholder-text);
+  margin: 0 0 24px;
+  line-height: 1.4;
+}
+
+.modal-actions {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 42px;
+
+  border: none;
+  outline: none;
+
+  border-radius: 12px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.cancel-btn {
+  background: var(--hover-bg);
+  color: var(--menu-text);
+}
+
+.cancel-btn:hover {
+  background: var(--active-bg);
+}
+
+.confirm-btn {
+  background: var(--danger-text);
+  color: var(--on-primary);
+}
+
+.confirm-btn:hover {
+  opacity: 0.85;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

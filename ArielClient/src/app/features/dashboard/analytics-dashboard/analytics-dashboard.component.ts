@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartOptions, ChartType } from 'chart.js';
 
@@ -233,55 +233,52 @@ export class AnalyticsDashboardComponent {
 
   // ── Chart data ────────────────────────────────────────────────────────────
 
-  get leadStatusBarData(): ChartData<'bar'> {
-    const statuses = [
-      { label: 'Contacted', status: LeadStatusType.Contracted },
-      { label: 'Qualified', status: LeadStatusType.Qualified },
-      { label: 'Converted', status: LeadStatusType.Converted },
-      { label: 'Lost', status: LeadStatusType.Lost },
-    ];
+leadStatusBarData = computed<ChartData<'bar'>>(() => {
+  const leads = this.leadState.leads(); // depends on signal
+  const statuses = [
+    { label: 'Contacted', status: LeadStatusType.Contracted },
+    { label: 'Qualified', status: LeadStatusType.Qualified },
+    { label: 'Converted', status: LeadStatusType.Converted },
+    { label: 'Lost', status: LeadStatusType.Lost },
+  ];
+  return {
+    labels: statuses.map(s => s.label),
+    datasets: [{
+      data: statuses.map(s => leads.filter(l => l.status === s.status).length),
+      backgroundColor: ['#206ce8', '#7c3aed', '#15803d', '#0ea5e9', '#ef4444'],
+      borderRadius: 4,
+      barThickness: 40
+    }]
+  };
+});
 
-    return {
-      labels: statuses.map(s => s.label),
-      datasets: [{
-        data: statuses.map(s => this.leads.filter(l => l.status === s.status).length),
-        backgroundColor: ['#206ce8', '#7c3aed', '#15803d', '#0ea5e9', '#ef4444'],
-        borderRadius: 4,
-        barThickness: 40
-      }]
-    };
-  }
+leadSourceData = computed(() => {
+  const leads = this.leads; 
+  const countBySource = (source: LeadSource) =>
+    leads.filter(x => x.source === source).length;
 
-  get leadSourceData() {
-    const leads = this.leads;
+  return {
+    marketingPlatform: countBySource('MarketingPlatform'),
+    website: countBySource('Website'),
+    referrals: countBySource('Referrals'),
+    linkedIn: countBySource('LinkedIn'),
+    events: countBySource('Events'),
+    partners: countBySource('Partners'),
+    coldOutreach: countBySource('ColdOutreach')
+  };
+});
 
-    const countBySource = (source: LeadSource) =>
-      leads.filter(x => x.source === source).length;
-
-    return {
-      marketingPlatform: countBySource('MarketingPlatform'),
-      website: countBySource('Website'),
-      referrals: countBySource('Referrals'),
-      linkedIn: countBySource('LinkedIn'),
-      events: countBySource('Events'),
-      partners: countBySource('Partners'),
-      coldOutreach: countBySource('ColdOutreach')
-    };
-  }
-
-  get doughnutChartData(): ChartData<'doughnut'> {
-    const d = this.leadSourceData;
-
-    return {
-      labels: ['Marketing Platform', 'Website', 'Referrals', 'LinkedIn', 'Events', 'Partners', 'Cold Outreach'],
-      datasets: [{
-        data: [d.marketingPlatform, d.website, d.referrals, d.linkedIn, d.events, d.partners, d.coldOutreach],
-        backgroundColor: ['#206ce8', '#7c3aed', '#f97316', '#38bdf8', '#10b981', '#f59e0b', '#ef4444'],
-        borderWidth: 0
-      }]
-    };
-  }
-
+doughnutChartData = computed<ChartData<'doughnut'>>(() => {
+  const d = this.leadSourceData();
+  return {
+    labels: ['Marketing Platform', 'Website', 'Referrals', 'LinkedIn', 'Events', 'Partners', 'Cold Outreach'],
+    datasets: [{
+      data: [d.marketingPlatform, d.website, d.referrals, d.linkedIn, d.events, d.partners, d.coldOutreach],
+      backgroundColor: ['#206ce8', '#7c3aed', '#f97316', '#38bdf8', '#10b981', '#f59e0b', '#ef4444'],
+      borderWidth: 0
+    }]
+  };
+});
   get recentHistory() {
     return this.historyState.recentHistory() ?? [];
   }

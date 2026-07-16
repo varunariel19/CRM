@@ -144,7 +144,7 @@
         <span class="chart-period">All time</span>
       </div>
       <div class="chart-canvas-wrap">
-        <canvas baseChart type="bar" [data]="leadStatusBarData" [options]="barChartOptions"></canvas>
+        <canvas baseChart type="bar" [data]="leadStatusBarData()" [options]="barChartOptions"></canvas>
       </div>
     </div>
 
@@ -154,7 +154,7 @@
         <h3>Lead Sources</h3>
       </div>
       <div class="donut-chart">
-        <canvas baseChart [type]="'doughnut'" [data]="doughnutChartData" [options]="doughnutChartOptions"></canvas>
+        <canvas baseChart [type]="'doughnut'" [data]="doughnutChartData()" [options]="doughnutChartOptions"></canvas>
         <div class="donut-center">
           <p>Total</p>
           <h2>{{ totalLeads }}</h2>
@@ -163,14 +163,14 @@
 
       <div class="legend">
         <div class="legend-item"><span class="dot dot--blue"></span> Marketing Platform ({{
-          leadSourceData.marketingPlatform }})</div>
-        <div class="legend-item"><span class="dot dot--purple"></span> Website ({{ leadSourceData.website }})</div>
-        <div class="legend-item"><span class="dot dot--orange"></span> Referrals ({{ leadSourceData.referrals }})</div>
-        <div class="legend-item"><span class="dot dot--light-blue"></span> LinkedIn ({{ leadSourceData.linkedIn }})
+          leadSourceData().marketingPlatform }})</div>
+        <div class="legend-item"><span class="dot dot--purple"></span> Website ({{ leadSourceData().website }})</div>
+        <div class="legend-item"><span class="dot dot--orange"></span> Referrals ({{ leadSourceData().referrals }})</div>
+        <div class="legend-item"><span class="dot dot--light-blue"></span> LinkedIn ({{ leadSourceData().linkedIn }})
         </div>
-        <div class="legend-item"><span class="dot dot--green"></span> Events ({{ leadSourceData.events }})</div>
-        <div class="legend-item"><span class="dot dot--yellow"></span> Partners ({{ leadSourceData.partners }})</div>
-        <div class="legend-item"><span class="dot dot--red"></span> Cold Outreach ({{ leadSourceData.coldOutreach }})
+        <div class="legend-item"><span class="dot dot--green"></span> Events ({{ leadSourceData().events }})</div>
+        <div class="legend-item"><span class="dot dot--yellow"></span> Partners ({{ leadSourceData().partners }})</div>
+        <div class="legend-item"><span class="dot dot--red"></span> Cold Outreach ({{ leadSourceData().coldOutreach }})
         </div>
       </div>
     </div>
@@ -263,7 +263,7 @@
     </div>
     }
 
-    @if(perm.auditHistory.canView()) {
+    <!-- @if(perm.auditHistory.canView()) {
     <div class="bottom-card">
       <div class="section-header">
         <h3><i class="fas fa-bolt"></i> CRM Live Activity Feed</h3>
@@ -299,7 +299,7 @@
       </div>
       }
     </div>
-    }
+    } -->
 
   </div>
 

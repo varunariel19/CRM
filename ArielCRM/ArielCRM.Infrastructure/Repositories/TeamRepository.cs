@@ -17,6 +17,7 @@ namespace ArielCRM.Infrastructure.Repositories
                 .Include(x => x.Department)
                 .Include(x => x.AccessLevel)
                 .Include(x => x.Designation)
+                .Include(x => x.EncryptionKey)
                 .ToListAsync();
         }
 
