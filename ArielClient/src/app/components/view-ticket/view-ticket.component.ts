@@ -154,9 +154,7 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
         this.htmlContent = this.quillInstance.root.innerHTML;
         this.cdr.detectChanges();
 
-        console.log("description", this.htmlContent);
       } catch {
-        // consider setting an error/toast here, this is currently a silent failure
       } finally {
         this.isUploading = false;
         document.body.style.cursor = 'default';
@@ -359,7 +357,6 @@ export class ViewTicketComponent implements OnInit, OnChanges, OnDestroy {
         ...this.ticket,
         aiSummary: [...points],
       };
-      console.log("updated ticket data ", updatedTicket);
       this.ticketUpdated.emit(updatedTicket);
       this.cdr.detectChanges();
     } catch {

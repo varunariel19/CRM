@@ -424,7 +424,6 @@ export class LoginComponent {
 
     const log = (msg: string) => {
       this.tempBulkLog = [...this.tempBulkLog, msg];
-      console.log(msg);
       this.cdr.detectChanges();
     };
 

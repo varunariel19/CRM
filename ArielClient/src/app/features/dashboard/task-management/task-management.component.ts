@@ -164,10 +164,10 @@ export class TaskManagementComponent implements OnInit {
     this.taskService.createTask(this.newTask)
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: (res) => {
+  next: (res) => {
           if (res.success) {
             this.taskState.addTask(res.task);
-            this.loadTasks();
+            this.allTasks.update(list => [...list, res.task]); 
             this.showCreateModal = false;
             this.newTask = this.resetForm();
           }
