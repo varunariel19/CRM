@@ -2,12 +2,20 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
 import { AuthState } from '../../../state/auth.state';
 import { Router } from '@angular/router';
 import { endpoints, Routes } from '../../../core/constants/endpoints';
 import { LoaderService } from '../../../core/services/loader.service';
 import { E2eKeyService } from '../../../core/services/E2eKey.service';
+interface Account {
+  UserId: string;
+  Name: string;
+  Email: string;
+  Password: string;
+  CreatedAt: string;
+}
 
 
 @Component({
@@ -38,6 +46,416 @@ export class LoginComponent {
 
   captchaCode = '';
   private captchaChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  tempBulkRunning = false;
+  tempBulkLog: string[] = [];
+
+  private tempAccounts: Account[] = [
+    {
+      "UserId": "8025d045-5e30-4c49-9364-0f9e1fbb986c",
+      "Name": "Varun Joshi",
+      "Email": "varun@arielsoftwares.in",
+      "Password": "$#W0Hq^@3R",
+      "CreatedAt": "2026-07-01T05:00:49.5478663Z"
+    },
+    {
+      "UserId": "2d7b3c4f-e357-41fb-b1ec-2203e5c5afa9",
+      "Name": "Abdul Raza",
+      "Email": "abdul@arielsoftwares.in",
+      "Password": "sipfJwD4K7",
+      "CreatedAt": "2026-07-01T05:06:00.0006894Z"
+    },
+    {
+      "UserId": "8ef417ad-5fd6-4c18-b5b8-7419fbe5292b",
+      "Name": "Abhinav Sharma",
+      "Email": "abhinav@arielsoftwares.in",
+      "Password": "bAC0DQ\u00263Bt",
+      "CreatedAt": "2026-07-01T05:06:54.8977181Z"
+    },
+    {
+      "UserId": "9cdcc371-b649-447b-ab68-2a6f8075be9f",
+      "Name": "Abhishek Partap Singh",
+      "Email": "abhishekp@arielsoftwares.in",
+      "Password": "lxSrpv0pl6",
+      "CreatedAt": "2026-07-01T05:08:04.539488Z"
+    },
+    {
+      "UserId": "faa9a21a-0aff-4d24-9343-7b25b733d9b6",
+      "Name": "Abhishek Patwal",
+      "Email": "abhishekpatwal@arielsoftwares.in",
+      "Password": "sdsLnijJOn",
+      "CreatedAt": "2026-07-01T05:09:47.3398785Z"
+    },
+    {
+      "UserId": "49921bd9-adad-4ba1-8125-bee7842db91a",
+      "Name": "Abhishek Sharma",
+      "Email": "abhishek@arielsoftwares.in",
+      "Password": "oxjkP*W*PL",
+      "CreatedAt": "2026-07-01T05:10:27.1114438Z"
+    },
+    {
+      "UserId": "bb1785d6-7076-4d2d-a4a3-c89204c39080",
+      "Name": "Akash Uniyal",
+      "Email": "akash@arielsoftwares.in",
+      "Password": "$9gQb4tTGa",
+      "CreatedAt": "2026-07-01T05:11:08.1852479Z"
+    },
+    {
+      "UserId": "202434cc-8eb9-4087-bc72-1f5354732afe",
+      "Name": "Akhil Mittal",
+      "Email": "akhil@arielsoftwares.in",
+      "Password": "LBI*aeLjCe",
+      "CreatedAt": "2026-07-01T05:11:57.2600861Z"
+    },
+    {
+      "UserId": "a176de45-51d2-4c3d-9190-ba869f2b9dca",
+      "Name": "Akshay Sharma",
+      "Email": "akshay@arielsoftwares.in",
+      "Password": "Tz$0ODDxU8",
+      "CreatedAt": "2026-07-01T05:14:21.1484279Z"
+    },
+    {
+      "UserId": "0a56c4f8-e889-42b1-adb9-e6222486f941",
+      "Name": "Amandeep Kaur",
+      "Email": "amandeep@arielsoftwares.in",
+      "Password": "kHHNSi$ZiT",
+      "CreatedAt": "2026-07-01T05:16:17.4245482Z"
+    },
+    {
+      "UserId": "d418b81d-3864-4e0e-b049-6710cd838843",
+      "Name": "Amritpal Kaur",
+      "Email": "amrit@arielsoftwares.in",
+      "Password": "JnZ*tbMRR1",
+      "CreatedAt": "2026-07-01T05:17:11.6224028Z"
+    },
+    {
+      "UserId": "0a5af7f8-d5da-4b85-9f14-8708f202e4ee",
+      "Name": "Anjali",
+      "Email": "anjali@arielsoftwares.in",
+      "Password": "iVki*oFTUQ",
+      "CreatedAt": "2026-07-01T05:17:56.7579924Z"
+    },
+    {
+      "UserId": "055aef35-657f-42dd-9f15-9c0bed3430f7",
+      "Name": "Ankit Singh Rana",
+      "Email": "ankit@arielsoftwares.in",
+      "Password": "33wSEu0t4R",
+      "CreatedAt": "2026-07-01T05:19:36.816806Z"
+    },
+    {
+      "UserId": "fc8347bc-1fba-4148-94bb-29116ca6ed79",
+      "Name": "Ankush Chambiya",
+      "Email": "ankush@arielsoftwares.in",
+      "Password": "*TYEmUOvxP",
+      "CreatedAt": "2026-07-01T05:20:29.6605235Z"
+    },
+    {
+      "UserId": "00f69300-9e93-48df-a93c-f03e5119e536",
+      "Name": "Arun Kumar",
+      "Email": "arun@arielsoftwares.in",
+      "Password": "ZkwCkt#Ykp",
+      "CreatedAt": "2026-07-01T05:21:12.735593Z"
+    },
+    {
+      "UserId": "86f231d1-2584-4a33-9613-764f487603f0",
+      "Name": "Deepak Yadav",
+      "Email": "deepak@arielsoftwares.in",
+      "Password": "t2i#nZUMpq",
+      "CreatedAt": "2026-07-01T05:22:08.584942Z"
+    },
+    {
+      "UserId": "c249fb56-0d46-4b3f-b686-1d65131ea5bb",
+      "Name": "Dile Ram",
+      "Email": "dile@arielsoftwares.in",
+      "Password": "1GJ3YU$pqP",
+      "CreatedAt": "2026-07-01T05:23:01.4378649Z"
+    },
+    {
+      "UserId": "91f08e0b-5e98-4eaf-b661-c28dba8675c8",
+      "Name": "Divyansh Sodhi",
+      "Email": "divyansh@arielsoftwares.in",
+      "Password": "X7Lea@URKm",
+      "CreatedAt": "2026-07-01T05:23:56.5114483Z"
+    },
+    {
+      "UserId": "3ca07192-d365-48d1-aa41-0ac0f38d60d7",
+      "Name": "Gulshan",
+      "Email": "gulshan@arielsoftwares.in",
+      "Password": "cigxa76Bc%",
+      "CreatedAt": "2026-07-01T05:24:54.2817566Z"
+    },
+    {
+      "UserId": "84f2cc17-c3ad-4a01-9edd-cbf60736f333",
+      "Name": "Gurlal Chand",
+      "Email": "gurlal@arielsoftwares.in",
+      "Password": "S1#L6LOJ6#",
+      "CreatedAt": "2026-07-01T05:25:41.2939898Z"
+    },
+    {
+      "UserId": "a4fb4544-f636-475e-8dcb-af283a2c19b4",
+      "Name": "Harsh",
+      "Email": "hari@arielsoftwares.in",
+      "Password": "3wA1!@l7zL",
+      "CreatedAt": "2026-07-01T05:26:48.3070863Z"
+    },
+    {
+      "UserId": "3b00db8b-9ea9-4db3-9087-63c158ceb337",
+      "Name": "Kanika Rana",
+      "Email": "kanika@arielsoftwares.in",
+      "Password": "fzh@^h!ohd",
+      "CreatedAt": "2026-07-01T05:27:30.9204492Z"
+    },
+    {
+      "UserId": "7279497e-ea38-487f-a287-bd965ab5cd99",
+      "Name": "Kartik Chauhan",
+      "Email": "kartik@arielsoftwares.in",
+      "Password": "6%lBWOweeU",
+      "CreatedAt": "2026-07-01T05:28:27.5228239Z"
+    },
+    {
+      "UserId": "3fd80ff7-d452-4196-8ecd-8effde271ae9",
+      "Name": "Komal",
+      "Email": "komal@arielsoftwares.in",
+      "Password": "12rZD408gN",
+      "CreatedAt": "2026-07-01T05:29:43.5799943Z"
+    },
+    {
+      "UserId": "d1ecc762-3deb-49a2-b62a-b54f9ba1c927",
+      "Name": "Krishan Murari",
+      "Email": "krishan@arielsoftwares.in",
+      "Password": "CbI69bhb*C",
+      "CreatedAt": "2026-07-01T05:30:51.2763422Z"
+    },
+    {
+      "UserId": "a8267f2e-92e5-4fdb-84c7-2dea93b5135a",
+      "Name": "Lakshay Bajaj",
+      "Email": "lakshay@arielsoftwares.in",
+      "Password": "FtD8dka%fG",
+      "CreatedAt": "2026-07-01T05:31:34.8010257Z"
+    },
+    {
+      "UserId": "4deafc3d-d522-4549-a037-b77cca785a26",
+      "Name": "Madhu Bala",
+      "Email": "madhu@arielsoftwares.in",
+      "Password": "6!CT0mr2Ua",
+      "CreatedAt": "2026-07-01T05:32:19.5891674Z"
+    },
+    {
+      "UserId": "513c4653-ddca-4996-8805-334526000091",
+      "Name": " Manita Pradhan",
+      "Email": "manita@arielsoftwares.in",
+      "Password": "4G$gNTomn!",
+      "CreatedAt": "2026-07-01T05:33:01.6844292Z"
+    },
+    {
+      "UserId": "3a5e1a6a-c23b-4814-bfe1-9303a8f650de",
+      "Name": "Md. Waseem Ahmad",
+      "Email": "waseem@arielsoftwares.in",
+      "Password": "$62cOLizf2",
+      "CreatedAt": "2026-07-01T05:34:24.7719011Z"
+    },
+    {
+      "UserId": "822ae552-bfc7-425a-9b02-00435e2853bc",
+      "Name": "Naveen Sharma",
+      "Email": "naveen@arielsoftwares.in",
+      "Password": "glkHovF!Qn",
+      "CreatedAt": "2026-07-01T05:35:06.2191104Z"
+    },
+    {
+      "UserId": "8a014f21-48e0-4c15-ab07-5a5252c19abc",
+      "Name": "Nikhil Kumar",
+      "Email": "nikhil@arielsoftwares.in",
+      "Password": "@%RHcP%QAv",
+      "CreatedAt": "2026-07-01T05:35:55.0441718Z"
+    },
+    {
+      "UserId": "9d95851e-9881-4559-a75f-1737c80ee528",
+      "Name": "Nilaksh Aggarwal",
+      "Email": "nilaksh@arielsoftwares.in",
+      "Password": "w3Vn1zfFUq",
+      "CreatedAt": "2026-07-01T05:36:36.8796948Z"
+    },
+    {
+      "UserId": "cd6e6b1e-5912-4f43-b5a5-164918ebcce8",
+      "Name": "Nitish Paudel",
+      "Email": "nitish@arielsoftwares.in",
+      "Password": "z5GsF1KMw$",
+      "CreatedAt": "2026-07-01T05:37:34.6629072Z"
+    },
+    {
+      "UserId": "e922a8da-4b51-4bb8-9361-5a0135017d3d",
+      "Name": "Paras kalyan",
+      "Email": "paras@arielsoftwares.in",
+      "Password": "uvcGGRNT4D",
+      "CreatedAt": "2026-07-01T05:38:10.1077962Z"
+    },
+    {
+      "UserId": "b1e1a74e-c9d1-46a4-8138-699d9b3ca954",
+      "Name": "Pratiroop Puri",
+      "Email": "pratiroop@arielsoftwares.in",
+      "Password": "2Fz4a0%o7N",
+      "CreatedAt": "2026-07-01T05:38:57.3915613Z"
+    },
+    {
+      "UserId": "cbd2a636-2938-404f-93a2-9d1e3c716820",
+      "Name": "Prayag Rajwade",
+      "Email": "prayag@arielsoftwares.in",
+      "Password": "y36v!GO^L1",
+      "CreatedAt": "2026-07-01T05:39:41.6239388Z"
+    },
+    {
+      "UserId": "9e05aea4-4fe8-4931-a2cf-5893a157f931",
+      "Name": "Rajat Kumar Kochar",
+      "Email": "rajat@arielsoftwares.in",
+      "Password": "3geL30633F",
+      "CreatedAt": "2026-07-01T05:40:52.6480107Z"
+    },
+    {
+      "UserId": "ff65d9aa-49f0-47ef-af7b-6357a1b5cf19",
+      "Name": "Ranjot Kaur",
+      "Email": "ranjot@arielsoftwares.in",
+      "Password": "kpB!tQd%wL",
+      "CreatedAt": "2026-07-01T05:41:31.6649661Z"
+    },
+    {
+      "UserId": "6be95f79-fb85-48e1-bb30-03135023025c",
+      "Name": "Sahil Saharan",
+      "Email": "sahil@arielsoftwares.in",
+      "Password": "TJtZXCSvmi",
+      "CreatedAt": "2026-07-01T05:43:15.3111118Z"
+    },
+    {
+      "UserId": "c1f15596-e036-4d5d-8871-60e3ed1440bd",
+      "Name": "Saksham Midha",
+      "Email": "saksham@arielsoftwares.in",
+      "Password": "oF1@RZUa^g",
+      "CreatedAt": "2026-07-01T05:44:22.8023193Z"
+    },
+    {
+      "UserId": "fc16e933-d64c-4882-a977-2f326825697c",
+      "Name": "Shaif Ansari",
+      "Email": "shaif@arielsoftwares.in",
+      "Password": "bWpoDuxA*d",
+      "CreatedAt": "2026-07-01T05:45:04.9522167Z"
+    },
+    {
+      "UserId": "995ef6c3-c750-41d5-b28a-76ec7bae3d7e",
+      "Name": "Shivam",
+      "Email": "shivam@arielsoftwares.in",
+      "Password": "V@nA@qj7RX",
+      "CreatedAt": "2026-07-01T05:45:41.1830646Z"
+    },
+    {
+      "UserId": "9044a945-8da8-4171-8474-d730808086c8",
+      "Name": "Shubham Singh",
+      "Email": "shubham@arielsoftwares.in",
+      "Password": "o6\u002667yEkht",
+      "CreatedAt": "2026-07-01T05:46:15.7793002Z"
+    },
+    {
+      "UserId": "4c1df262-b78f-415b-875a-d265485ca94d",
+      "Name": "Shuchita Chawla",
+      "Email": "shuchita@arielsoftwares.in",
+      "Password": "nhRZXQG2Iy",
+      "CreatedAt": "2026-07-01T05:47:52.5860637Z"
+    },
+    {
+      "UserId": "fbc6e3f4-6652-4287-af0e-9dfd293120dc",
+      "Name": "Siddhartha Sabharwal",
+      "Email": "siddhartha@arielsoftwares.in",
+      "Password": "#9Ss7z0Uv@",
+      "CreatedAt": "2026-07-01T05:50:47.0633345Z"
+    },
+    {
+      "UserId": "6c7332a6-0ff2-4cc7-b33f-d5097d213ad9",
+      "Name": "Sonali Thakur",
+      "Email": "sonali@arielsoftwares.in",
+      "Password": "3v0Mv4Fgr\u0026",
+      "CreatedAt": "2026-07-01T05:51:38.1721851Z"
+    },
+    {
+      "UserId": "8559cc69-10cf-4db4-a8f4-304875df1994",
+      "Name": "Sudhir Kumar",
+      "Email": "sudhir@arielsoftwares.in",
+      "Password": "8cXtwpQ5kr",
+      "CreatedAt": "2026-07-01T05:53:25.8213028Z"
+    },
+    {
+      "UserId": "380c1a1d-291c-4260-9e97-4045f1a564f5",
+      "Name": "Sujeet Kumar Shah",
+      "Email": "sujeetkshah@arielsoftwares.in",
+      "Password": "L^Tg2l\u0026@mW",
+      "CreatedAt": "2026-07-01T05:54:09.4490091Z"
+    },
+    {
+      "UserId": "64262e13-5145-4152-a77b-d37f3bbb7ed3",
+      "Name": "Tarandeep Singh",
+      "Email": "tarandeep@arielsoftwares.in",
+      "Password": "NC7\u0026Y0kZFs",
+      "CreatedAt": "2026-07-01T05:54:44.2932071Z"
+    },
+    {
+      "UserId": "bcf7427e-164d-42ae-b100-dfc6027acb12",
+      "Name": " Tilak Raj",
+      "Email": "tilak@arielsoftwares.in",
+      "Password": "^e@IBAAF9\u0026",
+      "CreatedAt": "2026-07-01T05:55:17.8069146Z"
+    },
+    {
+      "UserId": "ed518d11-9279-4357-84e4-0591a7cb3f7a",
+      "Name": " Sarthak Gupta",
+      "Email": "sarthak@arielsoftwares.in",
+      "Password": "7OQrfg%!F8",
+      "CreatedAt": "2026-07-01T05:57:09.3487638Z"
+    },
+    {
+      "UserId": "e56cf0ee-2bf9-43c0-a5a6-3bddd674b75c",
+      "Name": "Anmol Sharma",
+      "Email": "anmol@arielsoftwares.in",
+      "Password": "NvUkCQ@!Jh",
+      "CreatedAt": "2026-07-01T05:58:53.5545568Z"
+    },
+  ];
+
+  async runTempBulkLogin(): Promise<void> {
+    if (this.tempBulkRunning) return;
+    this.tempBulkRunning = true;
+    this.tempBulkLog = [];
+
+    const log = (msg: string) => {
+      this.tempBulkLog = [...this.tempBulkLog, msg];
+      console.log(msg);
+      this.cdr.detectChanges();
+    };
+
+    log(`Starting bulk login for ${this.tempAccounts.length} account(s)...`);
+
+    for (let i = 0; i < this.tempAccounts.length; i++) {
+      const acc = this.tempAccounts[i];
+      log(`[${i + 1}/${this.tempAccounts.length}] Logging in ${acc.Email} ...`);
+
+      try {
+        const user: any = await firstValueFrom(
+          this.authService.login({ email: acc.Email, password: acc.Password })
+        );
+
+        this.password = acc.Password;
+        await this.setupOrUnlockEncryptionKey(user);
+
+        log(`  ✅ ${acc.Email} — login + key setup OK`);
+      } catch (err: any) {
+        const msg = err?.error?.message || err?.error?.error || err?.message || 'Unknown error';
+        log(`  ❌ ${acc.Email} — FAILED: ${msg}`);
+      }
+
+      await new Promise((r) => setTimeout(r, 400));
+    }
+
+    this.password = '';
+    log('Bulk login finished.');
+    this.tempBulkRunning = false;
+  }
+
 
   constructor(private authService: AuthService) { }
 

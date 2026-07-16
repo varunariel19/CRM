@@ -822,6 +822,8 @@ namespace ArielCRM.API.Controllers
 
         private async Task<string> ScheduleDelayedMessageAsync(ScheduledTeamMessage scheduled, TeamConversation conversation)
         {
+
+            Console.WriteLine("Here trigger the schedule message from main backend" , DateTime.UtcNow);
             var client = httpClientFactory.CreateClient();
             var schedulerBaseUrl = configuration["MessageSchedulerUrl"]
                 ?? throw new InvalidOperationException("MessageSchedulerUrl is not configured.");

@@ -17,6 +17,7 @@ namespace ArielCRM.API.Controllers
         {
             try
             {
+                Console.WriteLine("RECEIVE HIT OF MAIN BACKEND ", DateTime.UtcNow);
                 if (!IsAuthorized(Request))
                     return Unauthorized(new { message = "Invalid or missing webhook credentials." });
 
