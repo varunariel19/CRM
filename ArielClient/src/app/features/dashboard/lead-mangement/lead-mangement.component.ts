@@ -149,7 +149,7 @@ export class LeadManagementComponent implements OnInit {
   leadSourceOptions = leadSourceOptions;
 
   newLead: CreateLeadDto = this.resetNewLead();
-  showOnlyMyLeads = this.authState.user()?.accessLevel.access != 100 ? true : false;
+  showOnlyMyLeads = this.authState.user()?.accessLevel?.access !== 100 ? true : false;
 
   readonly projectTypeOptions: ProjectType[] = ['Hourly', 'FixedPrice', 'ManMonth'];
 
@@ -174,7 +174,7 @@ export class LeadManagementComponent implements OnInit {
     private route: ActivatedRoute,
     private leadService: LeadService,
   ) {
-    
+
     effect(() => {
       const id = this.deepLink.pendingLeadId();
       if (id) {
@@ -229,7 +229,7 @@ export class LeadManagementComponent implements OnInit {
 
 
   leadView() {
-    return this.authState.user()?.accessLevel.access != 100;
+    return this.authState.user()?.accessLevel?.access != 100;
   }
 
   private addEditorFiles(files: File[]): void {
@@ -1109,5 +1109,17 @@ export class LeadManagementComponent implements OnInit {
       };
     }
   }
+
+
+ canModifyLead(lead: { assignedToId?: string } | null | undefined): boolean {
+  if (!lead) return false;
+  if (!this.authState.user()) return false;
+
+  if (this.authState.userId() === lead.assignedToId || this.authState.user()?.accessLevel?.access === 100) {
+    return true;
+  }
+
+  return false;
+}
 
 }

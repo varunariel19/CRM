@@ -60,45 +60,6 @@
           </div>
         </div>
 
-        <!-- Project / Deal Info Section -->
-        <!-- <div class="form-section">
-          <div class="form-section-label">
-            <i class="fas fa-briefcase"></i> Project / Deal Info
-          </div>
-          <div class="form-group full-width">
-            <label>Project Title</label>
-            <input type="text" [(ngModel)]="newLead.projectTitle" placeholder="e.g. CRM Integration for Initech" />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Project Type</label>
-              <select [(ngModel)]="newLead.projectType">
-                <option value="">Select Type</option>
-                <option *ngFor="let type of projectTypeOptions" [value]="type">{{ type }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>{{ getBudgetLabel(newLead.projectType) }}</label>
-              <div class="budget-input-wrap">
-                <span class="budget-prefix">$</span>
-                <input type="number" [(ngModel)]="newLead.budget"
-                  [placeholder]="getBudgetPlaceholder(newLead.projectType)" min="0" />
-                <span class="budget-suffix" *ngIf="newLead.projectType === 'Hourly'">/hr</span>
-                <span class="budget-suffix" *ngIf="newLead.projectType === 'ManMonth'">/mo</span>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Start Date</label>
-              <input type="date" [(ngModel)]="newLead.dealStartDate" />
-            </div>
-            <div class="form-group">
-              <label>Close Date</label>
-              <input type="date" [(ngModel)]="newLead.dealCloseDate" />
-            </div>
-          </div>
-        </div> -->
 
       </div>
 
@@ -178,46 +139,6 @@
           </div>
         </div>
 
-        <!-- Project / Deal Info Section -->
-        <!-- <div class="form-section">
-          <div class="form-section-label">
-            <i class="fas fa-briefcase"></i> Project / Deal Info
-          </div>
-          <div class="form-group full-width">
-            <label>Project Title</label>
-            <input type="text" [(ngModel)]="editLead.projectTitle" placeholder="e.g. CRM Integration for Initech" />
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Project Type</label>
-              <select [(ngModel)]="editLead.projectType">
-                <option value="">Select Type</option>
-                <option *ngFor="let type of projectTypeOptions" [value]="type">{{ type }}</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>{{ getBudgetLabel(editLead.projectType) }}</label>
-              <div class="budget-input-wrap">
-                <span class="budget-prefix">$</span>
-                <input type="number" [(ngModel)]="editLead.budget"
-                  [placeholder]="getBudgetPlaceholder(editLead.projectType)" min="0" />
-                <span class="budget-suffix" *ngIf="editLead.projectType === 'Hourly'">/hr</span>
-                <span class="budget-suffix" *ngIf="editLead.projectType === 'ManMonth'">/mo</span>
-              </div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Start Date</label>
-              <input type="date" [(ngModel)]="editLead.dealStartDate" />
-            </div>
-            <div class="form-group">
-              <label>Close Date</label>
-              <input type="date" [(ngModel)]="editLead.dealCloseDate" />
-            </div>
-          </div>
-        </div> -->
-
       </div>
 
       <div class="modal-footer">
@@ -281,22 +202,26 @@
             </div>
           </div>
         </div>
-
+        <!-- CHANGED: assignedToId equality replaced with canModifyLead() -->
+        @if(canModifyLead(detailLead)) {
         <div class="detail-section">
           <div class="detail-section-title-row">
             <div class="detail-section-title"><i class="fas fa-briefcase"></i> Projects</div>
             <span class="project-count-badge">{{ detailLead.projects.length }}</span>
           </div>
+
           <button class="btn-view-projects" (click)="openProjectsPanel(detailLead)">
             <i class="fas fa-diagram-project"></i> Manage Projects
           </button>
         </div>
+        }
 
       </div>
 
       <div class="modal-footer detail-footer">
         <button class="btn-cancel" (click)="closeDetailModal()">Close</button>
-        @if(perm.leads.canEdit()) {
+        <!-- CHANGED: perm.leads.canEdit() && assignedToId equality replaced with canModifyLead() -->
+        @if(canModifyLead(detailLead)) {
         <button class="btn-register" (click)="openEditModal(detailLead); closeDetailModal()">
           <i class="fas fa-pen"></i> Edit Lead
         </button>
@@ -509,29 +434,6 @@
   </div>
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   <div class="page-header">
     <div class="page-header-left">
       <h2><i class="fas fa-users"></i> Lead Management</h2>
@@ -601,8 +503,10 @@
           <i class="fas fa-inbox"></i> No leads here
         </div>
 
-        <div class="lead-card" *ngFor="let lead of getColumnLeads(col.key)" [draggable]="perm.leads.canEdit()"
-          (dragstart)="perm.leads.canEdit() && dragLead($event, lead, col.key)" (click)="openDetailModal(lead)">
+        <!-- CHANGED: draggable / dragstart conditions replaced with canModifyLead(lead) -->
+        <div class="lead-card" *ngFor="let lead of getColumnLeads(col.key)" [draggable]="canModifyLead(lead)"
+          (dragstart)="canModifyLead(lead) && dragLead($event, lead, col.key)"
+          (click)="openDetailModal(lead)">
 
           <div class="lead-card-header">
             <app-user-profile [name]="lead.name" [profileImage]="null" size="sm" shape="rounded" />
@@ -611,7 +515,7 @@
               <p><i class="fas fa-building"></i> {{ lead.company }}</p>
             </div>
             <div class="card-actions-top" (click)="$event.stopPropagation()">
-              @if(perm.leads.canEdit()) {
+              @if(perm.leads.canEdit() && canModifyLead(lead)) {
               <i class="fas fa-pen card-action-icon" (click)="openEditModal(lead)" title="Edit"></i>
               }
               @if(perm.leads.canDelete()) {
@@ -636,7 +540,8 @@
 
           <div class="lead-card-footer">
             <div class="card-nav-actions" (click)="$event.stopPropagation()">
-              @if(perm.leads.canEdit()) {
+              <!-- ADDED: nav buttons previously only checked perm.leads.canEdit(), now also checks ownership -->
+              @if(canModifyLead(lead)) {
               <button class="nav-btn" (click)="moveLeadLeft(lead)" [title]="previousStep(lead.status)"><i
                   class="fas fa-chevron-left"></i></button>
               <button class="nav-btn" (click)="moveLeadRight(lead)" [title]="nextStep(lead.status)"><i
@@ -689,8 +594,9 @@
       </div>
 
       <div class="crm-status-container">
+        <!-- ADDED: status dropdown was previously gated only on perm.leads.canEdit() -->
         <div class="dropdown-wrap">
-          <button type="button" class="status-select" [disabled]="!perm.leads.canEdit()"
+          <button type="button" class="status-select" [disabled]="!canModifyLead(lead)"
             [ngClass]="statusClass(lead.status)" (click)="toggleStatus(rowIndex)">
             <span class="status-dot"></span>
             <span>{{ lead.status }}</span>
@@ -706,8 +612,9 @@
         <p class="date-text">{{ lead.createdAt | date:'M/d/yyyy' }}</p>
       </div>
 
+      <!-- ADDED: assignee dropdown was previously gated only on perm.leads.canEdit() -->
       <div class="dropdown-wrap assignee-wrap">
-        <button type="button" class="assignee" [disabled]="!perm.leads.canEdit()" (click)="toggleAssignee(rowIndex)">
+        <button type="button" class="assignee" [disabled]="!canModifyLead(lead)" (click)="toggleAssignee(rowIndex)">
           <i class="fas fa-user"></i>
           <span>{{ getAssigneeName(lead.assignedToId) }}</span>
           <i class="fas fa-chevron-down"></i>
@@ -726,11 +633,7 @@
         <button class="action-btn view-btn" title="View Details" (click)="openDetailModal(lead)">
           <i class="fas fa-eye"></i>
         </button>
-        @if(perm.leads.canEdit()) {
-        <button class="action-btn edit-btn" (click)="openEditModal(lead)">
-          <i class="fas fa-pen"></i>
-        </button>
-        }
+       
         @if(perm.leads.canDelete()) {
         <i class="fas fa-trash card-action-icon danger" (click)="deleteLead(lead)" title="Delete"></i>
         }
@@ -738,6 +641,12 @@
         <button class="action-btn delete-btn" (click)="openHistory(lead)">
           <i class="fas fa-history card-action-icon" title="History"></i>
         </button>
+
+         @if(perm.leads.canEdit()  && canModifyLead(lead)) {
+        <button class="action-btn edit-btn" (click)="openEditModal(lead)">
+          <i class="fas fa-pen"></i>
+        </button>
+        }
       </div>
     </div>
   </div>
