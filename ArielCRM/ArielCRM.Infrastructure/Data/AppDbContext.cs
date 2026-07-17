@@ -50,6 +50,9 @@ namespace ArielCRM.Infrastructure.Data
 
         public DbSet<ScheduledTeamMessageKey> ScheduledTeamMessageKeys { get; set; }
 
+        public DbSet<Folder> Folders { get; set; } = null!;
+        public DbSet<DocumentFile> DocumentFiles { get; set; } = null!;
+
 
 
         // ─────────────────────────────────────────────
@@ -295,8 +298,53 @@ namespace ArielCRM.Infrastructure.Data
             });
 
 
+            modelBuilder.Entity<Folder>(entity =>
+                {
+                    entity.HasOne(f => f.ParentFolder)
+                          .WithMany(f => f.ChildFolders)
+                          .HasForeignKey(f => f.ParentFolderId)
+                          .OnDelete(DeleteBehavior.Restrict);
 
-            // ── Indexes ───────────────────────────────
+                    entity.HasOne(f => f.CreatedBy)
+                          .WithMany()
+                          .HasForeignKey(f => f.UserId)
+                          .OnDelete(DeleteBehavior.Restrict);
+
+                    entity.PrimitiveCollection(f => f.AllowedUsersId)
+                          .HasColumnName("AllowedUsersId");
+
+                    entity.HasIndex(f => f.ParentFolderId);
+                    entity.HasIndex(f => f.UserId);
+                    entity.HasIndex(f => new { f.ParentFolderId, f.Name });
+
+                    entity.HasQueryFilter(f => !f.IsDeleted);
+                });
+
+            modelBuilder.Entity<DocumentFile>(entity =>
+            {
+                entity.HasOne(d => d.Folder)
+                      .WithMany(f => f.Files)
+                      .HasForeignKey(d => d.FolderId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.UploadedBy)
+                      .WithMany()
+                      .HasForeignKey(d => d.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.PrimitiveCollection(d => d.AllowedUsersId)
+                      .HasColumnName("AllowedUsersId");
+
+                entity.HasIndex(d => d.FolderId);
+                entity.HasIndex(d => d.UserId);
+
+                entity.HasQueryFilter(d => !d.IsDeleted);
+            });
+
+            modelBuilder.Entity<Folder>()
+            .Property(f => f.FolderKey)
+            .HasConversion<string>();
+
 
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email).IsUnique()
@@ -360,7 +408,6 @@ namespace ArielCRM.Infrastructure.Data
                 .HasIndex(a => a.MessageId)
                 .HasDatabaseName("idx_team_message_attachments_message");
 
-            // ── AuditLog indexes ──────────────────────
 
             modelBuilder.Entity<AuditLog>()
                 .HasIndex(a => new { a.EntityName, a.EntityId })

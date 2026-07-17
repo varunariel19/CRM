@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ArielCRM.Infrastructure.Repositories
 {
- 
 
     public class AdminRepository : IAdminRepository
     {

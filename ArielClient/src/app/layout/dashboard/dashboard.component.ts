@@ -46,6 +46,7 @@ import { NotificationState } from '../../state/notification.state';
 import { NotificationService } from '../../core/services/notification.service';
 import { TaskManagementState } from '../../state/task-management.state';
 import { AuthState } from '../../state/auth.state';
+import { DocumentManagementComponent } from '../../features/dashboard/document-management/document-management.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -64,6 +65,7 @@ import { AuthState } from '../../state/auth.state';
     TaskManagementComponent,
     ProjectsComponent,
     TeamsComponent,
+    DocumentManagementComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',

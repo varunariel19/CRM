@@ -107,6 +107,14 @@ export const endpoints = {
     },
 
 
+    folders: {
+        root: `${BASE_URL}/api/folders/root-folders`,
+        children: (parentFolderId: string) => `${BASE_URL}/api/folders/${parentFolderId}/children`,
+        uploadFile: `${BASE_URL}/api/folders/upload-file`,
+        createFolder : `${BASE_URL}/api/folders/create-folder`
+    },
+
+
     AIUrl: environment.ai.url,
     groqApiKey: environment.ai.apiKey,
 

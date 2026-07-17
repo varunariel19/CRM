@@ -93,14 +93,13 @@ export const menuItems: MenuItem[] = [
   },
 
 
-  // {
-  //   idx: 10,
-
-  //   icon: 'fas fa-history',
-  //   label: 'Audit History',
-  //   route: 'audit-history',
-  //   permission: PermissionKey.AuditHistoryView,
-  // }
+  {
+    idx: 10,
+    icon: 'fas fa-folder-tree',
+    label: 'Documents',
+    route: 'documents',
+    permission: PermissionKey.TeamMembersView,
+  }
 ];
 
 
@@ -115,5 +114,5 @@ export const MenuItemState = {
   projects: 7,
   teams: 8,
   "team-members": 9,
-  // "audit-history": 10,
+  "documents": 10,
 } as const;

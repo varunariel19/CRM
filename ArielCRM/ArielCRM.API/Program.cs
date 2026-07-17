@@ -123,7 +123,8 @@ builder.Services.AddSingleton<CredentialFileLogger>();
 builder.Services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
 builder.Services.AddScoped<ITicketHistoryService, TicketHistoryService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
-
+builder.Services.AddScoped<IDocumentManagemntRepository, DocumentManagementRepository>();
+builder.Services.AddScoped<IDocumentMangementService, DocumentManagementService>();
 
 
 var app = builder.Build();

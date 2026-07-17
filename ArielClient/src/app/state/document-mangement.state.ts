@@ -1,0 +1,162 @@
+import { Injectable, signal, computed } from '@angular/core';
+
+
+export interface FolderPayload {
+    id: string;
+    name: string;
+    folderKey: string;
+    parentFolderId: string | null;
+    isSystem: boolean;
+    canCreate: boolean;
+    hasChildren: boolean;
+    createdAt: string;
+}
+
+export interface DocumentFilePayload {
+    id: string;
+    name: string;
+    fileName: string;
+    contentType: string;
+    url: string;
+    size: number;
+    folderId: string;
+    uploadedAt: string;
+}
+
+
+@Injectable({ providedIn: 'root' })
+export class FolderState {
+    private _rootFolders = signal<FolderPayload[]>([]);
+    private _currentFolders = signal<FolderPayload[]>([]);
+    private _currentFiles = signal<DocumentFilePayload[]>([]);
+    private _currentPath = signal<FolderPayload[]>([]);
+    private _isLoading = signal(false);
+
+    private _childrenCache = new Map<string, FolderPayload[]>();
+    private _filesCache = new Map<string, DocumentFilePayload[]>();
+
+    rootFolders = computed(() => this._rootFolders());
+    currentFolders = computed(() => this._currentFolders());
+    currentFiles = computed(() => this._currentFiles());
+    currentPath = computed(() => this._currentPath());
+    isLoading = computed(() => this._isLoading());
+
+    isAtRoot = computed(() => this._currentPath().length === 0);
+    activeFolder = computed(() => {
+        const path = this._currentPath();
+        return path.length ? path[path.length - 1] : null;
+    });
+    breadcrumbLabel = computed(() =>
+        this._currentPath().length
+            ? 'Root / ' + this._currentPath().map(f => f.name).join(' / ')
+            : 'Root'
+    );
+
+    isCurrentFolderEmpty = computed(() =>
+        this._currentFolders().length === 0 && this._currentFiles().length === 0
+    );
+
+    setRootFolders(folders: FolderPayload[]): void {
+        this._rootFolders.set(folders);
+        this._currentFolders.set(folders);
+        this._currentFiles.set([]);
+    }
+
+    setCurrentFolders(folders: FolderPayload[]): void {
+        this._currentFolders.set(folders);
+    }
+
+    setCurrentFiles(files: DocumentFilePayload[]): void {
+        this._currentFiles.set(files);
+    }
+
+    setCurrentContents(folders: FolderPayload[], files: DocumentFilePayload[]): void {
+        this._currentFolders.set(folders);
+        this._currentFiles.set(files);
+    }
+
+    setLoading(isLoading: boolean): void {
+        this._isLoading.set(isLoading);
+    }
+
+    pushPath(folder: FolderPayload): void {
+        this._currentPath.update((path) => [...path, folder]);
+    }
+
+    addFolderLocally(folder: FolderPayload): void {
+        this._currentFolders.update((folders) => [...folders, folder]);
+
+        if (this.isAtRoot()) {
+            this._rootFolders.update((folders) => [...folders, folder]);
+        }
+
+        const parentId = this.activeFolder()?.id ?? null;
+        if (parentId && this._childrenCache.has(parentId)) {
+            this._childrenCache.set(parentId, [...this._childrenCache.get(parentId)!, folder]);
+        }
+    }
+
+    addFileLocally(file: DocumentFilePayload): void {
+        this._currentFiles.update((files) => [...files, file]);
+
+        if (this._filesCache.has(file.folderId)) {
+            this._filesCache.set(file.folderId, [...this._filesCache.get(file.folderId)!, file]);
+        }
+    }
+
+    hasCachedChildren(folderId: string): boolean {
+        return this._childrenCache.has(folderId);
+    }
+
+    getCachedChildren(folderId: string): FolderPayload[] {
+        return this._childrenCache.get(folderId) ?? [];
+    }
+
+    cacheChildren(folderId: string, children: FolderPayload[]): void {
+        this._childrenCache.set(folderId, children);
+    }
+
+    invalidateCachedChildren(folderId: string): void {
+        this._childrenCache.delete(folderId);
+    }
+
+    hasCachedFiles(folderId: string): boolean {
+        return this._filesCache.has(folderId);
+    }
+
+    getCachedFiles(folderId: string): DocumentFilePayload[] {
+        return this._filesCache.get(folderId) ?? [];
+    }
+
+    cacheFiles(folderId: string, files: DocumentFilePayload[]): void {
+        this._filesCache.set(folderId, files);
+    }
+
+    invalidateCachedFiles(folderId: string): void {
+        this._filesCache.delete(folderId);
+    }
+
+    goToPathIndex(index: number): void {
+        this._currentPath.update((path) => (index < 0 ? [] : path.slice(0, index + 1)));
+    }
+
+    popPath(): void {
+        this._currentPath.update((path) => path.slice(0, -1));
+    }
+
+    resetToRoot(): void {
+        this._currentPath.set([]);
+        this._currentFolders.set(this._rootFolders());
+        this._currentFiles.set([]);
+    }
+
+    clear(): void {
+        this._rootFolders.set([]);
+        this._currentFolders.set([]);
+        this._currentFiles.set([]);
+        this._currentPath.set([]);
+        this._isLoading.set(false);
+        this._childrenCache.clear();
+        this._filesCache.clear();
+    }
+}

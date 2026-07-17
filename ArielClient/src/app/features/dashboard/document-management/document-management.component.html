@@ -1,0 +1,206 @@
+<div class="documents-container">
+
+    @if (view === 'folders') {
+
+    <div class="toolbar">
+
+        <button class="back-btn" (click)="goBack()" [disabled]="currentPath.length === 0" title="Back">
+            ←
+        </button>
+
+        <div class="breadcrumb">
+            <span class="crumb" (click)="goToBreadcrumb(-1)">Root</span>
+
+            @for (crumb of currentPath; track crumb.id; let i = $index) {
+            <span class="crumb-separator">/</span>
+            <span class="crumb" [class.active]="i === currentPath.length - 1" (click)="goToBreadcrumb(i)">
+                {{ crumb.name }}
+            </span>
+            }
+        </div>
+
+        @if (canCreateHere && !folderState.isAtRoot()) {
+        <div class="new-menu-wrapper">
+            <button class="new-folder-btn" (click)="toggleCreateMenu($event)">
+                + New
+            </button>
+
+            @if (createMenuOpen()) {
+            <div class="new-menu" (click)="$event.stopPropagation()">
+                <button class="new-menu-item" (click)="addFolder()">
+                    <span class="icon">📁</span> New Folder
+                </button>
+                <button class="new-menu-item" (click)="triggerFileUpload()">
+                    <span class="icon">📄</span> Upload File
+                </button>
+            </div>
+            }
+
+            <input id="file-input" type="file" class="hidden-file-input" multiple (change)="onFileSelected($event)" />
+        </div>
+        }
+    </div>
+
+    <div class="folder-grid" [class.root-grid]="currentPath.length === 0" (contextmenu)="$event.preventDefault()">
+
+        @for (folder of currentFolders; track folder.id) {
+        <div class="folder-card" [class.root-folder]="currentPath.length === 0" (click)="openFolder(folder)"
+            (contextmenu)="onFolderRightClick($event, folder)">
+            <img [src]="currentPath.length > 0 ? '/internal-folder.png' : '/root-folder.png'" alt="Folder">
+            <h5>{{ folder.name }}</h5>
+        </div>
+        }
+
+        @empty {
+        @if (currentPath.length > 0) {
+        <div class="empty-state">
+            This folder is empty.
+        </div>
+        }
+        }
+
+        @if (currentPath.length === 0) {
+        <div class="folder-card root-folder recycle-bin-card" (click)="openRecycleBin()">
+            <img src="/empty-bin.png" alt="Recycle Bin">
+            <h5>Recycle Bin</h5>
+        </div>
+        }
+
+    </div>
+
+    @if (contextMenu) {
+    <div class="context-menu" [style.left.px]="contextMenu.x" [style.top.px]="contextMenu.y"
+        (click)="$event.stopPropagation()">
+        <button class="context-menu-item strong" (click)="menuOpen()">
+            <span class="icon">📂</span> Open
+        </button>
+
+        @if(!contextMenu.folder.isSystem) {
+
+        <div class="menu-divider"></div>
+
+        <button class="context-menu-item" [class.disabled]="contextMenu.folder.isSystem" (click)="menuRename()">
+            <span class="icon">✏️</span> Rename
+        </button>
+
+        <div class="menu-divider"></div>
+
+        <button class="context-menu-item" [class.disabled]="contextMenu.folder.isSystem" (click)="menuCut()">
+            <span class="icon">✂️</span> Cut
+        </button>
+
+        <button class="context-menu-item" (click)="menuCopy()">
+            <span class="icon">📋</span> Copy
+        </button>
+
+        <button class="context-menu-item" [class.disabled]="!clipboard || !canCreateHere" (click)="menuPaste()">
+            <span class="icon">📎</span> Paste
+        </button>
+
+        <div class="menu-divider"></div>
+
+        <button class="context-menu-item" (click)="menuCreateShortcut()">
+            <span class="icon">🔗</span> Create shortcut
+        </button>
+
+        <button class="context-menu-item" (click)="menuCopyPath()">
+            <span class="icon">🧷</span> Copy as path
+        </button>
+
+        <div class="menu-divider"></div>
+
+        <button class="context-menu-item danger" [class.disabled]="contextMenu.folder.isSystem" (click)="menuDelete()">
+            <span class="icon">🗑</span> Delete
+        </button>
+        }
+
+        <div class="menu-divider"></div>
+
+        <button class="context-menu-item" (click)="menuProperties()">
+            <span class="icon">ℹ️</span> Properties
+        </button>
+
+    </div>
+    }
+
+    @if (propertiesFolder) {
+    <div class="properties-overlay" (click)="closeProperties()">
+        <div class="properties-dialog" (click)="$event.stopPropagation()">
+            <div class="properties-header">
+                <img src="/folder.png" alt="Folder">
+                <h3>{{ propertiesFolder.name }}</h3>
+            </div>
+
+            <div class="properties-row">
+                <span class="label">Type</span>
+                <span class="value">{{ propertiesFolder.isSystem ? 'System Folder' : 'Folder' }}</span>
+            </div>
+
+            <div class="properties-row">
+                <span class="label">Contains</span>
+                <span class="value">{{ propertiesFolder.hasChildren ? 'Has subfolders' : 'Empty' }}</span>
+            </div>
+
+            <div class="properties-row">
+                <span class="label">Editable</span>
+                <span class="value">{{ propertiesFolder.canCreate ? 'Yes' : 'No' }}</span>
+            </div>
+
+            <div class="properties-row">
+                <span class="label">Created</span>
+                <span class="value">{{ propertiesFolder.createdAt }}</span>
+            </div>
+
+            <div class="properties-row">
+                <span class="label">Location</span>
+                <span class="value">{{ currentPathLabel }}</span>
+            </div>
+
+            <button class="properties-close" (click)="closeProperties()">Close</button>
+        </div>
+    </div>
+    }
+
+    } @else {
+
+    <div class="toolbar">
+        <button class="back-btn" (click)="exitRecycleBin()" title="Back">
+            ←
+        </button>
+
+        <div class="breadcrumb">
+            <span class="crumb" (click)="exitRecycleBin()">Root</span>
+            <span class="crumb-separator">/</span>
+            <span class="crumb active">Recycle Bin</span>
+        </div>
+    </div>
+
+    <div class="recycle-list">
+
+        @for (entry of deletedFolders; track entry.folder.id) {
+        <div class="deleted-item">
+            <img src="/internal-folder.png" alt="Folder">
+
+            <div class="deleted-item-info">
+                <span class="name">{{ entry.folder.name }}</span>
+                <span class="path">Was in: {{ entry.pathLabel }}</span>
+            </div>
+
+            <span class="deleted-at">{{ entry.folder.deletedAt }}</span>
+
+            <div class="deleted-item-actions">
+                <button class="restore-btn" (click)="restoreFolder(entry)">Restore</button>
+                <button class="delete-forever-btn" (click)="permanentlyDeleteFolder(entry)">Delete Forever</button>
+            </div>
+        </div>
+        }
+
+        @empty {
+        <div class="empty-state">Recycle bin is empty.</div>
+        }
+
+    </div>
+
+    }
+
+</div>
