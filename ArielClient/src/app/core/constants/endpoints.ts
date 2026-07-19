@@ -107,11 +107,16 @@ export const endpoints = {
     },
 
 
-    folders: {
-        root: `${BASE_URL}/api/folders/root-folders`,
-        children: (parentFolderId: string) => `${BASE_URL}/api/folders/${parentFolderId}/children`,
-        uploadFile: `${BASE_URL}/api/folders/upload-file`,
-        createFolder : `${BASE_URL}/api/folders/create-folder`
+    documentManagment: {
+        baseUrl : `${BASE_URL}/api/documents`,
+        root: `${BASE_URL}/api/documents/root-folders`,
+        children: (parentFolderId: string) => `${BASE_URL}/api/documents/${parentFolderId}/children`,
+        uploadFile: `${BASE_URL}/api/documents/upload-file`,
+        createFolder: `${BASE_URL}/api/documents/create-folder`,
+        renameFolder: (folderId: string) => `${BASE_URL}/api/documents/folders/${folderId}/rename`,
+        renameFile: (fileId: string) => `${BASE_URL}/api/documents/files/${fileId}/rename`,
+        deleteFolder : () => ``,
+        deleteFile : () => ``
     },
 
 

@@ -48,6 +48,12 @@ namespace ArielCRM.Infrastructure.Repositories
                 _db.UserEncryptionKeys.Add(entity);
                 await _db.SaveChangesAsync();
             }
+
+
+            public async Task SaveChangesAsync()
+            {
+                await _db.SaveChangesAsync();
+            }
         }
     }
 }

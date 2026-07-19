@@ -4,6 +4,19 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { TeamMessageAttachment } from '../../../core/types/teams.type';
 
 type ViewerState = 'loading' | 'ready' | 'error' | 'fetching-text';
+type PreviewKind = 'image' | 'video' | 'audio' | 'pdf' | 'office' | 'text' | 'unsupported';
+
+const TEXT_EXTENSIONS = /\.(txt|csv|md|json|xml|yaml|yml|log|ini|env|sh|ts|tsx|js|jsx|html|htm|css|scss|less|py|java|cs|cpp|c|h|hpp|go|rs|rb|php|swift|kt|sql|bat|ps1|toml|gitignore)$/i;
+
+const OFFICE_EXTENSIONS = /\.(docx?|xlsx?|pptx?)$/i;
+const OFFICE_CONTENT_TYPES = [
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+];
 
 @Component({
   selector: 'app-attachment-viewer',
@@ -44,16 +57,25 @@ export class AttachmentViewerComponent implements OnChanges {
   hasPrev = computed(() => this.currentIndex() > 0);
   hasNext = computed(() => this.currentIndex() < this.allAttachments().length - 1);
 
-  type = computed((): 'image' | 'video' | 'pdf' | 'text' | 'other' => {
+  type = computed((): PreviewKind => {
     const att = this.current();
-    if (!att) return 'other';
+    if (!att) return 'unsupported';
+
     if (att.attachmentType === 'image') return 'image';
     if (att.attachmentType === 'video') return 'video';
+    if (att.attachmentType === 'audio') return 'audio';
+
     const ct = att.contentType?.toLowerCase() ?? '';
     const name = att.fileName?.toLowerCase() ?? '';
+
+    if (ct.startsWith('image/')) return 'image';
+    if (ct.startsWith('video/')) return 'video';
+    if (ct.startsWith('audio/')) return 'audio';
     if (ct === 'application/pdf' || name.endsWith('.pdf')) return 'pdf';
-    if (ct.startsWith('text/') || /\.(txt|csv|md|json|xml|yaml|yml|log|ini|env|sh|ts|js|html|css|py|java|cs|cpp|c|go|rs)$/i.test(name)) return 'text';
-    return 'other';
+    if (OFFICE_CONTENT_TYPES.includes(ct) || OFFICE_EXTENSIONS.test(name)) return 'office';
+    if (ct.startsWith('text/') || TEXT_EXTENSIONS.test(name)) return 'text';
+
+    return 'unsupported';
   });
 
   fileIcon = computed(() => {
@@ -79,14 +101,17 @@ export class AttachmentViewerComponent implements OnChanges {
 
     const t = this.type();
 
-    if (t === 'image' || t === 'video') {
+    if (t === 'image' || t === 'video' || t === 'audio' || t === 'pdf') {
       this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(att.fileUrl));
       this.state.set('ready');
       return;
     }
 
-    if (t === 'pdf') {
-      this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(att.fileUrl));
+    if (t === 'office') {
+      // Office Online Viewer needs a publicly reachable, non-expiring URL.
+      // If fileUrl is behind auth or is a short-lived signed URL, this will fail to load.
+      const viewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(att.fileUrl)}`;
+      this.safeUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(viewerUrl));
       this.state.set('ready');
       return;
     }
@@ -106,6 +131,7 @@ export class AttachmentViewerComponent implements OnChanges {
       return;
     }
 
+    // 'unsupported' — no preview, just show the download-only state
     this.state.set('ready');
   }
 
@@ -160,7 +186,6 @@ export class AttachmentViewerComponent implements OnChanges {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   }
-
 
   copyText() {
     const text = this.textContent();

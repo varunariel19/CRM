@@ -129,12 +129,15 @@ namespace ArielCRM.Application.Services
 
         public async Task<bool> SaveEncryptionKeyAsync(HttpContext context, UserEncryptionKeyDto dto)
         {
-          
+
             var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId is null) return false;
 
             var existing = await _repo.GetByUserIdAsync(userId);
+
             if (existing is not null && existing.EncryptionKey is not null) return false;
+
+
 
             var entity = new UserEncryptionKey
             {
@@ -145,7 +148,11 @@ namespace ArielCRM.Application.Services
                 CreatedAt = DateTime.UtcNow
             };
 
+
             await _repo.AddEncryptionKeyAsync(entity);
+            existing!.EncryptionId = entity.Id;
+
+            await _repo.SaveChangesAsync();
             return true;
         }
 

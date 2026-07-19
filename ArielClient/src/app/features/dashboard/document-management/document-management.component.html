@@ -9,15 +9,26 @@
         </button>
 
         <div class="breadcrumb">
-            <span class="crumb" (click)="goToBreadcrumb(-1)">Root</span>
+            <span class="crumb" [class.drag-over]="dragOverBreadcrumbIndex() === -1" (click)="goToBreadcrumb(-1)"
+                (dragover)="onBreadcrumbDragOver($event, -1)" (dragleave)="onBreadcrumbDragLeave(-1)"
+                (drop)="onBreadcrumbDrop($event, -1)">
+                Root
+            </span>
 
             @for (crumb of currentPath; track crumb.id; let i = $index) {
             <span class="crumb-separator">/</span>
-            <span class="crumb" [class.active]="i === currentPath.length - 1" (click)="goToBreadcrumb(i)">
+            <span class="crumb" [class.active]="i === currentPath.length - 1"
+                [class.drag-over]="dragOverBreadcrumbIndex() === i" (click)="goToBreadcrumb(i)"
+                (dragover)="onBreadcrumbDragOver($event, i)" (dragleave)="onBreadcrumbDragLeave(i)"
+                (drop)="onBreadcrumbDrop($event, i)">
                 {{ crumb.name }}
             </span>
             }
         </div>
+
+        @if (selectedCount() > 0) {
+        <span class="selection-badge">{{ selectedCount() }} selected</span>
+        }
 
         @if (canCreateHere && !folderState.isAtRoot()) {
         <div class="new-menu-wrapper">
@@ -41,18 +52,37 @@
         }
     </div>
 
-    <div class="folder-grid" [class.root-grid]="currentPath.length === 0" (contextmenu)="$event.preventDefault()">
+    <div #gridEl class="folder-grid" [class.root-grid]="currentPath.length === 0"
+        (contextmenu)="$event.preventDefault()" (mousedown)="onGridMouseDown($event)">
 
-        @for (folder of currentFolders; track folder.id) {
-        <div class="folder-card" [class.root-folder]="currentPath.length === 0" (click)="openFolder(folder)"
-            (contextmenu)="onFolderRightClick($event, folder)">
-            <img [src]="currentPath.length > 0 ? '/internal-folder.png' : '/root-folder.png'" alt="Folder">
+        @for (folder of currentFolders; track folder.id; let i = $index) {
+        <div class="folder-card" [class.root-folder]="currentPath.length === 0"
+            [class.selected]="isFolderSelected(folder)" [class.cut]="isCut('folder', folder.id)"
+            [class.dragging]="isDragging('folder', folder.id)" [class.drag-over]="dragOverFolderId() === folder.id"
+            [attr.data-key]="'folder:' + folder.id" [draggable]="!folder.isSystem"
+            (click)="onItemClick($event, 'folder', folder, i)" (dblclick)="openFolder(folder)"
+            (contextmenu)="onFolderRightClick($event, folder)" (dragstart)="onDragStart($event, 'folder', folder, i)"
+            (dragend)="onDragEnd()" (dragover)="onFolderDragOver($event, folder)"
+            (dragleave)="onFolderDragLeave(folder)" (drop)="onFolderDrop($event, folder)">
+            <img [src]="currentPath.length > 0 ? '/internal-folder.png' : '/root-folder.png'" alt="Folder"
+                draggable="false">
             <h5>{{ folder.name }}</h5>
         </div>
         }
 
+        @for (file of currentFiles; track file.id; let i = $index) {
+        <div class="folder-card file-card" [class.selected]="isFileSelected(file)" [class.cut]="isCut('file', file.id)"
+            [class.dragging]="isDragging('file', file.id)" [attr.data-key]="'file:' + file.id" draggable="true"
+            (click)="onItemClick($event, 'file', file, fileIndex(i))" (dblclick)="openFile(file)"
+            (contextmenu)="onFileRightClick($event, file)" (dragstart)="onDragStart($event, 'file', file, fileIndex(i))"
+            (dragend)="onDragEnd()">
+            <img [src]="getFileIcon(file.fileName)" alt="File" width="40" height="40" draggable="false">
+            <h5>{{ file.fileName }}</h5>
+        </div>
+        }
+
         @empty {
-        @if (currentPath.length > 0) {
+        @if (currentPath.length > 0 && currentFiles.length === 0 && currentFolders.length == 0) {
         <div class="empty-state">
             This folder is empty.
         </div>
@@ -60,9 +90,16 @@
         }
 
         @if (currentPath.length === 0) {
-        <div class="folder-card root-folder recycle-bin-card" (click)="openRecycleBin()">
-            <img src="/empty-bin.png" alt="Recycle Bin">
+        <div class="folder-card root-folder recycle-bin-card" (dblclick)="openRecycleBin()">
+            <img [src]="(deletedFiles().length > 0 || deletedFolders().length > 0) ? '/trash-bin.png' : '/empty-bin.png'"
+                alt="Recycle Bin">
             <h5>Recycle Bin</h5>
+        </div>
+        }
+
+        @if (marqueeBox()) {
+        <div class="marquee-box" [style.left.px]="marqueeBox()!.left" [style.top.px]="marqueeBox()!.top"
+            [style.width.px]="marqueeBox()!.width" [style.height.px]="marqueeBox()!.height">
         </div>
         }
 
@@ -71,92 +108,169 @@
     @if (contextMenu) {
     <div class="context-menu" [style.left.px]="contextMenu.x" [style.top.px]="contextMenu.y"
         (click)="$event.stopPropagation()">
-        <button class="context-menu-item strong" (click)="menuOpen()">
-            <span class="icon">📂</span> Open
-        </button>
 
-        @if(!contextMenu.folder.isSystem) {
-
+        @if (selectedCount() > 1) {
+        <div class="context-menu-label">{{ selectedCount() }} items selected</div>
         <div class="menu-divider"></div>
-
-        <button class="context-menu-item" [class.disabled]="contextMenu.folder.isSystem" (click)="menuRename()">
-            <span class="icon">✏️</span> Rename
-        </button>
-
-        <div class="menu-divider"></div>
-
-        <button class="context-menu-item" [class.disabled]="contextMenu.folder.isSystem" (click)="menuCut()">
-            <span class="icon">✂️</span> Cut
-        </button>
-
-        <button class="context-menu-item" (click)="menuCopy()">
-            <span class="icon">📋</span> Copy
-        </button>
-
-        <button class="context-menu-item" [class.disabled]="!clipboard || !canCreateHere" (click)="menuPaste()">
-            <span class="icon">📎</span> Paste
-        </button>
-
-        <div class="menu-divider"></div>
-
-        <button class="context-menu-item" (click)="menuCreateShortcut()">
-            <span class="icon">🔗</span> Create shortcut
-        </button>
-
-        <button class="context-menu-item" (click)="menuCopyPath()">
-            <span class="icon">🧷</span> Copy as path
-        </button>
-
-        <div class="menu-divider"></div>
-
-        <button class="context-menu-item danger" [class.disabled]="contextMenu.folder.isSystem" (click)="menuDelete()">
-            <span class="icon">🗑</span> Delete
-        </button>
         }
 
-        <div class="menu-divider"></div>
+        @if (selectedCount() <= 1) { <button class="context-menu-item strong" (click)="menuOpen()">
+            Open
+            </button>
+            }
 
-        <button class="context-menu-item" (click)="menuProperties()">
-            <span class="icon">ℹ️</span> Properties
-        </button>
+            @if(!contextMenuIsSystem) {
+
+            <div class="menu-divider"></div>
+
+            @if (selectedCount() <= 1) { <button class="context-menu-item" (click)="menuRename()">
+                Rename
+                </button>
+                <div class="menu-divider"></div>
+                }
+
+                <button class="context-menu-item" (click)="menuCut()">
+                    Cut
+                </button>
+
+                <button class="context-menu-item" (click)="menuCopy()">
+                    Copy
+                </button>
+
+                <button class="context-menu-item" [class.disabled]="!canPaste" (click)="menuPaste()">
+                    Paste
+                </button>
+
+                <div class="menu-divider"></div>
+
+                @if (selectedCount() <= 1) { <button class="context-menu-item" (click)="menuCreateShortcut()">
+                    Create shortcut
+                    </button>
+
+                    <button class="context-menu-item" (click)="menuCopyPath()">
+                        Copy as path
+                    </button>
+
+                    <div class="menu-divider"></div>
+                    }
+
+                    <button class="context-menu-item danger" (click)="menuDelete()">
+                        Delete
+                    </button>
+                    }
+
+                    <div class="menu-divider"></div>
+
+                    @if (selectedCount() <= 1) { <button class="context-menu-item" (click)="menuProperties()">
+                        Properties
+                        </button>
+                        }
 
     </div>
     }
 
-    @if (propertiesFolder) {
+    @if (renameTarget() && renamePosition()) {
+    <div class="rename-popover" [style.left.px]="renamePosition()!.x" [style.top.px]="renamePosition()!.y"
+        (click)="$event.stopPropagation()">
+
+        <label class="rename-label" for="rename-input">{{renameTarget()?.type}} name</label>
+
+        <div class="rename-row">
+            <input id="rename-input" type="text" class="rename-input" [(ngModel)]="renameValue"
+                (keydown)="onRenameKeydown($event)" autocomplete="off" />
+
+            <button class="rename-btn" type="button" [disabled]="!renameValue().trim()" (click)="confirmRename()">
+                Rename
+            </button>
+        </div>
+    </div>
+    }
+
+
+    @if (propertiesFolder || propertiesFile) {
     <div class="properties-overlay" (click)="closeProperties()">
         <div class="properties-dialog" (click)="$event.stopPropagation()">
-            <div class="properties-header">
-                <img src="/folder.png" alt="Folder">
-                <h3>{{ propertiesFolder.name }}</h3>
+
+            <div class="properties-topbar">
+                <button class="icon-btn favorite-btn" [class.active]="propertiesFavorite()" (click)="toggleFavorite()"
+                    aria-label="Favorite">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                        <path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.1-5.4 3.1 1.3-6-4.6-4.1 6.1-.6z"
+                            [attr.fill]="propertiesFavorite() ? 'currentColor' : 'none'" />
+                    </svg>
+                </button>
+
+                <button class="icon-btn close-btn" (click)="closeProperties()" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path d="M6 6l12 12M18 6L6 18" />
+                    </svg>
+                </button>
             </div>
 
-            <div class="properties-row">
-                <span class="label">Type</span>
-                <span class="value">{{ propertiesFolder.isSystem ? 'System Folder' : 'Folder' }}</span>
+            <div class="properties-hero">
+                <div class="hero-icon-wrapper">
+                    <img [src]="propertiesIcon" [class.file-thumb]="!!propertiesFile" class="hero-icon" alt="">
+
+                    @if (propertiesFolder) {
+                    <button class="edit-badge" (click)="editFolderIcon()" aria-label="Edit icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M4 20l4-1 11-11-3-3L5 16l-1 4z" />
+                        </svg>
+                    </button>
+                    }
+                </div>
+
+                <h3 class="hero-title">{{ propertiesName }}</h3>
+                <p class="hero-subtitle">{{ propertiesSubtitle }}</p>
+                @if (propertiesSecondarySubtitle) {
+                <p class="hero-subtitle muted">{{ propertiesSecondarySubtitle }}</p>
+                }
             </div>
 
-            <div class="properties-row">
-                <span class="label">Contains</span>
-                <span class="value">{{ propertiesFolder.hasChildren ? 'Has subfolders' : 'Empty' }}</span>
+            <div class="properties-section">
+                <div class="properties-field">
+                    <span class="field-label">Parent Folder</span>
+                    <div class="field-value-row">
+                        <span class="field-value">{{ propertiesParentPath }}</span>
+                        <button class="field-action" (click)="openParentFolderLocation()"
+                            aria-label="Open parent folder">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                                <path d="M3 7a1 1 0 011-1h4l2 2h10a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <div class="properties-row">
-                <span class="label">Editable</span>
-                <span class="value">{{ propertiesFolder.canCreate ? 'Yes' : 'No' }}</span>
+            <div class="properties-section grouped">
+                @if (propertiesFile && propertiesAccessed) {
+                <div class="properties-field">
+                    <span class="field-label">Accessed</span>
+                    <span class="field-value">{{ propertiesAccessed }}</span>
+                </div>
+                }
+                <div class="properties-field">
+                    <span class="field-label">Modified</span>
+                    <span class="field-value">{{ propertiesModified }}</span>
+                </div>
+                <div class="properties-field">
+                    <span class="field-label">Created</span>
+                    <span class="field-value">{{ propertiesCreated }}</span>
+                </div>
             </div>
 
-            <div class="properties-row">
-                <span class="label">Created</span>
-                <span class="value">{{ propertiesFolder.createdAt }}</span>
+            <div class="properties-section">
+                <div class="properties-row-flat">
+                    <span class="field-label-inline">Permissions</span>
+                    <button class="permissions-value" (click)="openPermissions()">
+                        <span>{{ propertiesPermissionsLabel }}</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M9 6l6 6-6 6" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
-            <div class="properties-row">
-                <span class="label">Location</span>
-                <span class="value">{{ currentPathLabel }}</span>
-            </div>
-
-            <button class="properties-close" (click)="closeProperties()">Close</button>
         </div>
     </div>
     }
@@ -173,25 +287,29 @@
             <span class="crumb-separator">/</span>
             <span class="crumb active">Recycle Bin</span>
         </div>
+
+        @if (binSelectedCount() > 0) {
+        <span class="selection-badge">{{ binSelectedCount() }} selected</span>
+        }
     </div>
 
-    <div class="recycle-list">
+    <div #binGridEl class="folder-grid" (contextmenu)="$event.preventDefault()"
+        (mousedown)="onBinGridMouseDown($event)">
 
-        @for (entry of deletedFolders; track entry.folder.id) {
-        <div class="deleted-item">
-            <img src="/internal-folder.png" alt="Folder">
+        @for (folder of deletedFolders(); track folder.id; let i = $index) {
+        <div class="folder-card" [class.selected]="isBinFolderSelected(folder)" [attr.data-key]="'folder:' + folder.id"
+            (click)="onBinItemClick($event, 'folder', folder, i)" (contextmenu)="onBinFolderRightClick($event, folder)">
+            <img src="/internal-folder.png" alt="Folder" draggable="false">
+            <h5>{{ folder.name }}</h5>
+        </div>
+        }
 
-            <div class="deleted-item-info">
-                <span class="name">{{ entry.folder.name }}</span>
-                <span class="path">Was in: {{ entry.pathLabel }}</span>
-            </div>
-
-            <span class="deleted-at">{{ entry.folder.deletedAt }}</span>
-
-            <div class="deleted-item-actions">
-                <button class="restore-btn" (click)="restoreFolder(entry)">Restore</button>
-                <button class="delete-forever-btn" (click)="permanentlyDeleteFolder(entry)">Delete Forever</button>
-            </div>
+        @for (file of deletedFiles(); track file.id; let i = $index) {
+        <div class="folder-card file-card" [class.selected]="isBinFileSelected(file)"
+            [attr.data-key]="'file:' + file.id" (click)="onBinItemClick($event, 'file', file, binFileIndex(i))"
+            (contextmenu)="onBinFileRightClick($event, file)">
+            <img [src]="getFileIcon(file.fileName)" alt="File" width="40" height="40" draggable="false">
+            <h5>{{ file.fileName }}</h5>
         </div>
         }
 
@@ -201,6 +319,37 @@
 
     </div>
 
+    @if (binContextMenu) {
+    <div class="context-menu" [style.left.px]="binContextMenu.x" [style.top.px]="binContextMenu.y"
+        (click)="$event.stopPropagation()">
+
+        @if (binSelectedCount() > 1) {
+        <div class="context-menu-label">{{ binSelectedCount() }} items selected</div>
+        <div class="menu-divider"></div>
+        }
+
+        @if (binSelectedCount() <= 1) { <button class="context-menu-item strong" (click)="binMenuOpen()">
+            Open
+            </button>
+            <div class="menu-divider"></div>
+            }
+
+            <button class="context-menu-item" (click)="binMenuRestore()">
+                Restore
+            </button>
+
+            <button class="context-menu-item danger" (click)="binMenuDeleteForever()">
+                Delete Forever
+            </button>
+
+    </div>
     }
 
+    }
 </div>
+
+@if (selectedAttachment()) {
+<app-attachment-viewer [attachment]="selectedAttachment()" [allAttachments]="allAttachments()"
+    (onClose)="closeViewer()">
+</app-attachment-viewer>
+}

@@ -62,6 +62,6 @@ namespace ArielCRM.DataLayer.Entities
         [Timestamp]
         public byte[]? RowVersion { get; set; }
 
-        public ICollection<string> AllowedUsersId { get; set; } = [];
+        public List<string> AllowedUsersId { get; set; } = [];
     }
 }

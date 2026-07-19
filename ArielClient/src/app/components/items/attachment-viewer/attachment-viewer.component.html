@@ -4,7 +4,7 @@
     <!-- Header -->
     <div class="viewer-header">
       <div class="viewer-meta">
-        <i class="fas fa-file viewer-meta__icon" aria-hidden="true"></i>
+        <i [class]="fileIcon()" class="viewer-meta__icon" aria-hidden="true"></i>
         <span class="viewer-meta__name">{{ currentFileName() }}</span>
         <span class="viewer-meta__size" *ngIf="currentSize()">
           {{ formatBytes(currentSize()) }}
@@ -74,12 +74,38 @@
         </video>
       </div>
 
+      <!-- AUDIO -->
+      <div class="viewer-content viewer-content--audio"
+        *ngIf="type() === 'audio' && state() === 'ready'">
+        <div class="audio-card">
+          <div class="audio-card__icon">
+            <i class="fas fa-file-audio" aria-hidden="true"></i>
+          </div>
+          <p class="audio-card__name">{{ currentFileName() }}</p>
+          <audio
+            [src]="currentUrl()"
+            controls
+            preload="metadata"
+            (error)="onImageError()">
+          </audio>
+        </div>
+      </div>
+
       <!-- PDF -->
       <div class="viewer-content viewer-content--pdf"
         *ngIf="type() === 'pdf' && state() === 'ready'">
         <iframe
           [src]="safeUrl()"
           title="PDF viewer">
+        </iframe>
+      </div>
+
+      <!-- OFFICE (docx / xlsx / pptx) -->
+      <div class="viewer-content viewer-content--office"
+        *ngIf="type() === 'office' && state() === 'ready'">
+        <iframe
+          [src]="safeUrl()"
+          title="Document viewer">
         </iframe>
       </div>
 
@@ -98,9 +124,9 @@
         <pre class="text-body"><code>{{ textContent() }}</code></pre>
       </div>
 
-      <!-- OTHER / UNKNOWN -->
-      <div class="viewer-content viewer-content--other"
-        *ngIf="type() === 'other' && state() === 'ready'">
+      <!-- UNSUPPORTED -->
+      <div class="viewer-content viewer-content--unsupported"
+        *ngIf="type() === 'unsupported' && state() === 'ready'">
         <div class="file-card">
           <div class="file-card__icon">
             <i [class]="fileIcon()" aria-hidden="true"></i>
@@ -143,7 +169,7 @@
           [class.fa-film]="att.attachmentType === 'video'"
           [class.fa-music]="att.attachmentType === 'audio'"
           [class.fa-file-lines]="att.attachmentType === 'document'"
-          [class.fa-file]="att.attachmentType === 'file'">
+          [class.fa-file]="att.attachmentType !== 'video' && att.attachmentType !== 'audio' && att.attachmentType !== 'document'">
         </i>
       </button>
     </div>

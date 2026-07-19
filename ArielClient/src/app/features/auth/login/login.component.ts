@@ -51,6 +51,15 @@ export class LoginComponent {
   tempBulkLog: string[] = [];
 
   private tempAccounts: Account[] = [
+
+    {
+      "UserId": "fb66c485-4219-4ed8-a443-bf4b5f09276e",
+      "Name": "Amit  Chawla",
+      "Email": "amit@arielsoftwares.in",
+      "Password": "test@100",
+      "CreatedAt": "2026-07-01 04:56:54.291"
+    },
+
     {
       "UserId": "8025d045-5e30-4c49-9364-0f9e1fbb986c",
       "Name": "Varun Joshi",

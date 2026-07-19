@@ -17,10 +17,19 @@ export interface DocumentFilePayload {
     name: string;
     fileName: string;
     contentType: string;
+    storagePath: string;
     url: string;
+    urlExpiresAt: string | null;
     size: number;
+    isHidden: boolean;
+    isDeleted: boolean;
+    deletedAt: string | null;
     folderId: string;
+    userId: string;
     uploadedAt: string;
+    updatedAt: string | null;
+    rowVersion: string | null;
+    allowedUsersId: string[];
 }
 
 
@@ -30,6 +39,10 @@ export class FolderState {
     private _currentFolders = signal<FolderPayload[]>([]);
     private _currentFiles = signal<DocumentFilePayload[]>([]);
     private _currentPath = signal<FolderPayload[]>([]);
+    private _binFolders = signal<FolderPayload[]>([]);
+    private _binFiles = signal<DocumentFilePayload[]>([]);
+    private _isBinLoading = signal(false);
+
     private _isLoading = signal(false);
 
     private _childrenCache = new Map<string, FolderPayload[]>();
@@ -55,6 +68,24 @@ export class FolderState {
     isCurrentFolderEmpty = computed(() =>
         this._currentFolders().length === 0 && this._currentFiles().length === 0
     );
+
+
+    binFolders = computed(() => this._binFolders());
+    binFiles = computed(() => this._binFiles());
+    isBinLoading = computed(() => this._isBinLoading());
+    isBinEmpty = computed(() => this._binFolders().length === 0 && this._binFiles().length === 0);
+
+    setBinFolders(folders: FolderPayload[]): void {
+        this._binFolders.set(folders);
+    }
+
+    setBinFiles(files: DocumentFilePayload[]): void {
+        this._binFiles.set(files);
+    }
+
+    setBinLoading(isLoading: boolean): void {
+        this._isBinLoading.set(isLoading);
+    }
 
     setRootFolders(folders: FolderPayload[]): void {
         this._rootFolders.set(folders);
@@ -102,6 +133,66 @@ export class FolderState {
         if (this._filesCache.has(file.folderId)) {
             this._filesCache.set(file.folderId, [...this._filesCache.get(file.folderId)!, file]);
         }
+    }
+
+    // --- new: rename ---
+
+    renameFolderLocally(folderId: string, newName: string): void {
+        const rename = (folders: FolderPayload[]) =>
+            folders.map(f => (f.id === folderId ? { ...f, name: newName } : f));
+
+        this._currentFolders.update(rename);
+        this._rootFolders.update(rename);
+        this._currentPath.update(rename);
+
+        for (const [parentId, children] of this._childrenCache.entries()) {
+            if (children.some(f => f.id === folderId)) {
+                this._childrenCache.set(parentId, rename(children));
+            }
+        }
+    }
+
+    renameFileLocally(fileId: string, fileName: string, name: string): void {
+        const rename = (files: DocumentFilePayload[]) =>
+            files.map(f => (f.id === fileId ? { ...f, fileName: fileName, name: name } : f));
+
+        this._currentFiles.update(rename);
+
+        for (const [folderId, files] of this._filesCache.entries()) {
+            if (files.some(f => f.id === fileId)) {
+                this._filesCache.set(folderId, rename(files));
+            }
+        }
+    }
+
+    removeFolderLocally(folderId: string): void {
+        const remove = (folders: FolderPayload[]) => folders.filter(f => f.id !== folderId);
+        this._currentFolders.update(remove);
+        this._rootFolders.update(remove);
+        for (const [parentId, children] of this._childrenCache.entries()) {
+            if (children.some(f => f.id === folderId)) {
+                this._childrenCache.set(parentId, remove(children));
+            }
+        }
+    }
+
+    removeFileLocally(fileId: string): void {
+        const remove = (files: DocumentFilePayload[]) => files.filter(f => f.id !== fileId);
+        this._currentFiles.update(remove);
+        for (const [folderId, files] of this._filesCache.entries()) {
+            if (files.some(f => f.id === fileId)) {
+                this._filesCache.set(folderId, remove(files));
+            }
+        }
+    }
+
+
+    removeBinFolderLocally(folderId: string): void {
+        this._binFolders.update(folders => folders.filter(f => f.id !== folderId));
+    }
+
+    removeBinFileLocally(fileId: string): void {
+        this._binFiles.update(files => files.filter(f => f.id !== fileId));
     }
 
     hasCachedChildren(folderId: string): boolean {

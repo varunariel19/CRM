@@ -40,12 +40,12 @@ public class Folder
     [ForeignKey(nameof(ParentFolderId))]
     public Folder? ParentFolder { get; set; }
 
-    public List<Folder> ChildFolders { get; set; } = new();
+    public ICollection<Folder> ChildFolders { get; set; } = [];
 
     [ForeignKey(nameof(UserId))]
     public User? CreatedBy { get; set; }
 
-    public List<DocumentFile> Files { get; set; } = new();
+    public ICollection<DocumentFile> Files { get; set; } = [];
 
-    public List<string> AllowedUsersId { get; set; } = new();
+    public List<string> AllowedUsersId { get; set; } = [];
 }
