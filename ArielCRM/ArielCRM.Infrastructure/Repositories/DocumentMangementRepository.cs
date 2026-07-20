@@ -1,13 +1,17 @@
+using System.Text.RegularExpressions;
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
+using ArielCRM.Infrastructure.Interfaces.IService;
+using ArielCRM.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ArielCRM.Infrastructure.Repositories
 {
-    public class DocumentManagementRepository(AppDbContext context) : IDocumentManagemntRepository
+    public class DocumentManagementRepository(AppDbContext context, IAppwriteStorageService storageService) : IDocumentManagemntRepository
     {
         private readonly AppDbContext _context = context;
+        private readonly IAppwriteStorageService _storageService = storageService;
 
         public async Task<List<Folder>> GetRootFoldersAsync()
         {
@@ -153,16 +157,34 @@ namespace ArielCRM.Infrastructure.Repositories
             return file;
         }
 
-        public async Task<DocumentFile> CopyFileAsync(Guid fileId, Guid targetFolderId)
+        public async Task<DocumentFile> CopyFileAsync(Guid fileId, Guid targetFolderId, string? newName = null, bool isTopLevelCall = true)
         {
             var original = await _context.DocumentFiles.AsNoTracking().FirstOrDefaultAsync(f => f.Id == fileId)
                 ?? throw new KeyNotFoundException("File not found.");
 
+            var finalFileName = original.FileName;
+            var finalName = original.Name;
+
+            if (isTopLevelCall)
+            {
+                var siblingFileNames = await _context.DocumentFiles.AsNoTracking()
+                    .Where(f => f.FolderId == targetFolderId && !f.IsDeleted)
+                    .Select(f => f.FileName)
+                    .ToListAsync();
+
+                var baseName = string.IsNullOrWhiteSpace(newName) ? original.FileName : newName;
+                finalFileName = GenerateUniqueName(baseName, siblingFileNames, isFile: true);
+
+                // Keep Name in sync with FileName (same base, no extension logic needed
+                // if Name never carries an extension in your data — adjust if it does).
+                finalName = string.IsNullOrWhiteSpace(newName) ? original.Name : finalFileName;
+            }
+
             var copy = new DocumentFile
             {
                 Id = Guid.NewGuid(),
-                Name = original.Name,
-                FileName = original.FileName,
+                Name = finalName,
+                FileName = finalFileName,
                 ContentType = original.ContentType,
                 StoragePath = original.StoragePath,
                 Url = original.Url,
@@ -184,18 +206,33 @@ namespace ArielCRM.Infrastructure.Repositories
             return copy;
         }
 
-        public async Task<Folder> CopyFolderAsync(Guid folderId, Guid? targetFolderId)
+        public async Task<Folder> CopyFolderAsync(Guid folderId, Guid? targetFolderId, string? newName = null, bool isTopLevelCall = true)
         {
             var original = await _context.Folders.AsNoTracking().FirstOrDefaultAsync(f => f.Id == folderId)
                 ?? throw new KeyNotFoundException("Folder not found.");
 
+            var finalName = original.Name;
+
+            if (isTopLevelCall)
+            {
+                var siblingFolderNames = await _context.Folders.AsNoTracking()
+                    .Where(f => f.ParentFolderId == targetFolderId)
+                    .Select(f => f.Name)
+                    .ToListAsync();
+
+                var baseName = string.IsNullOrWhiteSpace(newName) ? original.Name : newName;
+                finalName = GenerateUniqueName(baseName, siblingFolderNames, isFile: false);
+            }
+
             var copy = new Folder
             {
                 Id = Guid.NewGuid(),
-                Name = original.Name,
+                Name = finalName,
                 FolderKey = Guid.NewGuid().ToString(),
                 ParentFolderId = targetFolderId,
                 IsSystem = false,
+                UserId = original.UserId,
+                AllowedUsersId = original.AllowedUsersId,
                 CanCreate = original.CanCreate,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -205,48 +242,83 @@ namespace ArielCRM.Infrastructure.Repositories
             var childFolders = await _context.Folders.AsNoTracking()
                 .Where(f => f.ParentFolderId == folderId).ToListAsync();
             foreach (var child in childFolders)
-                await CopyFolderAsync(child.Id, copy.Id);
+                await CopyFolderAsync(child.Id, copy.Id, newName: null, isTopLevelCall: false);
 
             var childFiles = await _context.DocumentFiles.AsNoTracking()
                 .Where(f => f.FolderId == folderId).ToListAsync();
             foreach (var child in childFiles)
-                await CopyFileAsync(child.Id, copy.Id);
+                await CopyFileAsync(child.Id, copy.Id, newName: null, isTopLevelCall: false);
 
             return copy;
         }
 
+        private static readonly Regex CopySuffixRegex = new(@" \(Copy(?: (\d+))?\)$", RegexOptions.Compiled);
 
-        public async Task<DocumentFile> DeleteFileAsync(Guid fileId)
+        private static string GenerateUniqueName(string baseName, List<string> existingNames, bool isFile)
+        {
+            var existing = new HashSet<string>(existingNames, StringComparer.OrdinalIgnoreCase);
+
+            string namePart = baseName;
+            string ext = "";
+            if (isFile)
+            {
+                var lastDot = baseName.LastIndexOf('.');
+                if (lastDot > 0)
+                {
+                    namePart = baseName[..lastDot];
+                    ext = baseName[lastDot..];
+                }
+            }
+
+            var rootName = CopySuffixRegex.Replace(namePart, "");
+
+            var candidate = $"{rootName} (Copy){ext}";
+            if (!existing.Contains(candidate)) return candidate;
+
+            var n = 1;
+            candidate = $"{rootName} (Copy {n}){ext}";
+            while (existing.Contains(candidate))
+            {
+                n++;
+                candidate = $"{rootName} (Copy {n}){ext}";
+            }
+            return candidate;
+        }
+
+
+        public async Task<DocumentFile> DeleteFileAsync(Guid fileId, bool isDeletedAsRoot)
         {
             var file = await _context.DocumentFiles.FirstOrDefaultAsync(f => f.Id == fileId)
                 ?? throw new KeyNotFoundException("File not found.");
 
             file.IsDeleted = true;
+            file.IsDeletedAsRoot = isDeletedAsRoot;
             file.DeletedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return file;
         }
 
-        public async Task<Folder> DeleteFolderAsync(Guid folderId)
+        public async Task<Folder> DeleteFolderAsync(Guid folderId, bool isDeletedAsRoot)
         {
             var folder = await _context.Folders.FirstOrDefaultAsync(f => f.Id == folderId)
                 ?? throw new KeyNotFoundException("Folder not found.");
 
             folder.IsDeleted = true;
+            folder.IsDeletedAsRoot = isDeletedAsRoot;
             folder.DeletedAt = DateTime.UtcNow;
 
             var childFolders = await _context.Folders
                 .Where(f => f.ParentFolderId == folderId && !f.IsDeleted)
                 .ToListAsync();
             foreach (var child in childFolders)
-                await DeleteFolderAsync(child.Id);
+                await DeleteFolderAsync(child.Id, false);
 
             var childFiles = await _context.DocumentFiles
                 .Where(f => f.FolderId == folderId && !f.IsDeleted)
                 .ToListAsync();
             foreach (var file in childFiles)
-                await DeleteFileAsync(file.Id);
+                await DeleteFileAsync(file.Id, false);
 
             await _context.SaveChangesAsync();
             return folder;
@@ -274,11 +346,30 @@ namespace ArielCRM.Infrastructure.Repositories
 
         public async Task<Folder> RestoreFolderAsync(Guid folderId)
         {
-            var folder = await _context.Folders.FirstOrDefaultAsync(f => f.Id == folderId)
+            var folder = await _context.Folders.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == folderId)
                 ?? throw new KeyNotFoundException("Folder not found.");
+
 
             folder.IsDeleted = false;
             folder.DeletedAt = null;
+
+
+            var childFolders = await _context.Folders
+               .Where(f => f.ParentFolderId == folderId && !f.IsDeleted)
+               .ToListAsync();
+            foreach (var child in childFolders)
+            {
+                if (!child.IsDeletedAsRoot) await RestoreFolderAsync(child.Id);
+            }
+
+            var childFiles = await _context.DocumentFiles
+                .Where(f => f.FolderId == folderId && !f.IsDeleted)
+                .ToListAsync();
+            foreach (var file in childFiles)
+            {
+                if (!file.IsDeletedAsRoot) await RestoreFileAsync(file.Id);
+
+            }
 
             await _context.SaveChangesAsync();
             return folder;
@@ -286,7 +377,7 @@ namespace ArielCRM.Infrastructure.Repositories
 
         public async Task<DocumentFile> RestoreFileAsync(Guid fileId)
         {
-            var file = await _context.DocumentFiles.FirstOrDefaultAsync(f => f.Id == fileId)
+            var file = await _context.DocumentFiles.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == fileId)
                 ?? throw new KeyNotFoundException("File not found.");
 
             file.IsDeleted = false;
@@ -296,9 +387,13 @@ namespace ArielCRM.Infrastructure.Repositories
             return file;
         }
 
+
+        //  HANDLE THAT CASE IF THE ROOT FOLDER IS ALREADY DELETED AND WE ARE TRYING  
+
+
         public async Task PermanentlyDeleteFolderAsync(Guid folderId)
         {
-            var folder = await _context.Folders.FirstOrDefaultAsync(f => f.Id == folderId)
+            var folder = await _context.Folders.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == folderId)
                 ?? throw new KeyNotFoundException("Folder not found.");
 
             var childFolders = await _context.Folders
@@ -319,11 +414,18 @@ namespace ArielCRM.Infrastructure.Repositories
 
         public async Task PermanentlyDeleteFileAsync(Guid fileId)
         {
-            var file = await _context.DocumentFiles.FirstOrDefaultAsync(f => f.Id == fileId)
+            var file = await _context.DocumentFiles.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == fileId)
                 ?? throw new KeyNotFoundException("File not found.");
 
+            var blobUrl = file.Url;
             _context.DocumentFiles.Remove(file);
             await _context.SaveChangesAsync();
+
+            var reference = await _context.DocumentFiles.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Url == blobUrl);
+            if (reference == null)
+            {
+                await _storageService.DeleteFileByUrlAsync(blobUrl);
+            }
         }
 
 

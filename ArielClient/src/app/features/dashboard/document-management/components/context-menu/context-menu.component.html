@@ -1,0 +1,59 @@
+<div class="context-menu" [style.left.px]="x" [style.top.px]="y" (click)="$event.stopPropagation()">
+
+  @if (selectedCount > 1) {
+  <div class="context-menu-label">{{ selectedCount }} items selected</div>
+  <div class="menu-divider"></div>
+  }
+
+  @if (isSingleSelection) {
+  <button class="context-menu-item strong" (click)="open.emit()">
+    Open
+  </button>
+  }
+
+  @if (!isSystem) {
+  <div class="menu-divider"></div>
+
+  @if (isSingleSelection) {
+  <button class="context-menu-item" (click)="rename.emit()">
+    Rename
+  </button>
+  <div class="menu-divider"></div>
+  }
+
+  <button class="context-menu-item" (click)="cut.emit()">
+    Cut
+  </button>
+
+  <button class="context-menu-item" (click)="copy.emit()">
+    Copy
+  </button>
+
+  <button class="context-menu-item" [class.disabled]="!canPaste" (click)="paste.emit()">
+    Paste
+  </button>
+
+  <div class="menu-divider"></div>
+
+  @if (isSingleSelection) {
+  <button class="context-menu-item" (click)="copyPath.emit()">
+    Copy as path
+  </button>
+
+  <div class="menu-divider"></div>
+  }
+
+  <button class="context-menu-item danger" (click)="delete.emit()">
+    Delete
+  </button>
+  }
+
+  <div class="menu-divider"></div>
+
+  @if (isSingleSelection) {
+  <button class="context-menu-item" (click)="properties.emit()">
+    Properties
+  </button>
+  }
+
+</div>

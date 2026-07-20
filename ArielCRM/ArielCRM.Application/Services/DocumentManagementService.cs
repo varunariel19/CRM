@@ -197,15 +197,15 @@ namespace ArielCRM.Application.Services
             return await _folderRepository.MoveFileAsync(fileId, targetFolderId);
         }
 
-        public async Task<DocumentFile> CopyFileAsync(Guid fileId, Guid targetFolderId)
+        public async Task<DocumentFile> CopyFileAsync(Guid fileId, Guid targetFolderId, string? newName)
         {
             var file = await _folderRepository.GetFileByIdAsync(fileId)
                 ?? throw new KeyNotFoundException("File not found.");
 
-            return await _folderRepository.CopyFileAsync(fileId, targetFolderId);
+            return await _folderRepository.CopyFileAsync(fileId, targetFolderId, newName);
         }
 
-        public async Task<Folder> CopyFolderAsync(Guid folderId, Guid? targetFolderId)
+        public async Task<Folder> CopyFolderAsync(Guid folderId, Guid? targetFolderId, string? newName)
         {
             var folder = await _folderRepository.GetFolderByIdAsync(folderId)
                 ?? throw new KeyNotFoundException("Folder not found.");
@@ -213,15 +213,15 @@ namespace ArielCRM.Application.Services
             if (targetFolderId != null && await _folderRepository.IsFolderAncestorOfAsync(folderId, targetFolderId))
                 throw new InvalidOperationException("Cannot copy a folder into its own subfolder.");
 
-            return await _folderRepository.CopyFolderAsync(folderId, targetFolderId);
+            return await _folderRepository.CopyFolderAsync(folderId, targetFolderId, newName);
         }
 
 
         public Task<DocumentFile> DeleteFileAsync(Guid fileId)
-                   => _folderRepository.DeleteFileAsync(fileId);
+                   => _folderRepository.DeleteFileAsync(fileId, true);
 
         public Task<Folder> DeleteFolderAsync(Guid folderId)
-            => _folderRepository.DeleteFolderAsync(folderId);
+            => _folderRepository.DeleteFolderAsync(folderId, true);
 
 
         public Task<List<Folder>> GetBinFoldersAsync(string userId)

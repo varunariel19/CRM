@@ -146,11 +146,11 @@ namespace ArielCRM.Api.Controllers
         }
 
         [HttpPost("folders/{folderId:guid}/copy")]
-        public async Task<IActionResult> CopyFolder(Guid folderId, [FromQuery] Guid? targetFolderId)
+        public async Task<IActionResult> CopyFolder(Guid folderId, [FromQuery] Guid? targetFolderId, [FromQuery] string? newName)
         {
             try
             {
-                var folder = await _folderService.CopyFolderAsync(folderId, targetFolderId);
+                var folder = await _folderService.CopyFolderAsync(folderId, targetFolderId, newName);
                 return Ok(folder);
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
@@ -158,11 +158,11 @@ namespace ArielCRM.Api.Controllers
         }
 
         [HttpPost("files/{fileId:guid}/copy")]
-        public async Task<IActionResult> CopyFile(Guid fileId, [FromQuery] Guid targetFolderId)
+        public async Task<IActionResult> CopyFile(Guid fileId, [FromQuery] Guid targetFolderId, [FromQuery] string? newName)
         {
             try
             {
-                var file = await _folderService.CopyFileAsync(fileId, targetFolderId);
+                var file = await _folderService.CopyFileAsync(fileId, targetFolderId, newName);
                 return Ok(file);
             }
             catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }

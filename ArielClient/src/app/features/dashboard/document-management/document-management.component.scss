@@ -1,8 +1,10 @@
 .documents-container {
-  padding: 16px 24px;
+  position: relative;
+  padding: 28px 32px 48px;
+  min-height: 100vh;
   background: var(--page-bg);
   color: var(--text-dark);
-  min-height: 100%;
+  font-family: 'DM Sans', 'Segoe UI', sans-serif;
 }
 
 .toolbar {
@@ -85,6 +87,7 @@
 
 .folder-grid {
   display: grid;
+
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 16px;
 }
@@ -94,11 +97,13 @@
   padding: 16px;
   text-align: center;
   cursor: pointer;
-  transition: box-shadow 0.15s, border-color 0.15s, background 0.15s;
+  transition:
+    box-shadow 0.15s,
+    border-color 0.15s,
+    background 0.15s;
   user-select: none;
 
-
-   &.cut {
+  &.cut {
     opacity: 0.4;
   }
 
@@ -144,7 +149,6 @@
   font-size: 14px;
 }
 
-/* Root-level folders render bigger, Drive-style */
 .folder-card.root-folder {
   padding: 24px 20px;
 }
@@ -168,10 +172,8 @@
   opacity: 0.9;
 }
 
-/* ---------- Context menu ---------- */
-
 .context-menu {
-  position: fixed;
+  position: fixed;   
   z-index: 1000;
   min-width: 220px;
   background: var(--surface-bg);
@@ -244,10 +246,6 @@
   margin: 4px 2px;
 }
 
-/* ---------- Properties modal ---------- */
-
-
-
 .properties-overlay {
   position: fixed;
   inset: 0;
@@ -289,10 +287,15 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   padding: 0;
 
-  svg { width: 16px; height: 16px; }
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 
   &:hover {
     background: var(--hover-bg);
@@ -351,7 +354,10 @@
   cursor: pointer;
   padding: 0;
 
-  svg { width: 13px; height: 13px; }
+  svg {
+    width: 13px;
+    height: 13px;
+  }
 
   &:hover {
     background: var(--active-bg);
@@ -437,7 +443,10 @@
   flex-shrink: 0;
   padding: 0;
 
-  svg { width: 15px; height: 15px; }
+  svg {
+    width: 15px;
+    height: 15px;
+  }
 
   &:hover {
     background: var(--hover-bg);
@@ -472,7 +481,10 @@
   padding: 2px 4px;
   border-radius: 6px;
 
-  svg { width: 14px; height: 14px; }
+  svg {
+    width: 14px;
+    height: 14px;
+  }
 
   &:hover {
     color: var(--link-text);
@@ -481,15 +493,24 @@
 }
 
 @keyframes properties-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes properties-pop-in {
-  from { opacity: 0; transform: scale(0.96) translateY(4px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
-
 
 /* ---------- Recycle Bin list ---------- */
 
@@ -575,7 +596,6 @@
   background: var(--danger-hover-bg);
 }
 
-
 .new-menu-wrapper {
   position: relative;
 }
@@ -601,7 +621,6 @@
   position: absolute;
 }
 
-
 /* document-management.component.scss — append */
 .file-card h5 {
   text-decoration: none;
@@ -612,8 +631,6 @@
   text-decoration: none;
 }
 
-
-
 .folder-card.selected {
   background: rgba(59, 130, 246, 0.18);
   outline: 1px solid rgba(59, 130, 246, 0.6);
@@ -621,16 +638,16 @@
 }
 
 .folder-grid {
-  position: relative; 
-  user-select: none;  
+  position: relative;
+  user-select: none;
 }
 
 .marquee-box {
   position: absolute;
-  border: 1px solid rgba(59, 130, 246, 0.8);
-  background: rgba(59, 130, 246, 0.15);
   pointer-events: none;
-  z-index: 5;
+  z-index: 50;
+  border: 1px solid #4c8bf5;
+  background: rgba(76, 139, 245, 0.15);
 }
 
 .selection-badge {
@@ -643,13 +660,13 @@
 }
 
 .context-menu-label {
+
   padding: 6px 12px;
   font-size: 12px;
   opacity: 0.7;
 }
 
-
-// RENNAME 
+// RENNAME
 .rename-popover {
   position: fixed;
   z-index: 1000;
@@ -659,7 +676,6 @@
   padding: 14px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   min-width: 260px;
-
 }
 
 .rename-label {
@@ -709,15 +725,13 @@
   }
 }
 
-
 .folder-card {
   img {
-    -webkit-user-drag: none;  
-    user-select: none;         
-    pointer-events: none;      
+    -webkit-user-drag: none;
+    user-select: none;
+    pointer-events: none;
   }
 }
-
 
 .crumb.drag-over {
   outline: 2px dashed #3b82f6;

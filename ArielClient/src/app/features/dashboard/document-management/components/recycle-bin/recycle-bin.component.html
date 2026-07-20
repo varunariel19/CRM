@@ -1,0 +1,75 @@
+<div class="toolbar">
+  <button class="back-btn" (click)="exit.emit()" title="Back">
+    ←
+  </button>
+
+  <div class="breadcrumb">
+    <span class="crumb" (click)="exit.emit()">Root</span>
+    <span class="crumb-separator">/</span>
+    <span class="crumb active">Recycle Bin</span>
+  </div>
+
+  @if (selectedCount() > 0) {
+  <span class="selection-badge">{{ selectedCount() }} selected</span>
+  }
+</div>
+
+<div #binGridEl class="folder-grid" (contextmenu)="$event.preventDefault()" (mousedown)="onGridMouseDown($event)">
+
+  @for (folder of deletedFolders(); track folder.id; let i = $index) {
+  <div class="folder-card" [class.selected]="isFolderSelected(folder)" [attr.data-key]="'folder:' + folder.id"
+    (click)="onItemClick($event, 'folder', folder)" (contextmenu)="onFolderRightClick($event, folder)">
+    <img src="/internal-folder.png" alt="Folder" draggable="false">
+    <h5>{{ folder.name }}</h5>
+  </div>
+  }
+
+  @for (file of deletedFiles(); track file.id; let i = $index) {
+  <div class="folder-card file-card" [class.selected]="isFileSelected(file)" [attr.data-key]="'file:' + file.id"
+    (click)="onItemClick($event, 'file', file)" (contextmenu)="onFileRightClick($event, file)">
+    <img [src]="getFileIcon(file.fileName)" alt="File" width="40" height="40" draggable="false">
+    <h5>{{ file.fileName }}</h5>
+  </div>
+  }
+
+  @if(deletedFiles().length == 0 && deletedFolders().length == 0) {
+  <div class="empty-state">Recycle bin is empty.</div>
+  }
+
+</div>
+
+@if (contextMenu) {
+<div class="context-menu" [style.left.px]="contextMenu.x" [style.top.px]="contextMenu.y"
+  (click)="$event.stopPropagation()">
+
+  @if (selectedCount() > 1) {
+  <div class="context-menu-label">{{ selectedCount() }} items selected</div>
+  <div class="menu-divider"></div>
+  }
+
+  <button class="context-menu-item" (click)="restoreSelection()">
+    Restore
+  </button>
+
+  <button class="context-menu-item danger" (click)="deleteSelectionForever()">
+    Delete Forever
+  </button>
+
+  <div class="menu-divider"></div>
+
+  @if (selectedCount() <= 1) { <button class="context-menu-item" (click)="showProperties()">
+    Properties
+    </button>
+    }
+
+</div>
+}
+
+@if (propertiesFolder || propertiesFile) {
+<app-properties-dialog [icon]="propertiesIcon" [isFolder]="!!propertiesFolder" [name]="propertiesName"
+  [subtitle]="propertiesSubtitle" [secondarySubtitle]="propertiesSecondarySubtitle" [parentPath]="propertiesParentPath"
+  [modified]="propertiesModified" [created]="propertiesCreated" [accessed]="propertiesAccessed"
+  [permissionsLabel]="propertiesPermissionsLabel" [favorite]="propertiesFavorite()" (close)="closeProperties()"
+  (toggleFavorite)="toggleFavorite()">
+</app-properties-dialog>
+}

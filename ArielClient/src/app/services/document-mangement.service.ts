@@ -165,21 +165,35 @@ export class DocumentManagementService {
         return this.http.patch<DocumentFilePayload>(`${endpoints.documentManagment.baseUrl}/files/${fileId}/move`, null, { params, withCredentials: true });
     }
 
-    copyFolder(folderId: string, targetFolderId: string | null): Observable<FolderPayload> {
+    copyFolder(folderId: string, targetFolderId: string | null, newName?: string): Observable<FolderPayload> {
         let params = new HttpParams();
         if (targetFolderId) params = params.set('targetFolderId', targetFolderId);
-        return this.http.post<FolderPayload>(`${endpoints.documentManagment.baseUrl}/folders/${folderId}/copy`, null, { params, withCredentials: true });
+        if (newName) params = params.set('newName', newName);
+        return this.http.post<FolderPayload>(
+            `${endpoints.documentManagment.baseUrl}/folders/${folderId}/copy`,
+            null,
+            { params, withCredentials: true }
+        );
     }
 
-    copyFile(fileId: string, targetFolderId: string): Observable<DocumentFilePayload> {
-        const params = new HttpParams().set('targetFolderId', targetFolderId);
-        return this.http.post<DocumentFilePayload>(`${endpoints.documentManagment.baseUrl}/files/${fileId}/copy`, null, { params, withCredentials: true });
+    copyFile(fileId: string, targetFolderId: string, newName?: string): Observable<DocumentFilePayload> {
+        let params = new HttpParams().set('targetFolderId', targetFolderId);
+        if (newName) params = params.set('newName', newName);
+        return this.http.post<DocumentFilePayload>(
+            `${endpoints.documentManagment.baseUrl}/files/${fileId}/copy`,
+            null,
+            { params, withCredentials: true }
+        );
     }
 
 
     deleteFile(fileId: string): Observable<DeleteResult> {
         return this.http.delete(`${endpoints.documentManagment.baseUrl}/files/${fileId}`, { withCredentials: true }).pipe(
-            tap(() => this.folderState.removeFileLocally(fileId)),
+            tap(() => {
+                const removedFile = this.folderState.removeFileLocally(fileId);
+                if (removedFile) this.folderState.handleAddFileInTrash(removedFile);
+
+            }),
             map(() => ({ id: fileId, type: 'file' as const, success: true })),
             catchError(err => of({
                 id: fileId,
@@ -192,7 +206,10 @@ export class DocumentManagementService {
 
     deleteFolder(folderId: string): Observable<DeleteResult> {
         return this.http.delete(`${endpoints.documentManagment.baseUrl}/folders/${folderId}`, { withCredentials: true }).pipe(
-            tap(() => this.folderState.removeFolderLocally(folderId)),
+            tap(() => {
+                const removedFolder = this.folderState.removeFolderLocally(folderId);
+                if (removedFolder) this.folderState.handleAddFolderInTrash(removedFolder);
+            }),
             map(() => ({ id: folderId, type: 'folder' as const, success: true })),
             catchError(err => of({
                 id: folderId,
@@ -249,13 +266,21 @@ export class DocumentManagementService {
 
 
     restoreFolder(folderId: string): Observable<FolderPayload> {
-        return this.http.put<FolderPayload>(`${endpoints.documentManagment.baseUrl}/bin/folders/${folderId}/restore`, { withCredentials: true }).pipe(
+        return this.http.put<FolderPayload>(
+            `${endpoints.documentManagment.baseUrl}/bin/folders/${folderId}/restore`,
+            null,
+            { withCredentials: true }
+        ).pipe(
             tap(() => this.folderState.removeBinFolderLocally(folderId))
         );
     }
 
     restoreFile(fileId: string): Observable<DocumentFilePayload> {
-        return this.http.put<DocumentFilePayload>(`${endpoints.documentManagment.baseUrl}/bin/files/${fileId}/restore`, { withCredentials: true }).pipe(
+        return this.http.put<DocumentFilePayload>(
+            `${endpoints.documentManagment.baseUrl}/bin/files/${fileId}/restore`,
+            null,
+            { withCredentials: true }
+        ).pipe(
             tap(() => this.folderState.removeBinFileLocally(fileId))
         );
     }

@@ -1,0 +1,25 @@
+<div class="dialog-overlay" (click)="cancel.emit()">
+    <div class="dialog-box" (click)="$event.stopPropagation()">
+        <div class="dialog-header">New folder</div>
+
+        <div class="dialog-body">
+            <label class="dialog-label" for="new-folder-input">Folder name</label>
+            <input #folderInput id="new-folder-input" type="text" class="dialog-input" [class.has-error]="error"
+                [ngModel]="value()" (ngModelChange)="onInput($event)" (keydown)="onKeydown($event)"
+                autocomplete="off" />
+
+            @if (error) {
+            <div class="dialog-error">{{ error }}</div>
+            }
+        </div>
+
+        <div class="dialog-actions">
+            <button type="button" class="dialog-btn cancel-btn" (click)="cancel.emit()">
+                Cancel
+            </button>
+            <button type="button" class="dialog-btn confirm-btn" [disabled]="!value().trim()" (click)="confirm()">
+                Create
+            </button>
+        </div>
+    </div>
+</div>

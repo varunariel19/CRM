@@ -16,8 +16,8 @@ namespace ArielCRM.Application.Interfaces
         Task<Folder> MoveFolderAsync(Guid folderId, Guid? targetFolderId);
 
         Task<DocumentFile> MoveFileAsync(Guid fileId, Guid targetFolderId);
-        Task<DocumentFile> CopyFileAsync(Guid fileId, Guid targetFolderId);
-        Task<Folder> CopyFolderAsync(Guid folderId, Guid? targetFolderId);
+        Task<DocumentFile> CopyFileAsync(Guid fileId, Guid targetFolderId, string? newName);
+        Task<Folder> CopyFolderAsync(Guid folderId, Guid? targetFolderId, string? newName);
 
         Task<DocumentFile> DeleteFileAsync(Guid fileId);
         Task<Folder> DeleteFolderAsync(Guid folderId);

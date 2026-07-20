@@ -1,0 +1,77 @@
+<div class="ctx-menu" [style.left.px]="x" [style.top.px]="y" (contextmenu)="$event.preventDefault()">
+
+  <!-- View -->
+  <div class="ctx-item has-submenu" [class.active]="activeSubmenu() === 'view'"
+    (click)="toggleSubmenu('view', $event)" (mouseenter)="activeSubmenu.set('view')">
+    <span class="label">View</span>
+    <span class="chevron">›</span>
+
+    @if (activeSubmenu() === 'view') {
+    <div class="ctx-submenu" (click)="$event.stopPropagation()">
+      @for (opt of viewOptions; track opt.value) {
+      <div class="ctx-item" [class.checked]="currentView === opt.value" (click)="onViewSelect(opt.value)">
+        <span class="check">{{ currentView === opt.value ? '●' : '' }}</span>
+        <span class="label">{{ opt.label }}</span>
+      </div>
+      }
+    </div>
+    }
+  </div>
+
+  <!-- Sort by -->
+  <div class="ctx-item has-submenu" [class.active]="activeSubmenu() === 'sort'"
+    (click)="toggleSubmenu('sort', $event)" (mouseenter)="activeSubmenu.set('sort')">
+    <span class="label">Sort by</span>
+    <span class="chevron">›</span>
+
+    @if (activeSubmenu() === 'sort') {
+    <div class="ctx-submenu" (click)="$event.stopPropagation()">
+      @for (opt of sortOptions; track opt.value) {
+      <div class="ctx-item" [class.checked]="currentSort === opt.value" (click)="onSortSelect(opt.value)">
+        <span class="check">{{ currentSort === opt.value ? '●' : '' }}</span>
+        <span class="label">{{ opt.label }}</span>
+      </div>
+      }
+    </div>
+    }
+  </div>
+
+  <!-- Refresh -->
+  <div class="ctx-item" (mouseenter)="activeSubmenu.set(null)" (click)="onRefresh()">
+    <span class="label">Refresh</span>
+  </div>
+
+  <div class="ctx-separator"></div>
+
+  <!-- Paste -->
+  <div class="ctx-item" [class.disabled]="!canPaste" (mouseenter)="activeSubmenu.set(null)" (click)="onPaste()">
+    <span class="label">Paste</span>
+  </div>
+
+  @if (canCreate) {
+  <div class="ctx-separator"></div>
+
+  <!-- New -->
+  <div class="ctx-item has-submenu" [class.active]="activeSubmenu() === 'new'"
+    (click)="toggleSubmenu('new', $event)" (mouseenter)="activeSubmenu.set('new')">
+    <span class="label">New</span>
+    <span class="chevron">›</span>
+
+    @if (activeSubmenu() === 'new') {
+    <div class="ctx-submenu" (click)="$event.stopPropagation()">
+      <div class="ctx-item" (click)="onNewFolder()">
+        <span class="icon">
+          <img src="/internal-folder.png" alt="">
+        </span>
+        <span class="label">Folder</span>
+      </div>
+      <div class="ctx-item" (click)="onUploadFile()">
+        <span class="icon">📄</span>
+        <span class="label">Upload File</span>
+      </div>
+    </div>
+    }
+  </div>
+  }
+
+</div>

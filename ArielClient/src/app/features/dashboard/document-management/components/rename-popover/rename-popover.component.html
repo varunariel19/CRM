@@ -1,0 +1,13 @@
+<div class="rename-popover" [style.left.px]="x" [style.top.px]="y" (click)="$event.stopPropagation()">
+
+  <label class="rename-label" for="rename-input">{{ label }} name</label>
+
+  <div class="rename-row">
+    <input #renameInput id="rename-input" type="text" class="rename-input" [ngModel]="value"
+      (ngModelChange)="onInput($event)" (keydown)="onKeydown($event)" autocomplete="off" />
+
+    <button class="rename-btn" type="button" [disabled]="!value.trim()" (click)="confirm.emit()">
+      Rename
+    </button>
+  </div>
+</div>

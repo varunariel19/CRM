@@ -1,82 +1,45 @@
-import { Component, ElementRef, HostListener, signal, ViewChild, computed, NgModule } from '@angular/core';
+import { Component, ElementRef, HostListener, signal, ViewChild, computed, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DocumentManagementService } from '../../../services/document-mangement.service';
 import { DocumentFilePayload, FolderPayload, FolderState } from '../../../state/document-mangement.state';
-import { TeamMessageAttachment, TeamAttachmentType } from '../../../core/types/teams.type';
+import { TeamMessageAttachment } from '../../../core/types/teams.type';
 
 import { getVSIFileIcon } from '@baybreezy/file-extension-icon';
 import { AttachmentViewerComponent } from '../../../components/items/attachment-viewer/attachment-viewer.component';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, of } from 'rxjs';
+import { ContextMenuComponent } from './components/context-menu/context-menu.component';
+import { PropertiesDialogComponent } from './components/properties-dialog/properties-dialog.component';
+import { RenamePopoverComponent } from './components/rename-popover/rename-popover.component';
+import { RecycleBinComponent } from './components/recycle-bin/recycle-bin.component';
+import { ClipboardEntry, ContextMenuTarget, FileProps, FolderProps } from './types/document-management.type';
+import { entryKey, generateUniqueCopyName, getFileTypeLabel, toTeamAttachment } from './services/document-management.util';
+import { DocumentEmptyContextMenuComponent, SortField, ViewMode } from './components/empty-context/empty-context.component';
+import { NewFolderDialogComponent } from './components/new-folder-dialog/new-folder-dialog.component';
 
-type ContextMenuTarget =
-  | { type: 'folder'; item: FolderPayload }
-  | { type: 'file'; item: DocumentFilePayload };
-
-interface ClipboardEntry {
-  targets: ContextMenuTarget[];
-  mode: 'cut' | 'copy';
-}
-
-type BinContextMenuTarget =
-  | { type: 'folder'; item: FolderPayload }
-  | { type: 'file'; item: DocumentFilePayload };
-
-interface BinContextMenuState {
-  x: number;
-  y: number;
-}
-
-type FolderProps = FolderPayload & {
-  itemsCount?: number;
-  totalSizeLabel?: string;
-  freeSpaceLabel?: string;
-  parentPath?: string;
-  modifiedAt?: string;
-  permissionsLabel?: string;
-};
-
-type FileProps = DocumentFilePayload & {
-  fileTypeLabel?: string;
-  sizeLabel?: string;
-  parentPath?: string;
-  accessedAt?: string;
-  modifiedAt?: string;
-  createdAt?: string;
-  permissionsLabel?: string;
-};
-
-function inferAttachmentType(contentType: string): TeamAttachmentType {
-  const ct = contentType?.toLowerCase() ?? '';
-  if (ct.startsWith('image/')) return 'image' as TeamAttachmentType;
-  if (ct.startsWith('video/')) return 'video' as TeamAttachmentType;
-  if (ct.startsWith('audio/')) return 'audio' as TeamAttachmentType;
-  return 'document' as TeamAttachmentType;
-}
-
-function toTeamAttachment(file: DocumentFilePayload): TeamMessageAttachment {
-  return {
-    id: file.id,
-    fileName: file.fileName || file.name,
-    fileUrl: file.url,
-    uploadId: file.id,
-    contentType: file.contentType,
-    attachmentType: inferAttachmentType(file.contentType),
-    sizeBytes: file.size,
-    createdAt: file.uploadedAt,
-  };
-}
 
 @Component({
   selector: 'app-document-management',
-  imports: [CommonModule, FormsModule, AttachmentViewerComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AttachmentViewerComponent,
+    ContextMenuComponent,
+    DocumentEmptyContextMenuComponent,
+    NewFolderDialogComponent,
+    PropertiesDialogComponent,
+    RenamePopoverComponent,
+    RecycleBinComponent,
+  ],
   templateUrl: './document-management.component.html',
   styleUrl: './document-management.component.scss',
 })
 export class DocumentManagementComponent {
 
   view: 'folders' | 'recycle-bin' = 'folders';
-
+  private isScrolling = false;
+  private scrollEndTimeout: any;
+  newFolderDialogOpen = signal(false);
   contextMenu: { x: number; y: number; target: ContextMenuTarget } | null = null;
   propertiesFolder: FolderProps | null = null;
   propertiesFile: FileProps | null = null;
@@ -93,16 +56,6 @@ export class DocumentManagementComponent {
   selectedCount = computed(() => this.selectedKeys().size);
   private lastSelectedIndex: number | null = null;
 
-
-  private binSelectedKeys = signal<Set<string>>(new Set());
-  binSelectedCount = computed(() => this.binSelectedKeys().size);
-
-  deletedFolders = computed(() => this.folderState.binFolders());
-  deletedFiles = computed(() => this.folderState.binFiles());
-
-  binContextMenu: BinContextMenuState | null = null;
-  private binContextMenuTargets: BinContextMenuTarget[] = [];
-
   isMarqueeSelecting = signal(false);
   marqueeBox = signal<{ left: number; top: number; width: number; height: number } | null>(null);
   private dragStartX = 0;
@@ -113,7 +66,7 @@ export class DocumentManagementComponent {
   clipboard = signal<ClipboardEntry | null>(null);
   cutKeys = computed(() =>
     this.clipboard()?.mode === 'cut'
-      ? new Set(this.clipboard()!.targets.map(t => this.keyFor(t.type, t.item.id)))
+      ? new Set(this.clipboard()!.targets.map(t => entryKey(t.type, t.item.id)))
       : new Set<string>()
   );
 
@@ -127,11 +80,46 @@ export class DocumentManagementComponent {
   renamePosition = signal<{ x: number; y: number } | null>(null);
 
   @ViewChild('gridEl') gridEl!: ElementRef<HTMLDivElement>;
+  @ViewChild('containerEl') containerEl!: ElementRef<HTMLDivElement>;
 
   constructor(
     private folderService: DocumentManagementService,
     public folderState: FolderState,
+    private ngZone: NgZone
   ) { }
+
+  ngOnInit() {
+    this.ngZone.runOutsideAngular(() => {
+      document.addEventListener('scroll', this.onScrollCapture, true);
+    });
+    this.folderService.loadRootFolders().subscribe();
+    this.folderService.loadBinItems();
+  }
+
+  localScroll(block: boolean) {
+    const element = document.querySelector('.inner-content') as HTMLDivElement | null;
+    if (!element) return;
+    element.style.overflowY = block ? 'hidden' : 'auto';
+  }
+
+  ngOnDestroy() {
+    document.removeEventListener('scroll', this.onScrollCapture, true);
+    clearTimeout(this.scrollEndTimeout);
+  }
+
+  private onScrollCapture = () => {
+    clearTimeout(this.scrollEndTimeout);
+    this.scrollEndTimeout = setTimeout(() => {
+      this.isScrolling = false;
+    }, 150);
+
+    if (this.isScrolling) return;
+
+    this.isScrolling = true;
+    this.ngZone.run(this.scrollListener);
+  };
+
+  // --- basic getters ---
 
   get currentFolders(): FolderPayload[] {
     return this.folderState.currentFolders();
@@ -178,6 +166,7 @@ export class DocumentManagementComponent {
     return this.contextMenuFolder?.isSystem ?? false;
   }
 
+  // --- properties dialog derived values ---
 
   get propertiesIcon(): string {
     if (this.propertiesFolder) {
@@ -198,7 +187,7 @@ export class DocumentManagementComponent {
       return `${count} item${count === 1 ? '' : 's'}, totalling ${size}`;
     }
     const file = this.propertiesFile;
-    return file ? (file.fileTypeLabel ?? this.getFileTypeLabel(file.fileName)) : '';
+    return file ? (file.fileTypeLabel ?? getFileTypeLabel(file.fileName)) : '';
   }
 
   get propertiesSecondarySubtitle(): string {
@@ -229,174 +218,26 @@ export class DocumentManagementComponent {
     );
   }
 
-
-
   get selectionHasSystemItem(): boolean {
     return this.getSelectedEntries().some(e => e.type === 'folder' && e.item.isSystem);
   }
 
-
-  // --- bin selection state ---
-
-
-  private binKeyFor(type: 'folder' | 'file', id: string): string {
-    return `${type}:${id}`;
-  }
-
-  isBinFolderSelected(folder: FolderPayload): boolean {
-    return this.binSelectedKeys().has(this.binKeyFor('folder', folder.id));
-  }
-
-  isBinFileSelected(file: DocumentFilePayload): boolean {
-    return this.binSelectedKeys().has(this.binKeyFor('file', file.id));
-  }
-
-  binFileIndex(i: number): number {
-    return this.deletedFolders().length + i;
-  }
-
-  onBinItemClick(event: MouseEvent, type: 'folder' | 'file', item: FolderPayload | DocumentFilePayload, index: number): void {
-    event.stopPropagation();
-    const key = this.binKeyFor(type, item.id);
-
-    if (event.ctrlKey || event.metaKey) {
-      this.binSelectedKeys.update(keys => {
-        const next = new Set(keys);
-        next.has(key) ? next.delete(key) : next.add(key);
-        return next;
-      });
-    } else {
-      this.binSelectedKeys.set(new Set([key]));
-    }
-
-    this.closeBinContextMenu();
-  }
-
-  onBinGridMouseDown(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      this.binSelectedKeys.set(new Set());
-      this.closeBinContextMenu();
-    }
-  }
-
-  private getBinSelectedEntries(): BinContextMenuTarget[] {
-    const keys = this.binSelectedKeys();
-    const folders: BinContextMenuTarget[] = this.deletedFolders()
-      .filter(f => keys.has(this.binKeyFor('folder', f.id)))
-      .map(item => ({ type: 'folder' as const, item }));
-    const files: BinContextMenuTarget[] = this.deletedFiles()
-      .filter(f => keys.has(this.binKeyFor('file', f.id)))
-      .map(item => ({ type: 'file' as const, item }));
-    return [...folders, ...files];
-  }
-
-  onBinFolderRightClick(event: MouseEvent, folder: FolderPayload): void {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const key = this.binKeyFor('folder', folder.id);
-    if (!this.binSelectedKeys().has(key)) {
-      this.binSelectedKeys.set(new Set([key]));
-    }
-
-    this.openBinContextMenu(event);
-  }
-
-  onBinFileRightClick(event: MouseEvent, file: DocumentFilePayload): void {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const key = this.binKeyFor('file', file.id);
-    if (!this.binSelectedKeys().has(key)) {
-      this.binSelectedKeys.set(new Set([key]));
-    }
-
-    this.openBinContextMenu(event);
-  }
-
-  private openBinContextMenu(event: MouseEvent): void {
-    this.binContextMenuTargets = this.getBinSelectedEntries();
-    this.binContextMenu = { x: event.clientX, y: event.clientY };
-  }
-
-  closeBinContextMenu(): void {
-    this.binContextMenu = null;
-    this.binContextMenuTargets = [];
-  }
-
-  binMenuOpen(): void {
-    const target = this.binContextMenuTargets[0];
-    if (!target) return;
-
-    if (target.type === 'file') {
-    }
-
-    this.closeBinContextMenu();
-  }
-
-  binMenuRestore(): void {
-    const targets = this.binContextMenuTargets;
-    if (!targets.length) return;
-
-    targets.forEach(t => {
-      const request$ = (t.type === 'folder'
-        ? this.folderService.restoreFolder(t.item.id)
-        : this.folderService.restoreFile(t.item.id)) as any;
-
-      request$.subscribe({
-        error: (err: any) => console.error(`Failed to restore ${t.type}:`, err)
-      });
-    });
-
-    this.binSelectedKeys.set(new Set());
-    this.closeBinContextMenu();
-  }
-
-  binMenuDeleteForever(): void {
-    const targets = this.binContextMenuTargets;
-    if (!targets.length) return;
-
-    const confirmed = confirm(
-      `Permanently delete ${targets.length} item(s)? This cannot be undone.`
-    );
-    if (!confirmed) return;
-
-    targets.forEach(t => {
-      const request$ = (t.type === 'folder'
-        ? this.folderService.permanentlyDeleteFolder(t.item.id)
-        : this.folderService.permanentlyDeleteFile(t.item.id)) as any;
-
-      request$.subscribe({
-        error: (err: any) => console.error(`Failed to permanently delete ${t.type}:`, err)
-      });
-    });
-
-    this.binSelectedKeys.set(new Set());
-    this.closeBinContextMenu();
-  }
-
-
-  // --- Selection helpers ---
-
-
-  private keyFor(type: 'folder' | 'file', id: string): string {
-    return `${type}:${id}`;
-  }
+  // --- main grid selection ---
 
   isFolderSelected(folder: FolderPayload): boolean {
-    return this.selectedKeys().has(this.keyFor('folder', folder.id));
+    return this.selectedKeys().has(entryKey('folder', folder.id));
   }
 
   isFileSelected(file: DocumentFilePayload): boolean {
-    return this.selectedKeys().has(this.keyFor('file', file.id));
+    return this.selectedKeys().has(entryKey('file', file.id));
   }
 
   isCut(type: 'folder' | 'file', id: string): boolean {
-    return this.cutKeys().has(this.keyFor(type, id));
+    return this.cutKeys().has(entryKey(type, id));
   }
 
   isDragging(type: 'folder' | 'file', id: string): boolean {
-    return this.draggingKeys().has(this.keyFor(type, id));
+    return this.draggingKeys().has(entryKey(type, id));
   }
 
   fileIndex(i: number): number {
@@ -412,7 +253,7 @@ export class DocumentManagementComponent {
 
   private getSelectedEntries(): ContextMenuTarget[] {
     const keys = this.selectedKeys();
-    return this.combinedItems().filter(entry => keys.has(this.keyFor(entry.type, entry.item.id)));
+    return this.combinedItems().filter(entry => keys.has(entryKey(entry.type, entry.item.id)));
   }
 
   clearSelection() {
@@ -423,7 +264,7 @@ export class DocumentManagementComponent {
   onItemClick(event: MouseEvent, type: 'folder' | 'file', item: FolderPayload | DocumentFilePayload, index: number) {
     event.stopPropagation();
     this.cancelRename();
-    const key = this.keyFor(type, item.id);
+    const key = entryKey(type, item.id);
 
     if (event.shiftKey && this.lastSelectedIndex !== null) {
       this.selectRange(this.lastSelectedIndex, index);
@@ -444,33 +285,36 @@ export class DocumentManagementComponent {
     const keys = new Set(this.selectedKeys());
     for (let i = start; i <= end; i++) {
       const entry = items[i];
-      if (entry) keys.add(this.keyFor(entry.type, entry.item.id));
+      if (entry) keys.add(entryKey(entry.type, entry.item.id));
     }
     this.selectedKeys.set(keys);
   }
 
 
-  private getFileTypeLabel(fileName: string): string {
-    const ext = fileName.split('.').pop()?.toUpperCase() ?? '';
-    return ext ? `${ext} document` : 'File';
-  }
-
-
-
-
-  // --- Marquee (rubber-band) select ---
-
   onGridMouseDown(event: MouseEvent) {
     if (event.button !== 0) return;
     const target = event.target as HTMLElement;
-    if (target.closest('.folder-card')) return;
+    if (
+      target.closest('app-document-context-menu') ||
+      target.closest('app-document-empty-context-menu') ||
+      target.closest('app-rename-popover') ||
+      target.closest('app-properties-dialog') ||
+      target.closest('.toolbar') ||
+      target.closest('.folder-card') ||
+      target.closest('.new-menu-wrapper')
+    ) {
+      return;
+    }
 
     this.cancelRename();
     this.dragAdditive = event.ctrlKey || event.metaKey || event.shiftKey;
     this.marqueeBaseSelection = this.dragAdditive ? new Set(this.selectedKeys()) : new Set();
-    this.selectedKeys.set(new Set(this.marqueeBaseSelection));
 
-    const rect = this.gridEl.nativeElement.getBoundingClientRect();
+    if (this.view === 'folders') {
+      this.selectedKeys.set(new Set(this.marqueeBaseSelection));
+    }
+
+    const rect = this.containerEl.nativeElement.getBoundingClientRect();
     this.dragStartX = event.clientX;
     this.dragStartY = event.clientY;
     this.isMarqueeSelecting.set(true);
@@ -479,14 +323,17 @@ export class DocumentManagementComponent {
 
   @HostListener('document:mousemove', ['$event'])
   onDocumentMouseMove(event: MouseEvent) {
-    if (!this.isMarqueeSelecting() || !this.gridEl) return;
-    const rect = this.gridEl.nativeElement.getBoundingClientRect();
+    if (!this.isMarqueeSelecting() || !this.containerEl) return;
+    const rect = this.containerEl.nativeElement.getBoundingClientRect();
     const left = Math.min(this.dragStartX, event.clientX) - rect.left;
     const top = Math.min(this.dragStartY, event.clientY) - rect.top;
     const width = Math.abs(event.clientX - this.dragStartX);
     const height = Math.abs(event.clientY - this.dragStartY);
     this.marqueeBox.set({ left, top, width, height });
-    this.updateMarqueeSelection(event);
+
+    if (this.view === 'folders') {
+      this.updateMarqueeSelection(event);
+    }
   }
 
   @HostListener('document:mouseup')
@@ -497,6 +344,7 @@ export class DocumentManagementComponent {
   }
 
   private updateMarqueeSelection(event: MouseEvent) {
+    if (!this.gridEl) return;
     const marqueeRect = {
       left: Math.min(this.dragStartX, event.clientX),
       right: Math.max(this.dragStartX, event.clientX),
@@ -511,8 +359,10 @@ export class DocumentManagementComponent {
         r.bottom < marqueeRect.top || r.top > marqueeRect.bottom);
       if (intersects) keys.add(card.dataset['key']!);
     });
+    console.log("keys", keys);
     this.selectedKeys.set(keys);
   }
+
 
   // --- Actions ---
 
@@ -524,13 +374,9 @@ export class DocumentManagementComponent {
   openParentFolderLocation() { }
   openPermissions() { }
 
-  ngOnInit() {
-    this.folderService.loadRootFolders().subscribe();
-    this.folderService.loadBinItems();
-  }
-
   openFolder(folder: FolderPayload) {
     this.folderService.openFolder(folder).subscribe();
+    this.selectedKeys.set(new Set([]));
   }
 
   openFile(file: DocumentFilePayload) {
@@ -562,13 +408,6 @@ export class DocumentManagementComponent {
     this.view = 'folders';
   }
 
-  restoreFolder(folder: FolderPayload) { }
-
-  permanentlyDeleteFolder(folder: FolderPayload) {
-    const confirmed = confirm(`Permanently delete "${folder.name}"? This cannot be undone.`);
-    if (!confirmed) return;
-  }
-
   toggleCreateMenu(event: MouseEvent) {
     event.stopPropagation();
     this.createMenuOpen.update((open) => !open);
@@ -578,16 +417,43 @@ export class DocumentManagementComponent {
     this.createMenuOpen.set(false);
   }
 
+  newFolderError = signal<string | null>(null);
+
   addFolder() {
     this.closeCreateMenu();
-    const folderName = prompt('Folder Name');
-    if (!folderName?.trim()) return;
+    this.newFolderError.set(null);
+    this.newFolderDialogOpen.set(true);
+  }
+
+  confirmNewFolder(folderName: string) {
+    const name = folderName.trim();
+    if (!name) return;
+
+    const alreadyExists = this.folderState.currentFolders()
+      .some(folder => folder.name.toLowerCase() === name.toLowerCase());
+
+    if (alreadyExists) {
+      this.newFolderError.set('A folder with this name already exists.');
+      return; // keep dialog open, don't call the API
+    }
+
     const parentId = this.folderState.activeFolder()?.id ?? null;
-    this.folderService.createFolder(parentId, folderName.trim()).subscribe({
-      next: (createdFolder) => this.folderState.addFolderLocally(createdFolder),
-      error: () => this.uploadError.set('Could not create folder. Please try again.'),
+    this.folderService.createFolder(parentId, name).subscribe({
+      next: (createdFolder) => {
+        this.folderState.addFolderLocally(createdFolder);
+        this.newFolderDialogOpen.set(false);
+        this.newFolderError.set(null);
+      },
+      error: () => this.newFolderError.set('Could not create folder. Please try again.'),
     });
   }
+
+  cancelNewFolder() {
+    this.newFolderDialogOpen.set(false);
+    this.newFolderError.set(null);
+  }
+
+
 
   triggerFileUpload() {
     const inputFile = document.getElementById("file-input") as HTMLInputElement;
@@ -618,29 +484,40 @@ export class DocumentManagementComponent {
     });
   }
 
+  // --- context menu (folder/file) ---
+
   onFolderRightClick(event: MouseEvent, folder: FolderPayload) {
     event.preventDefault();
     event.stopPropagation();
     this.cancelRename();
-    const key = this.keyFor('folder', folder.id);
+    const key = entryKey('folder', folder.id);
     if (!this.selectedKeys().has(key)) {
       this.selectedKeys.set(new Set([key]));
     }
-    this.contextMenu = { x: event.clientX, y: event.clientY, target: { type: 'folder', item: folder } };
+    this.openContextMenu(event, 'folder', folder);
   }
 
   onFileRightClick(event: MouseEvent, file: DocumentFilePayload) {
     event.preventDefault();
     event.stopPropagation();
-    const key = this.keyFor('file', file.id);
+    const key = entryKey('file', file.id);
     if (!this.selectedKeys().has(key)) {
       this.selectedKeys.set(new Set([key]));
     }
-    this.contextMenu = { x: event.clientX, y: event.clientY, target: { type: 'file', item: file } };
+    this.openContextMenu(event, 'file', file);
+  }
+
+  private openContextMenu(event: MouseEvent, type: 'file' | 'folder', item: FolderPayload | DocumentFilePayload): void {
+    const target: ContextMenuTarget =
+      type === 'file'
+        ? { type: 'file', item: item as DocumentFilePayload }
+        : { type: 'folder', item: item as FolderPayload };
+    this.contextMenu = { x: event.clientX, y: event.clientY, target };
   }
 
   closeContextMenu() {
     this.contextMenu = null;
+    this.localScroll(false);
   }
 
   menuOpen() {
@@ -671,6 +548,7 @@ export class DocumentManagementComponent {
     this.propertiesFile = null;
   }
 
+  // --- rename ---
 
   menuRename() {
     if (!this.contextMenu || this.contextMenuIsSystem || this.selectedCount() > 1) return;
@@ -682,14 +560,7 @@ export class DocumentManagementComponent {
     this.renameValue.set(currentName);
     this.renamePosition.set({ x: this.contextMenu.x, y: this.contextMenu.y });
     this.closeContextMenu();
-
-    setTimeout(() => {
-      const el = document.getElementById('rename-input') as HTMLInputElement | null;
-      el?.focus();
-      el?.select();
-    });
   }
-
 
   confirmRename() {
     const target = this.renameTarget();
@@ -733,38 +604,26 @@ export class DocumentManagementComponent {
     this.renamePosition.set(null);
   }
 
-
-  onRenameKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      this.confirmRename();
-    } else if (event.key === 'Escape') {
-      event.preventDefault();
-      this.cancelRename();
-    }
-  }
-
+  // --- clipboard (cut/copy/paste) ---
 
   menuCut() {
     if (this.selectionHasSystemItem) return;
     const targets = this.getSelectedEntries();
     if (!targets.length) return;
-    this.clipboard.set({ targets, mode: 'cut' });
+    this.clipboard.set({ targets, mode: 'cut', sourceFolderId: this.folderState.activeFolder()?.id ?? null });
     this.closeContextMenu();
   }
 
   menuCopy() {
     const targets = this.getSelectedEntries();
     if (!targets.length) return;
-    this.clipboard.set({ targets, mode: 'copy' });
+    this.clipboard.set({ targets, mode: 'copy', sourceFolderId: this.folderState.activeFolder()?.id ?? null });
     this.closeContextMenu();
   }
-
   menuPaste() {
     this.pasteIntoFolder(this.folderState.activeFolder()?.id ?? null);
     this.closeContextMenu();
   }
-
 
   get canPaste(): boolean {
     return !!this.clipboard() && this.canCreateHere;
@@ -780,24 +639,33 @@ export class DocumentManagementComponent {
       return;
     }
 
+    const isSameDirectoryCopy = clip.mode === 'copy' && clip.sourceFolderId === targetFolderId;
+    const existingFolderNames = new Set(this.currentFolders.map(f => f.name));
+    const existingFileNames = new Set(this.currentFiles.map(f => f.fileName));
+
     this.isPasting.set(true);
     const calls = clip.targets.map(target => {
       if (target.type === 'folder') {
+        const newName = isSameDirectoryCopy
+          ? this.resolveCopyName(target.item.name, true, existingFolderNames, existingFileNames)
+          : undefined;
+
         const call$ = clip.mode === 'copy'
-          ? this.folderService.copyFolder(target.item.id, targetFolderId)
+          ? this.folderService.copyFolder(target.item.id, targetFolderId, newName)
           : this.folderService.moveFolder(target.item.id, targetFolderId);
-        return call$.pipe(
-          catchError(err => of({ __error: err?.error?.message ?? 'Could not process folder.' }))
-        );
+        return call$.pipe(catchError(err => of({ __error: err?.error?.message ?? 'Could not process folder.' })));
       } else {
+        const newName = isSameDirectoryCopy
+          ? this.resolveCopyName(target.item.fileName, false, existingFolderNames, existingFileNames)
+          : undefined;
+
         const call$ = clip.mode === 'copy'
-          ? this.folderService.copyFile(target.item.id, targetFolderId!)
+          ? this.folderService.copyFile(target.item.id, targetFolderId!, newName)
           : this.folderService.moveFile(target.item.id, targetFolderId!);
-        return call$.pipe(
-          catchError(err => of({ __error: err?.error?.message ?? 'Could not process file.' }))
-        );
+        return call$.pipe(catchError(err => of({ __error: err?.error?.message ?? 'Could not process file.' })));
       }
     });
+
 
     forkJoin(calls).subscribe(results => {
       this.isPasting.set(false);
@@ -842,16 +710,29 @@ export class DocumentManagementComponent {
     if (this.selectionHasSystemItem) return;
     const targets = this.getSelectedEntries();
     if (!targets.length) return;
-    this.clipboard.set({ targets, mode: 'cut' });
+    this.clipboard.set({ targets, mode: 'cut', sourceFolderId: this.folderState.activeFolder()?.id ?? null });
   }
 
   private menuCopyFromSelection() {
     const targets = this.getSelectedEntries();
     if (!targets.length) return;
-    this.clipboard.set({ targets, mode: 'copy' });
+    this.clipboard.set({ targets, mode: 'copy', sourceFolderId: this.folderState.activeFolder()?.id ?? null });
   }
 
 
+  private resolveCopyName(
+    originalName: string,
+    isFolder: boolean,
+    existingFolderNames: Set<string>,
+    existingFileNames: Set<string>,
+  ): string {
+    const existing = isFolder ? existingFolderNames : existingFileNames;
+    const uniqueName = generateUniqueCopyName(originalName, existing);
+    existing.add(uniqueName); // reserve it so a multi-select paste doesn't collide with itself
+    return uniqueName;
+  }
+
+  // --- drag & drop ---
 
   onDragStart(event: DragEvent, type: 'folder' | 'file', item: FolderPayload | DocumentFilePayload, index: number) {
     if (type === 'folder' && (item as FolderPayload).isSystem) {
@@ -860,7 +741,7 @@ export class DocumentManagementComponent {
     }
     event.stopPropagation();
     this.cancelRename();
-    const key = this.keyFor(type, item.id);
+    const key = entryKey(type, item.id);
 
     if (!this.selectedKeys().has(key)) {
       this.selectedKeys.set(new Set([key]));
@@ -880,7 +761,7 @@ export class DocumentManagementComponent {
 
   onFolderDragOver(event: DragEvent, folder: FolderPayload) {
     if (!this.draggingKeys().size) return;
-    if (this.draggingKeys().has(this.keyFor('folder', folder.id))) return;
+    if (this.draggingKeys().has(entryKey('folder', folder.id))) return;
     event.preventDefault();
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
     this.dragOverFolderId.set(folder.id);
@@ -920,7 +801,7 @@ export class DocumentManagementComponent {
     const keys = this.draggingKeys();
     if (!keys.size) return;
 
-    const entries = this.combinedItems().filter(e => keys.has(this.keyFor(e.type, e.item.id)));
+    const entries = this.combinedItems().filter(e => keys.has(entryKey(e.type, e.item.id)));
     this.draggingKeys.set(new Set());
     if (!entries.length) return;
 
@@ -931,20 +812,31 @@ export class DocumentManagementComponent {
     }
 
     const isCopy = event.ctrlKey || event.metaKey;
+    const sourceFolderId = this.folderState.activeFolder()?.id ?? null;
+    const isSameDirectoryCopy = isCopy && sourceFolderId === targetFolderId;
+    const existingFolderNames = new Set(this.currentFolders.map(f => f.name));
+    const existingFileNames = new Set(this.currentFiles.map(f => f.fileName));
 
     const calls = entries.map(target => {
       if (target.type === 'folder') {
+        const newName = isSameDirectoryCopy
+          ? this.resolveCopyName(target.item.name, true, existingFolderNames, existingFileNames)
+          : undefined;
         const call$ = isCopy
-          ? this.folderService.copyFolder(target.item.id, targetFolderId)
+          ? this.folderService.copyFolder(target.item.id, targetFolderId, newName)
           : this.folderService.moveFolder(target.item.id, targetFolderId);
         return call$.pipe(catchError(err => of({ __error: err?.error?.message ?? 'Could not move folder.' })));
       } else {
+        const newName = isSameDirectoryCopy
+          ? this.resolveCopyName(target.item.fileName, false, existingFolderNames, existingFileNames)
+          : undefined;
         const call$ = isCopy
-          ? this.folderService.copyFile(target.item.id, targetFolderId!)
+          ? this.folderService.copyFile(target.item.id, targetFolderId!, newName)
           : this.folderService.moveFile(target.item.id, targetFolderId!);
         return call$.pipe(catchError(err => of({ __error: err?.error?.message ?? 'Could not move file.' })));
       }
     });
+
 
     forkJoin(calls).subscribe(results => {
       const firstError = results.find((r: any) => r?.__error);
@@ -968,13 +860,22 @@ export class DocumentManagementComponent {
     });
   }
 
+  // --- global interaction handlers ---
 
+  @HostListener('document:click', ['$event'])
+  @HostListener('document:contextmenu', ['$event'])
+  onDocumentInteraction(event: MouseEvent) {
+    const target = event.target as HTMLElement;
 
+    if (
+      target.closest('app-rename-popover') ||
+      target.closest('app-document-context-menu') ||
+      target.closest('app-document-empty-context-menu') ||
+      target.closest('.new-menu-wrapper')
+    ) {
+      return;
+    }
 
-  @HostListener('document:click')
-  @HostListener('document:contextmenu')
-  @HostListener('window:scroll')
-  onDocumentInteraction() {
     this.closeContextMenu();
     this.closeCreateMenu();
     this.cancelRename();
@@ -988,7 +889,6 @@ export class DocumentManagementComponent {
     this.clearSelection();
     this.cancelRename();
   }
-
 
   menuCopyPath() {
     if (!this.contextMenu || this.selectedCount() > 1) return;
@@ -1017,6 +917,73 @@ export class DocumentManagementComponent {
     this.closeContextMenu();
   }
 
+  private scrollListener = () => {
+    this.closeContextMenu();
+    this.closeCreateMenu();
+    if (!this.renameTarget()) {
+      this.cancelRename();
+    }
+  };
+
+
+  emptyContextMenu = signal<{ x: number; y: number } | null>(null);
+  currentView = signal<ViewMode>('grid-medium');
+  currentSort = signal<SortField>('name');
+
+  onGridContextMenu(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (target.closest('.folder-card')) return;
+
+    event.preventDefault();
+    this.contextMenu = null; // close item menu if open
+    this.emptyContextMenu.set({ x: event.clientX, y: event.clientY });
+  }
+
+  onContainerContextMenu(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+
+    if (
+      target.closest('.toolbar') ||
+      target.closest('.folder-card') ||
+      target.closest('.recycle-bin-card') ||
+      target.closest('.context-menu')
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    this.contextMenu = null;
+    this.emptyContextMenu.set({ x: event.clientX, y: event.clientY });
+  }
+
+  closeEmptyContextMenu() {
+    this.emptyContextMenu.set(null);
+  }
+
+  onEmptyRefresh() {
+    // // reload current folder contents
+    // this.folderState.refe?.();
+  }
+
+  onEmptyPaste() {
+    this.menuPaste();
+  }
+
+  onEmptyNewFolder() {
+    this.addFolder();
+  }
+
+  onEmptyUploadFile() {
+    this.triggerFileUpload();
+  }
+
+  onEmptyViewChange(view: ViewMode) {
+    this.currentView.set(view);
+  }
+
+  onEmptySortChange(sort: SortField) {
+    this.currentSort.set(sort);
+    // apply your existing sort logic here
+  }
+
 }
-
-

@@ -1,0 +1,57 @@
+.rename-popover {
+  position: fixed;
+  z-index: 1000;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  min-width: 260px;
+}
+
+.rename-label {
+  display: block;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.rename-row {
+  display: flex;
+  gap: 8px;
+}
+
+.rename-input {
+  flex: 1;
+  background: #2a2a2a;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+
+  &::selection {
+    background: #3b82f6;
+    color: #fff;
+  }
+}
+
+.rename-btn {
+  background: #2a2a2a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 6px 14px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #333;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}

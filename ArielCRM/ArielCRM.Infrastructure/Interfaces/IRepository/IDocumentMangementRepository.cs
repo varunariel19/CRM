@@ -24,12 +24,12 @@ namespace ArielCRM.Infrastructure.Interfaces.IRepository
         Task<bool> IsFolderAncestorOfAsync(Guid folderId, Guid? targetFolderId);
         Task<Folder> MoveFolderAsync(Guid folderId, Guid? targetFolderId);
         Task<DocumentFile> MoveFileAsync(Guid fileId, Guid targetFolderId);
-        Task<DocumentFile> CopyFileAsync(Guid fileId, Guid targetFolderId);
-        Task<Folder> CopyFolderAsync(Guid folderId, Guid? targetFolderId);
+        Task<DocumentFile> CopyFileAsync(Guid fileId, Guid targetFolderId, string? newName = null, bool isTopLevelCall = true);
+        Task<Folder> CopyFolderAsync(Guid folderId, Guid? targetFolderId, string? newName = null, bool isTopLevelCall = true);
 
 
-        Task<DocumentFile> DeleteFileAsync(Guid fileId);
-        Task<Folder> DeleteFolderAsync(Guid folderId);
+       Task<DocumentFile> DeleteFileAsync(Guid fileId, bool isDeletedAsRoot);
+       Task<Folder> DeleteFolderAsync(Guid folderId, bool isDeletedAsRoot);
 
 
         Task<List<Folder>> BinDeletedFoldersAsync(string userId);

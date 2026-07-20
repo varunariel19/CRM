@@ -39,6 +39,8 @@ namespace ArielCRM.DataLayer.Entities
 
         public bool IsDeleted { get; set; } = false;
 
+        public bool IsDeletedAsRoot {get; set;} 
+
         public DateTime? DeletedAt { get; set; }
 
         [Required]

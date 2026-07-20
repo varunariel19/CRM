@@ -1,0 +1,78 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.back-btn {
+  border: 1px solid var(--border-color);
+  background: var(--surface-bg);
+  color: var(--text-dark);
+  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background 0.15s;
+}
+
+.back-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.back-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.breadcrumb {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.crumb {
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.crumb:hover {
+  background: var(--surface-hover);
+}
+
+.crumb.active {
+  color: var(--text-dark);
+  font-weight: 600;
+  cursor: default;
+}
+
+.crumb.active:hover {
+  background: transparent;
+}
+
+.crumb-separator {
+  margin: 0 2px;
+  color: var(--placeholder-text);
+}
+
+.crumb.drag-over {
+  outline: 2px dashed #3b82f6;
+  outline-offset: 2px;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.selection-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}

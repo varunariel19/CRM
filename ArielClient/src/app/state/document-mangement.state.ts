@@ -135,7 +135,6 @@ export class FolderState {
         }
     }
 
-    // --- new: rename ---
 
     renameFolderLocally(folderId: string, newName: string): void {
         const rename = (folders: FolderPayload[]) =>
@@ -165,34 +164,110 @@ export class FolderState {
         }
     }
 
-    removeFolderLocally(folderId: string): void {
-        const remove = (folders: FolderPayload[]) => folders.filter(f => f.id !== folderId);
+    removeFolderLocally(folderId: string): FolderPayload | null {
+        let removedFolder: FolderPayload | null = null;
+
+        const remove = (folders: FolderPayload[]) => {
+            const folder = folders.find(f => f.id === folderId);
+            if (folder && !removedFolder) {
+                removedFolder = folder;
+            }
+            return folders.filter(f => f.id !== folderId);
+        };
+
         this._currentFolders.update(remove);
         this._rootFolders.update(remove);
+
         for (const [parentId, children] of this._childrenCache.entries()) {
             if (children.some(f => f.id === folderId)) {
                 this._childrenCache.set(parentId, remove(children));
             }
         }
+
+        return removedFolder;
     }
 
-    removeFileLocally(fileId: string): void {
-        const remove = (files: DocumentFilePayload[]) => files.filter(f => f.id !== fileId);
+    removeFileLocally(fileId: string): DocumentFilePayload | null {
+        let removedFile: DocumentFilePayload | null = null;
+
+        const remove = (files: DocumentFilePayload[]) => {
+            const file = files.find(f => f.id === fileId);
+            if (file && !removedFile) {
+                removedFile = file;
+            }
+            return files.filter(f => f.id !== fileId);
+        };
+
         this._currentFiles.update(remove);
+
         for (const [folderId, files] of this._filesCache.entries()) {
             if (files.some(f => f.id === fileId)) {
                 this._filesCache.set(folderId, remove(files));
             }
         }
+
+        return removedFile;
     }
 
-
     removeBinFolderLocally(folderId: string): void {
-        this._binFolders.update(folders => folders.filter(f => f.id !== folderId));
+        let restoredFolder: FolderPayload | undefined;
+
+        this._binFolders.update(folders => {
+            restoredFolder = folders.find(f => f.id === folderId);
+            return folders.filter(f => f.id !== folderId);
+        });
+
+        if (!restoredFolder) return;
+
+        const parentId = restoredFolder.parentFolderId ?? null;
+
+        if (parentId) {
+            const cachedChildren = this._childrenCache.get(parentId);
+            if (cachedChildren) {
+                if (!cachedChildren.some(f => f.id === restoredFolder!.id)) {
+                    this._childrenCache.set(parentId, [...cachedChildren, restoredFolder]);
+                }
+            }
+        }
+
+        if (this.activeFolder()?.id === parentId) {
+            this._currentFolders.update(folders => [...folders, restoredFolder!]);
+        }
     }
 
     removeBinFileLocally(fileId: string): void {
-        this._binFiles.update(files => files.filter(f => f.id !== fileId));
+        let restoredFile: DocumentFilePayload | undefined;
+
+        this._binFiles.update(files => {
+            restoredFile = files.find(f => f.id === fileId);
+            return files.filter(f => f.id !== fileId);
+        });
+
+        if (!restoredFile) return;
+
+        const parentId = restoredFile.folderId ?? null;
+
+        if (parentId) {
+            const cachedFiles = this._filesCache.get(parentId);
+            if (cachedFiles) {
+                if (!cachedFiles.some(f => f.id === restoredFile!.id)) {
+                    this._filesCache.set(parentId, [...cachedFiles, restoredFile]);
+                }
+            }
+        }
+
+        if (this.activeFolder()?.id === parentId) {
+            this._currentFiles.update(files => [...files, restoredFile!]);
+        }
+    }
+
+
+    handleAddFileInTrash(deletedFile: DocumentFilePayload) {
+        this._binFiles.update(files => [...files, deletedFile]);
+    }
+
+    handleAddFolderInTrash(deletedFolder: FolderPayload) {
+        this._binFolders.update(folders => [...folders, deletedFolder]);
     }
 
     hasCachedChildren(folderId: string): boolean {
@@ -205,6 +280,7 @@ export class FolderState {
 
     cacheChildren(folderId: string, children: FolderPayload[]): void {
         this._childrenCache.set(folderId, children);
+        console.log("CACHE ITEMS", this._childrenCache);
     }
 
     invalidateCachedChildren(folderId: string): void {
@@ -221,6 +297,7 @@ export class FolderState {
 
     cacheFiles(folderId: string, files: DocumentFilePayload[]): void {
         this._filesCache.set(folderId, files);
+        console.log("CACHED FILES", this._filesCache);
     }
 
     invalidateCachedFiles(folderId: string): void {
