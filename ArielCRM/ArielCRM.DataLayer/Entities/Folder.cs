@@ -19,15 +19,22 @@ public class Folder
 
     public Guid? ParentFolderId { get; set; }
 
+    public Guid? RootDriveId { get; set; }
+
     public string? UserId { get; set; }
 
     public bool IsSystem { get; set; }
+
+    public long FolderSize { get; set; } = 0;
+
+    public int FoldersCount { get; set; } = 0;
+    public int FileCount { get; set; } = 0;
 
     public bool CanCreate { get; set; } = true;
 
     public bool IsDeleted { get; set; }
 
-    public bool IsDeletedAsRoot { get; set; } 
+    public bool IsDeletedAsRoot { get; set; }
 
     public DateTime? DeletedAt { get; set; }
 
@@ -38,9 +45,13 @@ public class Folder
     [Timestamp]
     public byte[]? RowVersion { get; set; }
 
-    // Navigation Properties
+
+
     [ForeignKey(nameof(ParentFolderId))]
     public Folder? ParentFolder { get; set; }
+
+    [ForeignKey(nameof(RootDriveId))]
+    public RootDrive? Drive { get; set; }
 
     public ICollection<Folder> ChildFolders { get; set; } = [];
 

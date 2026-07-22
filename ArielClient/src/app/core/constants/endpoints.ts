@@ -109,7 +109,7 @@ export const endpoints = {
 
     documentManagment: {
         baseUrl : `${BASE_URL}/api/documents`,
-        root: `${BASE_URL}/api/documents/root-folders`,
+        root: `${BASE_URL}/api/documents/root-drives`,
         children: (parentFolderId: string) => `${BASE_URL}/api/documents/${parentFolderId}/children`,
         uploadFile: `${BASE_URL}/api/documents/upload-file`,
         createFolder: `${BASE_URL}/api/documents/create-folder`,

@@ -2,11 +2,11 @@ using ArielCRM.DataLayer.Entities;
 
 namespace ArielCRM.Infrastructure.Interfaces.IRepository
 {
-    public interface IDocumentManagemntRepository
+    public interface IDocumentManagementRepository
     {
-        Task<List<Folder>> GetRootFoldersAsync();
-        Task<List<Folder>> GetFoldersByParentIdAsync(Guid parentFolderId);
-        Task<List<DocumentFile>> GetFilesByParentIdAsync(Guid parentFolderId);
+        Task<List<RootDrive>> GetRootDrivesAsync();
+        Task<List<Folder>> GetFoldersByParentIdAsync(Guid parentFolderId , string AccessLevelId,  string userId);
+       Task<List<DocumentFile>> GetFilesByParentIdAsync(Guid parentFolderId, string accessLevelId, string userId);
         Task<Folder?> GetByIdAsync(Guid folderId);
         Task<Folder> CreateFolderAsync(Folder folder);
         Task<DocumentFile> CreateFileAsync(DocumentFile file);
@@ -36,10 +36,12 @@ namespace ArielCRM.Infrastructure.Interfaces.IRepository
         Task<List<DocumentFile>> BinDeletedFilesAsync(string userId);
 
 
-        Task<Folder> RestoreFolderAsync(Guid folderId);
-        Task<DocumentFile> RestoreFileAsync(Guid fileId);
+        Task<Folder> RestoreFolderAsync(Guid folderId , bool isRoot);
+        Task<DocumentFile> RestoreFileAsync(Guid fileId , bool isRoot);
         Task PermanentlyDeleteFolderAsync(Guid folderId);
         Task PermanentlyDeleteFileAsync(Guid fileId);
+
+        Task  EmptyRecycleBinAsync();
     }
 
 

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, catchError, finalize, forkJoin, map, of, tap } from 'rxjs';
 import { endpoints } from '../core/constants/endpoints';
-import { DocumentFilePayload, FolderPayload, FolderState } from '../state/document-mangement.state';
+import { DocumentFilePayload, DrivePayload, FolderPayload, FolderState } from '../state/document-mangement.state';
 
 interface FolderContentsResponse {
     currentFolder: FolderPayload;
@@ -35,13 +35,12 @@ export class DocumentManagementService {
         private folderState: FolderState,
     ) { }
 
-    loadRootFolders(): Observable<FolderPayload[]> {
+    loadDrives(): Observable<DrivePayload[]> {
         this.folderState.setLoading(true);
-
         return this.http
-            .get<FolderPayload[]>(endpoints.documentManagment.root, { withCredentials: true })
+            .get<DrivePayload[]>(endpoints.documentManagment.root, { withCredentials: true })
             .pipe(
-                tap((folders) => this.folderState.setRootFolders(folders)),
+                tap(drives => this.folderState.setDrives(drives)),
                 catchError((err: HttpErrorResponse) => {
                     console.error(this.resolveError(err));
                     return of([]);
@@ -79,28 +78,37 @@ export class DocumentManagementService {
     }
 
     goToBreadcrumb(index: number): void {
-        this.folderState.goToPathIndex(index);
+        // index -1 => back to drive list entirely
+        if (index === -1) {
+            this.folderState.exitToDriveList();
+            return;
+        }
+        // index 0 => active drive's own root (crumb[0] is the drive name)
+        this.folderState.goToPathIndex(index - 1);   // shift by 1 since path no longer includes the drive itself
 
         const active = this.folderState.activeFolder();
         if (!active) {
-            this.folderState.setCurrentContents(this.folderState.rootFolders(), []);
+            this.folderState.resetToDriveRoot();
             return;
         }
-
         this.fetchChildrenInPlace(active.id);
     }
 
     goBack(): void {
+        if (this.folderState.isAtDriveRoot()) {
+            this.folderState.exitToDriveList();
+            return;
+        }
         this.folderState.popPath();
 
         const active = this.folderState.activeFolder();
         if (!active) {
-            this.folderState.setCurrentContents(this.folderState.rootFolders(), []);
+            this.folderState.resetToDriveRoot();
             return;
         }
-
         this.fetchChildrenInPlace(active.id);
     }
+
 
     uploadFiles(parentFolderId: string | null, files: File[]): Observable<DocumentFilePayload[]> {
         const formData = new FormData();
@@ -124,20 +132,16 @@ export class DocumentManagementService {
 
     createFolder(parentFolderId: string | null, name: string): Observable<FolderPayload> {
         this.folderState.setLoading(true);
-
-        const payload = { name, parentFolderId };
+        const driveId = this.folderState.activeDrive()?.id ?? null;
+        const payload = { name, parentFolderId, rootDriveId: parentFolderId ? null : driveId };
 
         return this.http
             .post<FolderPayload>(endpoints.documentManagment.createFolder, payload, { withCredentials: true })
             .pipe(
-                catchError((err: HttpErrorResponse) => {
-                    console.error(this.resolveError(err));
-                    throw err;
-                }),
+                catchError((err: HttpErrorResponse) => { console.error(this.resolveError(err)); throw err; }),
                 finalize(() => this.folderState.setLoading(false)),
             );
     }
-
 
     renameFolder(folderId: string, newName: string): Observable<FolderPayload> {
         return this.http.patch<FolderPayload>(endpoints.documentManagment.renameFolder(folderId),
@@ -295,6 +299,10 @@ export class DocumentManagementService {
         return this.http.delete<void>(`${endpoints.documentManagment.baseUrl}/bin/files/${fileId}`, { withCredentials: true }).pipe(
             tap(() => this.folderState.removeBinFileLocally(fileId))
         );
+    }
+
+    emptyOutRecycleBin() {
+        return this.http.delete<void>(`${endpoints.documentManagment.baseUrl}/bin/empty-bin`, { withCredentials: true });
     }
 
 

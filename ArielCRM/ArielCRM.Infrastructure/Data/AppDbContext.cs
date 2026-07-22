@@ -51,7 +51,10 @@ namespace ArielCRM.Infrastructure.Data
         public DbSet<ScheduledTeamMessageKey> ScheduledTeamMessageKeys { get; set; }
 
         public DbSet<Folder> Folders { get; set; } = null!;
+        public DbSet<RootDrive> RootDrives => Set<RootDrive>();
         public DbSet<DocumentFile> DocumentFiles { get; set; } = null!;
+
+
 
 
 
@@ -299,26 +302,44 @@ namespace ArielCRM.Infrastructure.Data
 
 
             modelBuilder.Entity<Folder>(entity =>
-                {
-                    entity.HasOne(f => f.ParentFolder)
-                          .WithMany(f => f.ChildFolders)
-                          .HasForeignKey(f => f.ParentFolderId)
-                          .OnDelete(DeleteBehavior.Restrict);
+            {
+                entity.HasOne(f => f.Drive)
+                    .WithMany(d => d.Folders)
+                    .HasForeignKey(f => f.RootDriveId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
-                    entity.HasOne(f => f.CreatedBy)
-                          .WithMany()
-                          .HasForeignKey(f => f.UserId)
-                          .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(f => f.ParentFolder)
+                        .WithMany(f => f.ChildFolders)
+                        .HasForeignKey(f => f.ParentFolderId)
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    entity.PrimitiveCollection(f => f.AllowedUsersId)
-                          .HasColumnName("AllowedUsersId");
+                entity.HasOne(f => f.CreatedBy)
+                        .WithMany()
+                        .HasForeignKey(f => f.UserId)
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    entity.HasIndex(f => f.ParentFolderId);
-                    entity.HasIndex(f => f.UserId);
-                    entity.HasIndex(f => new { f.ParentFolderId, f.Name });
+                entity.PrimitiveCollection(f => f.AllowedUsersId)
+                        .HasColumnName("AllowedUsersId");
 
-                    entity.HasQueryFilter(f => !f.IsDeleted);
-                });
+                entity.HasIndex(f => f.ParentFolderId);
+                entity.HasIndex(f => f.UserId);
+                entity.HasIndex(f => new { f.ParentFolderId, f.Name });
+                entity.HasIndex(f => f.RootDriveId);
+
+                entity.HasQueryFilter(f => !f.IsDeleted);
+
+                entity.ToTable(t => t.HasCheckConstraint(
+                    "CK_Folder_ParentOrDrive",
+                    """("ParentFolderId" IS NOT NULL AND "RootDriveId" IS NULL) OR ("ParentFolderId" IS NULL AND "RootDriveId" IS NOT NULL)"""));
+            });
+
+            modelBuilder.Entity<RootDrive>(entity =>
+            {
+                entity.HasIndex(d => d.DriveKey).IsUnique();
+
+                entity.PrimitiveCollection(d => d.AllowedUsersId)
+                      .HasColumnName("AllowedUsersId");
+            });
 
             modelBuilder.Entity<DocumentFile>(entity =>
             {

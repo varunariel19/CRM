@@ -61,3 +61,13 @@ export function generateUniqueCopyName(originalName: string, existingNames: Set<
   }
   return candidate;
 }
+
+
+export function formatBytes(bytes: number): string {
+  if (!bytes || bytes <= 0) return '0 bytes';
+  const units = ['bytes', 'KB', 'MB', 'GB', 'TB'];
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, exponent);
+  const rounded = exponent === 0 ? value : Math.round(value * 10) / 10;
+  return `${rounded} ${units[exponent]} (${bytes.toLocaleString()} bytes)`;
+}

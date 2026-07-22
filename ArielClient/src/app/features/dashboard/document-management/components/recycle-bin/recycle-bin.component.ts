@@ -8,6 +8,7 @@ import {
   Output,
   SimpleChanges,
   computed,
+  inject,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -18,6 +19,8 @@ import { DocumentManagementService } from '../../../../../services/document-mang
 import { DocumentFilePayload, FolderPayload, FolderState } from '../../../../../state/document-mangement.state';
 import { entryKey, getFileTypeLabel } from '../../services/document-management.util';
 import { PropertiesDialogComponent } from '../properties-dialog/properties-dialog.component';
+import { OperationProgressService } from '../../../../../core/services/file-upload.service';
+import { firstValueFrom } from 'rxjs';
 
 interface MarqueeRect {
   left: number;
@@ -30,7 +33,7 @@ interface MarqueeRect {
   selector: 'app-recycle-bin',
   standalone: true,
   imports: [CommonModule, PropertiesDialogComponent],
-  templateUrl: './recycle-bin.component.html',
+  templateUrl:   './recycle-bin.component.html',
   styleUrls: ['./recycle-bin.component.scss', '../../document-management.component.scss'],
 })
 export class RecycleBinComponent implements OnChanges {
@@ -54,6 +57,8 @@ export class RecycleBinComponent implements OnChanges {
   propertiesFile: FileProps | null = null;
   propertiesFavorite = signal(false);
 
+  opService = inject(OperationProgressService);
+
   constructor(
     private folderService: DocumentManagementService,
     private folderState: FolderState,
@@ -75,26 +80,26 @@ export class RecycleBinComponent implements OnChanges {
 
   // --- marquee-driven selection ---
 
-ngOnChanges(changes: SimpleChanges): void {
-  if (!changes['marqueeBox']) return;
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['marqueeBox']) return;
 
-  const box = this.marqueeBox;
+    const box = this.marqueeBox;
 
-  if (box) {
-    const isRealDrag = box.width > 3 || box.height > 3; // ignore near-zero boxes (a click, not a drag)
+    if (box) {
+      const isRealDrag = box.width > 3 || box.height > 3; // ignore near-zero boxes (a click, not a drag)
 
-    if (!isRealDrag) return; // don't touch selection/context menu for a mere mousedown
+      if (!isRealDrag) return; // don't touch selection/context menu for a mere mousedown
 
-    if (!this.isMarqueeActive) {
-      this.isMarqueeActive = true;
-      this.marqueeBaseSelection = new Set(this.selectedKeys());
-      this.closeContextMenu();
+      if (!this.isMarqueeActive) {
+        this.isMarqueeActive = true;
+        this.marqueeBaseSelection = new Set(this.selectedKeys());
+        this.closeContextMenu();
+      }
+      this.applyMarqueeSelection(box);
+    } else {
+      this.isMarqueeActive = false;
     }
-    this.applyMarqueeSelection(box);
-  } else {
-    this.isMarqueeActive = false;
   }
-}
   private applyMarqueeSelection(box: MarqueeRect): void {
     const containerRect = this.elRef.nativeElement.getBoundingClientRect();
 
@@ -236,44 +241,53 @@ ngOnChanges(changes: SimpleChanges): void {
   }
 
 
-  restoreSelection(): void {
-    const targets = this.contextMenuTargets;
-    if (!targets.length) return;
+async restoreSelection(): Promise<void> {
+  const targets = this.contextMenuTargets;
+  if (!targets.length) return;
 
-    targets.forEach(t => {
-      const request$ = (t.type === 'folder'
-        ? this.folderService.restoreFolder(t.item.id)
-        : this.folderService.restoreFile(t.item.id)) as any;
+  await this.opService.runPerItem(
+    'Restoring',
+    targets.map(t => ({ id: t.item.id, label: t.item.name })),
+    async (id) => {
+      const t = targets.find(x => x.item.id === id)!;
+      if (t.type === 'folder') {
+        await firstValueFrom(this.folderService.restoreFolder(t.item.id));
+      } else {
+        await firstValueFrom(this.folderService.restoreFile(t.item.id));
+      }
+    },
+    'Recycle Bin',
+    this.folderState.activeFolder()?.name ?? 'Root',
+  );
 
-      request$.subscribe({
-        error: (err: any) => console.error(`Failed to restore ${t.type}:`, err),
-      });
-    });
+  this.selectedKeys.set(new Set());
+  this.closeContextMenu();
+}
 
-    this.selectedKeys.set(new Set());
-    this.closeContextMenu();
-  }
+async deleteSelectionForever(): Promise<void> {
+  const targets = this.contextMenuTargets;
+  if (!targets.length) return;
 
-  deleteSelectionForever(): void {
-    const targets = this.contextMenuTargets;
-    if (!targets.length) return;
+  const confirmed = confirm(`Permanently delete ${targets.length} item(s)? This cannot be undone.`);
+  if (!confirmed) return;
 
-    const confirmed = confirm(`Permanently delete ${targets.length} item(s)? This cannot be undone.`);
-    if (!confirmed) return;
-
-    targets.forEach(t => {
-      const request$ = (t.type === 'folder'
+  await this.opService.runPerItem(
+    'Deleting',
+    targets.map(t => ({ id: t.item.id, label: t.item.name })),
+    async (id) => {
+      const t = targets.find(x => x.item.id === id)!;
+      const request$ = t.type === 'folder'
         ? this.folderService.permanentlyDeleteFolder(t.item.id)
-        : this.folderService.permanentlyDeleteFile(t.item.id)) as any;
+        : this.folderService.permanentlyDeleteFile(t.item.id);
+      await firstValueFrom(request$);
+    },
+    'Recycle Bin',
+    '',
+  );
 
-      request$.subscribe({
-        error: (err: any) => console.error(`Failed to permanently delete ${t.type}:`, err),
-      });
-    });
-
-    this.selectedKeys.set(new Set());
-    this.closeContextMenu();
-  }
+  this.selectedKeys.set(new Set());
+  this.closeContextMenu();
+}
 
   // --- properties ---
 
@@ -313,24 +327,24 @@ ngOnChanges(changes: SimpleChanges): void {
   get propertiesSubtitle(): string {
     const f = this.propertiesFolder;
     if (f) {
-      const count = f.itemsCount ?? 0;
-      const size = f.totalSizeLabel ?? '0 kB';
+      const count = f.folderCount ?? 0;
+      const size = f.folderSize ?? '0 kB';
       return `${count} item${count === 1 ? '' : 's'}, totalling ${size}`;
     }
     const file = this.propertiesFile;
     return file ? (file.fileTypeLabel ?? getFileTypeLabel(file.fileName)) : '';
   }
 
-  get propertiesSecondarySubtitle(): string {
-    return this.propertiesFolder?.freeSpaceLabel ?? this.propertiesFile?.sizeLabel ?? '';
-  }
+  // get propertiesSecondarySubtitle(): string {
+  //   return this.propertiesFolder?.freeSpaceLabel ?? this.propertiesFile?.sizeLabel ?? '';
+  // }
 
   get propertiesParentPath(): string {
     return this.propertiesFolder?.parentPath ?? this.propertiesFile?.parentPath ?? '';
   }
 
   get propertiesModified(): string {
-    return this.propertiesFolder?.modifiedAt ?? this.propertiesFile?.modifiedAt ?? '—';
+    return this.propertiesFolder?.updatedAt ?? this.propertiesFile?.updatedAt ?? '—';
   }
 
   get propertiesCreated(): string {
@@ -348,4 +362,7 @@ ngOnChanges(changes: SimpleChanges): void {
       (this.propertiesFolder?.canCreate ? 'Create and Delete Files' : 'Read and Write')
     );
   }
+
+
+
 }

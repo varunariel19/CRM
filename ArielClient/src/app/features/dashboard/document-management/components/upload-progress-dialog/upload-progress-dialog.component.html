@@ -1,0 +1,65 @@
+<div class="win-copy-overlay">
+  <div class="win-copy-dialog">
+
+    <div class="win-titlebar">
+      <span class="win-icon">📁</span>
+      <span class="win-title">
+        {{ opService.isComplete ? (opService.verb() + ' complete') : opService.timeRemainingLabel }}
+      </span>
+      <button class="win-close" (click)="close()" aria-label="Close">✕</button>
+    </div>
+
+    <div class="win-body">
+      <div class="win-heading">
+        {{ opService.verb() }} {{ opService.items().length }}
+        item{{ opService.items().length === 1 ? '' : 's' }}
+        @if (opService.sizeLabel) { ({{ opService.sizeLabel }}) }
+      </div>
+
+      @if (opService.sourceLabel() || opService.destinationLabel()) {
+      <div class="win-subline">
+        @if (opService.sourceLabel()) { from <strong>{{ opService.sourceLabel() }}</strong> }
+        @if (opService.destinationLabel()) { to <strong>{{ opService.destinationLabel() }}</strong> }
+      </div>
+      }
+      <div class="win-subline muted">
+        {{ opService.isComplete ? 'Done' : opService.timeRemainingLabel }}
+      </div>
+
+      <div class="progress-track" [class.indeterminate]="opService.indeterminate() && !opService.isComplete">
+        <div class="progress-fill" [style.width.%]="opService.indeterminate() ? undefined : opService.overallProgress"
+             [class.done]="opService.isComplete"></div>
+      </div>
+
+      <div class="win-footer">
+        <button class="win-details-toggle" (click)="toggleDetails()">
+          <span class="chevron" [class.open]="showDetails">▾</span>
+          More information
+        </button>
+
+        @if (!opService.isComplete) {
+        <button class="win-stop-btn" (click)="onStop()">Stop</button>
+        } @else {
+        <button class="win-stop-btn" (click)="close()">Close</button>
+        }
+      </div>
+
+      @if (showDetails) {
+      <div class="win-file-list">
+        @for (item of opService.items(); track item.id) {
+        <div class="win-file-row">
+          <span class="win-file-name" [class.error]="item.status === 'error'">{{ item.label }}</span>
+          <span class="win-file-status">
+            @if (item.status === 'error') { {{ item.errorMessage }} }
+            @else if (item.status === 'done') { Done }
+            @else if (item.status === 'processing') { {{ opService.indeterminate() ? 'Working…' : item.progress + '%' }} }
+            @else { Waiting… }
+          </span>
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+  </div>
+</div>

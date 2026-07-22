@@ -1,4 +1,5 @@
 import { Injectable, signal, computed } from '@angular/core';
+import { DriveKey } from '../core/services/fileFolder-permission.service';
 
 
 export interface FolderPayload {
@@ -32,9 +33,21 @@ export interface DocumentFilePayload {
     allowedUsersId: string[];
 }
 
+export interface DrivePayload {
+    id: string;
+    driveName: string;
+    driveKey: DriveKey;
+    canCreate: boolean;
+    diskSize: number;
+    folders : FolderPayload[],
+    occupiedSpace: number;
+}
+
 
 @Injectable({ providedIn: 'root' })
 export class FolderState {
+    private _drives = signal<DrivePayload[]>([]);
+    private _activeDrive = signal<DrivePayload | null>(null);
     private _rootFolders = signal<FolderPayload[]>([]);
     private _currentFolders = signal<FolderPayload[]>([]);
     private _currentFiles = signal<DocumentFilePayload[]>([]);
@@ -47,12 +60,16 @@ export class FolderState {
 
     private _childrenCache = new Map<string, FolderPayload[]>();
     private _filesCache = new Map<string, DocumentFilePayload[]>();
+    drives = computed(() => this._drives());
+    activeDrive = computed(() => this._activeDrive());
 
     rootFolders = computed(() => this._rootFolders());
     currentFolders = computed(() => this._currentFolders());
     currentFiles = computed(() => this._currentFiles());
     currentPath = computed(() => this._currentPath());
     isLoading = computed(() => this._isLoading());
+    isAtDriveList = computed(() => this._activeDrive() === null);
+    isAtDriveRoot = computed(() => this._activeDrive() !== null && this._currentPath().length === 0);
 
     isAtRoot = computed(() => this._currentPath().length === 0);
     activeFolder = computed(() => {
@@ -75,6 +92,8 @@ export class FolderState {
     isBinLoading = computed(() => this._isBinLoading());
     isBinEmpty = computed(() => this._binFolders().length === 0 && this._binFiles().length === 0);
 
+
+
     setBinFolders(folders: FolderPayload[]): void {
         this._binFolders.set(folders);
     }
@@ -93,39 +112,7 @@ export class FolderState {
         this._currentFiles.set([]);
     }
 
-    setCurrentFolders(folders: FolderPayload[]): void {
-        this._currentFolders.set(folders);
-    }
 
-    setCurrentFiles(files: DocumentFilePayload[]): void {
-        this._currentFiles.set(files);
-    }
-
-    setCurrentContents(folders: FolderPayload[], files: DocumentFilePayload[]): void {
-        this._currentFolders.set(folders);
-        this._currentFiles.set(files);
-    }
-
-    setLoading(isLoading: boolean): void {
-        this._isLoading.set(isLoading);
-    }
-
-    pushPath(folder: FolderPayload): void {
-        this._currentPath.update((path) => [...path, folder]);
-    }
-
-    addFolderLocally(folder: FolderPayload): void {
-        this._currentFolders.update((folders) => [...folders, folder]);
-
-        if (this.isAtRoot()) {
-            this._rootFolders.update((folders) => [...folders, folder]);
-        }
-
-        const parentId = this.activeFolder()?.id ?? null;
-        if (parentId && this._childrenCache.has(parentId)) {
-            this._childrenCache.set(parentId, [...this._childrenCache.get(parentId)!, folder]);
-        }
-    }
 
     addFileLocally(file: DocumentFilePayload): void {
         this._currentFiles.update((files) => [...files, file]);
@@ -304,13 +291,7 @@ export class FolderState {
         this._filesCache.delete(folderId);
     }
 
-    goToPathIndex(index: number): void {
-        this._currentPath.update((path) => (index < 0 ? [] : path.slice(0, index + 1)));
-    }
 
-    popPath(): void {
-        this._currentPath.update((path) => path.slice(0, -1));
-    }
 
     resetToRoot(): void {
         this._currentPath.set([]);
@@ -318,7 +299,70 @@ export class FolderState {
         this._currentFiles.set([]);
     }
 
+
+
+    // ---------- Drive setters ----------
+
+    setDrives(drives: DrivePayload[]): void {
+        this._drives.set(drives);
+    }
+
+    enterDrive(drive: DrivePayload, rootFolders: FolderPayload[]): void {
+        this._activeDrive.set(drive);
+        this._currentPath.set([]);
+        this._rootFolders.set(rootFolders);
+        this._currentFolders.set(rootFolders);
+        this._currentFiles.set([]);
+    }
+
+    exitToDriveList(): void {
+        this._activeDrive.set(null);
+        this._currentPath.set([]);
+        this._rootFolders.set([]);
+        this._currentFolders.set([]);
+        this._currentFiles.set([]);
+    }
+
+    setCurrentFolders(folders: FolderPayload[]): void { this._currentFolders.set(folders); }
+    setCurrentFiles(files: DocumentFilePayload[]): void { this._currentFiles.set(files); }
+    setCurrentContents(folders: FolderPayload[], files: DocumentFilePayload[]): void {
+        this._currentFolders.set(folders);
+        this._currentFiles.set(files);
+    }
+    setLoading(isLoading: boolean): void { this._isLoading.set(isLoading); }
+    pushPath(folder: FolderPayload): void { this._currentPath.update(path => [...path, folder]); }
+
+    addFolderLocally(folder: FolderPayload): void {
+        this._currentFolders.update(folders => [...folders, folder]);
+
+        if (this.isAtDriveRoot()) {              // was: this.isAtRoot()
+            this._rootFolders.update(folders => [...folders, folder]);
+        }
+
+        const parentId = this.activeFolder()?.id ?? null;
+        if (parentId && this._childrenCache.has(parentId)) {
+            this._childrenCache.set(parentId, [...this._childrenCache.get(parentId)!, folder]);
+        }
+    }
+
+
+    goToPathIndex(index: number): void {
+        this._currentPath.update(path => (index < 0 ? [] : path.slice(0, index + 1)));
+    }
+
+    popPath(): void {
+        this._currentPath.update(path => path.slice(0, -1));
+    }
+
+    resetToDriveRoot(): void {
+        this._currentPath.set([]);
+        this._currentFolders.set(this._rootFolders());
+        this._currentFiles.set([]);
+    }
+
     clear(): void {
+        this._drives.set([]);
+        this._activeDrive.set(null);
         this._rootFolders.set([]);
         this._currentFolders.set([]);
         this._currentFiles.set([]);

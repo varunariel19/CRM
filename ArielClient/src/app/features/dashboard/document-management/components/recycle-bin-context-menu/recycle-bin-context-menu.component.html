@@ -1,0 +1,17 @@
+<div class="context-menu" [style.left.px]="x" [style.top.px]="y" (click)="$event.stopPropagation()">
+
+  <button class="context-menu-item strong" (click)="open.emit()">
+    Open
+  </button>
+  <div class="menu-divider"></div>
+
+  <button class="context-menu-item" (click)="emptyRecycleBin.emit()">
+    Empty Recycle Bin
+  </button>
+  <div class="menu-divider"></div>
+
+  <button class="context-menu-item" (click)="properties.emit()">
+    Properties
+  </button>
+
+</div>

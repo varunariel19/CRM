@@ -19,22 +19,30 @@ export interface BinContextMenuState {
 }
 
 export type FolderProps = FolderPayload & {
-  itemsCount?: number;
-  totalSizeLabel?: string;
-  freeSpaceLabel?: string;
+  folderCount: number;
+  fileCount: number;
+  folderSize: number;        
+  sizeOnDisk?: number;      
   parentPath?: string;
-  modifiedAt?: string;
+  location?: string;         
+  updatedAt?: string;
   permissionsLabel?: string;
+  readOnly?: boolean;
+  hidden?: boolean;
 };
 
 export type FileProps = DocumentFilePayload & {
   fileTypeLabel?: string;
   sizeLabel?: string;
+  sizeOnDiskLabel?: string;
   parentPath?: string;
+  location?: string;
   accessedAt?: string;
-  modifiedAt?: string;
+  updatedAt?: string;
   createdAt?: string;
   permissionsLabel?: string;
+  readOnly?: boolean;
+  hidden?: boolean;
 };
 
 export type EntryKind = 'folder' | 'file';

@@ -13,12 +13,14 @@ namespace ArielCRM.Api.Controllers
     public class DocumentManagementController(IDocumentMangementService folderService) : ControllerBase
     {
         private readonly IDocumentMangementService _folderService = folderService;
+        private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
 
-        [HttpGet("root-folders")]
+
+        [HttpGet("root-drives")]
         public async Task<IActionResult> GetRootFolders()
         {
-            var folders = await _folderService.GetRootFoldersAsync();
-            return Ok(folders);
+            var drives = await _folderService.GetRootDrivesAsync();
+            return Ok(drives);
         }
 
         [HttpPost("create-folder")]
@@ -66,7 +68,7 @@ namespace ArielCRM.Api.Controllers
         {
             try
             {
-                var folders = await _folderService.GetFoldersAndFilesByParentIdAsync(parentFolderId);
+                var folders = await _folderService.GetFoldersAndFilesByParentIdAsync(parentFolderId , UserId);
                 return Ok(folders);
             }
             catch (KeyNotFoundException ex)
@@ -220,8 +222,6 @@ namespace ArielCRM.Api.Controllers
         }
 
 
-
-
         [HttpPut("bin/folders/{folderId:guid}/restore")]
         public async Task<ActionResult<Folder>> RestoreFolder(Guid folderId)
         {
@@ -276,6 +276,21 @@ namespace ArielCRM.Api.Controllers
             }
         }
 
+
+
+        [HttpDelete("bin/empty-bin")]
+        public async Task<IActionResult> EmptyRecycleBin()
+        {
+            try
+            {
+                await _folderService.EmptyRecycleBinAsync();
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
 
     }
 

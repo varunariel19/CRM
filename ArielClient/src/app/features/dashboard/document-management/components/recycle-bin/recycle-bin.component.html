@@ -65,9 +65,12 @@
 </div>
 }
 
+
+
+
 @if (propertiesFolder || propertiesFile) {
 <app-properties-dialog [icon]="propertiesIcon" [isFolder]="!!propertiesFolder" [name]="propertiesName"
-  [subtitle]="propertiesSubtitle" [secondarySubtitle]="propertiesSecondarySubtitle" [parentPath]="propertiesParentPath"
+  [subtitle]="propertiesSubtitle" [secondarySubtitle]="propertiesName" [parentPath]="propertiesParentPath"
   [modified]="propertiesModified" [created]="propertiesCreated" [accessed]="propertiesAccessed"
   [permissionsLabel]="propertiesPermissionsLabel" [favorite]="propertiesFavorite()" (close)="closeProperties()"
   (toggleFavorite)="toggleFavorite()">

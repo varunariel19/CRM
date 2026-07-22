@@ -8,24 +8,29 @@ using Microsoft.AspNetCore.Http;
 
 namespace ArielCRM.Application.Services
 {
-    public class DocumentManagementService(IDocumentManagemntRepository folderRepository, IAppwriteStorageService fileStorageService) : IDocumentMangementService
+    public class DocumentManagementService(IDocumentManagementRepository folderRepository, IAppwriteStorageService fileStorageService, IAuthRepository authRepository) : IDocumentMangementService
     {
-        private readonly IDocumentManagemntRepository _folderRepository = folderRepository;
+        private readonly IDocumentManagementRepository _folderRepository = folderRepository;
         private readonly IAppwriteStorageService _fileStorageService = fileStorageService;
+        private readonly IAuthRepository _authRepo = authRepository;
 
-        public async Task<List<FolderDto>> GetRootFoldersAsync()
+
+        public async Task<List<RootDrive>> GetRootDrivesAsync()
         {
-            var folders = await _folderRepository.GetRootFoldersAsync();
-            return [.. folders.Select(MapToDto)];
+            var drives = await _folderRepository.GetRootDrivesAsync();
+            return [.. drives];
         }
 
-        public async Task<FolderContentsDto> GetFoldersAndFilesByParentIdAsync(Guid parentFolderId)
+        public async Task<FolderContentsDto> GetFoldersAndFilesByParentIdAsync(Guid parentFolderId, string UserId)
         {
             var parent = await _folderRepository.GetByIdAsync(parentFolderId)
                 ?? throw new KeyNotFoundException($"Folder with id '{parentFolderId}' was not found.");
 
-            var folders = await _folderRepository.GetFoldersByParentIdAsync(parentFolderId);
-            var files = await _folderRepository.GetFilesByParentIdAsync(parentFolderId);
+
+            var user = await _authRepo.GetByUserIdAsync(UserId) ?? throw new KeyNotFoundException($"User not found with this Id '{UserId}'.");
+
+            var folders = await _folderRepository.GetFoldersByParentIdAsync(parentFolderId, user.AccessLevelId, UserId);
+            var files = await _folderRepository.GetFilesByParentIdAsync(parentFolderId, user.AccessLevelId, UserId);
 
             return new FolderContentsDto
             {
@@ -233,10 +238,10 @@ namespace ArielCRM.Application.Services
 
 
         public Task<Folder> RestoreFolderAsync(Guid folderId)
-            => _folderRepository.RestoreFolderAsync(folderId);
+            => _folderRepository.RestoreFolderAsync(folderId, true);
 
         public Task<DocumentFile> RestoreFileAsync(Guid fileId)
-            => _folderRepository.RestoreFileAsync(fileId);
+            => _folderRepository.RestoreFileAsync(fileId, true);
 
         public Task PermanentlyDeleteFolderAsync(Guid folderId)
             => _folderRepository.PermanentlyDeleteFolderAsync(folderId);
@@ -244,6 +249,9 @@ namespace ArielCRM.Application.Services
         public Task PermanentlyDeleteFileAsync(Guid fileId)
             => _folderRepository.PermanentlyDeleteFileAsync(fileId);
 
+
+        public Task EmptyRecycleBinAsync()
+           => _folderRepository.EmptyRecycleBinAsync();
 
         private static string Slugify(string name) =>
             name.Trim().ToLowerInvariant().Replace(" ", "-");

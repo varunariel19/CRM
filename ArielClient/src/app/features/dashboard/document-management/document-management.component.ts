@@ -1,22 +1,28 @@
-import { Component, ElementRef, HostListener, signal, ViewChild, computed, NgZone } from '@angular/core';
+import { Component, ElementRef, HostListener, signal, ViewChild, computed, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DocumentManagementService } from '../../../services/document-mangement.service';
-import { DocumentFilePayload, FolderPayload, FolderState } from '../../../state/document-mangement.state';
+import { DocumentFilePayload, DrivePayload, FolderPayload, FolderState } from '../../../state/document-mangement.state';
 import { TeamMessageAttachment } from '../../../core/types/teams.type';
 
 import { getVSIFileIcon } from '@baybreezy/file-extension-icon';
 import { AttachmentViewerComponent } from '../../../components/items/attachment-viewer/attachment-viewer.component';
 import { FormsModule } from '@angular/forms';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, firstValueFrom, forkJoin, of } from 'rxjs';
 import { ContextMenuComponent } from './components/context-menu/context-menu.component';
 import { PropertiesDialogComponent } from './components/properties-dialog/properties-dialog.component';
 import { RenamePopoverComponent } from './components/rename-popover/rename-popover.component';
 import { RecycleBinComponent } from './components/recycle-bin/recycle-bin.component';
 import { ClipboardEntry, ContextMenuTarget, FileProps, FolderProps } from './types/document-management.type';
-import { entryKey, generateUniqueCopyName, getFileTypeLabel, toTeamAttachment } from './services/document-management.util';
+import { entryKey, formatBytes, generateUniqueCopyName, getFileTypeLabel, toTeamAttachment } from './services/document-management.util';
 import { DocumentEmptyContextMenuComponent, SortField, ViewMode } from './components/empty-context/empty-context.component';
 import { NewFolderDialogComponent } from './components/new-folder-dialog/new-folder-dialog.component';
+import { RecycleBinContextMenuComponent } from './components/recycle-bin-context-menu/recycle-bin-context-menu.component';
+import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component';
+import { OperationProgressDialogComponent } from './components/upload-progress-dialog/upload-progress-dialog.component';
+import { OperationProgressService } from '../../../core/services/file-upload.service';
+import { FileAndFolderPermissionService } from '../../../core/services/fileFolder-permission.service';
 
+type BinEntry = FolderPayload | DocumentFilePayload;
 
 @Component({
   selector: 'app-document-management',
@@ -30,10 +36,15 @@ import { NewFolderDialogComponent } from './components/new-folder-dialog/new-fol
     PropertiesDialogComponent,
     RenamePopoverComponent,
     RecycleBinComponent,
+    RecycleBinContextMenuComponent,
+    ConfirmDialogComponent,
+    OperationProgressDialogComponent
   ],
   templateUrl: './document-management.component.html',
   styleUrl: './document-management.component.scss',
 })
+
+
 export class DocumentManagementComponent {
 
   view: 'folders' | 'recycle-bin' = 'folders';
@@ -79,6 +90,9 @@ export class DocumentManagementComponent {
   renameValue = signal('');
   renamePosition = signal<{ x: number; y: number } | null>(null);
 
+  opService = inject(OperationProgressService);
+  fileAndFolderPerm = inject(FileAndFolderPermissionService);
+
   @ViewChild('gridEl') gridEl!: ElementRef<HTMLDivElement>;
   @ViewChild('containerEl') containerEl!: ElementRef<HTMLDivElement>;
 
@@ -92,8 +106,15 @@ export class DocumentManagementComponent {
     this.ngZone.runOutsideAngular(() => {
       document.addEventListener('scroll', this.onScrollCapture, true);
     });
-    this.folderService.loadRootFolders().subscribe();
+    this.folderService.loadDrives().subscribe();
     this.folderService.loadBinItems();
+  }
+
+  openDrive(drive: DrivePayload) {
+    // this.folderService.openDrive(drive).subscribe();
+    this.folderState.setLoading(true);
+    this.folderState.enterDrive(drive, drive.folders);
+    this.selectedKeys.set(new Set());
   }
 
   localScroll(block: boolean) {
@@ -139,7 +160,9 @@ export class DocumentManagementComponent {
 
   get canCreateHere(): boolean {
     const active = this.folderState.activeFolder();
-    return active ? active.canCreate : true;
+    if (active) return active.canCreate;
+    const drive = this.folderState.activeDrive();
+    return drive ? drive.canCreate : false;
   }
 
   get currentPathLabel(): string {
@@ -182,24 +205,58 @@ export class DocumentManagementComponent {
   get propertiesSubtitle(): string {
     const f = this.propertiesFolder;
     if (f) {
-      const count = f.itemsCount ?? 0;
-      const size = f.totalSizeLabel ?? '0 kB';
+      const count = f.fileCount ?? 0;
+      const size = formatBytes(f.folderSize ?? 0);
       return `${count} item${count === 1 ? '' : 's'}, totalling ${size}`;
     }
     const file = this.propertiesFile;
     return file ? (file.fileTypeLabel ?? getFileTypeLabel(file.fileName)) : '';
   }
 
-  get propertiesSecondarySubtitle(): string {
-    return this.propertiesFolder?.freeSpaceLabel ?? this.propertiesFile?.sizeLabel ?? '';
-  }
-
   get propertiesParentPath(): string {
     return this.propertiesFolder?.parentPath ?? this.propertiesFile?.parentPath ?? this.currentPathLabel;
   }
 
+  get propertiesLocation(): string {
+    return this.propertiesFolder?.location ?? this.propertiesFile?.location ?? this.currentPathLabel;
+  }
+
   get propertiesModified(): string {
-    return this.propertiesFolder?.modifiedAt ?? this.propertiesFile?.modifiedAt ?? '—';
+    return this.propertiesFolder?.updatedAt ?? this.propertiesFile?.updatedAt ?? '—';
+  }
+
+  get propertiesTypeLabel(): string {
+    return this.propertiesFolder != null
+      ? 'File folder'
+      : (this.propertiesFile?.fileTypeLabel ?? getFileTypeLabel(this.propertiesFile?.fileName ?? ''));
+  }
+
+  get propertiesSizeLabel(): string {
+    if (this.propertiesFolder) return formatBytes(this.propertiesFolder.folderSize ?? 0);
+    return this.propertiesFile?.sizeLabel ?? (this.propertiesFile ? formatBytes(this.propertiesFile.size) : '');
+  }
+
+  get propertiesSizeOnDiskLabel(): string {
+    const f = this.propertiesFolder;
+    if (f) return formatBytes(f.sizeOnDisk ?? f.folderSize ?? 0);
+    const file = this.propertiesFile;
+    return file?.sizeOnDiskLabel ?? this.propertiesSizeLabel;
+  }
+
+  get propertiesContainsLabel(): string {
+    const f = this.propertiesFolder;
+    if (!f) return '';
+    const files = f.fileCount ?? 0;
+    const folders = f.folderCount ?? 0;
+    return `${files.toLocaleString()} Files, ${folders.toLocaleString()} Folders`;
+  }
+
+  get propertiesReadOnly(): boolean {
+    return this.propertiesFolder?.readOnly ?? this.propertiesFile?.readOnly ?? false;
+  }
+
+  get propertiesHidden(): boolean {
+    return this.propertiesFolder?.hidden ?? this.propertiesFile?.hidden ?? false;
   }
 
   get propertiesCreated(): string {
@@ -461,27 +518,26 @@ export class DocumentManagementComponent {
     this.closeCreateMenu();
   }
 
-  onFileSelected(event: Event) {
+  async onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
     const files: File[] = Array.from(input.files);
     input.value = '';
-    if (!files || !files.length) return;
+    if (!files.length) return;
 
     const parentId = this.folderState.activeFolder()?.id ?? null;
     this.uploading.set(true);
     this.uploadError.set(null);
 
-    this.folderService.uploadFiles(parentId, Array.from(files)).subscribe({
-      next: (uploadedFiles) => {
-        uploadedFiles.forEach((file) => this.folderState.addFileLocally(file));
-        this.uploading.set(false);
-      },
-      error: () => {
-        this.uploading.set(false);
-        this.uploadError.set('Upload failed. Please try again.');
-      },
-    });
+    try {
+      const uploadedFiles = await this.opService.uploadFiles(parentId, files);
+      uploadedFiles.forEach((file) => this.folderState.addFileLocally(file));
+    } catch {
+      this.uploadError.set('Upload failed. Please try again.');
+    } finally {
+      this.uploading.set(false);
+      this.opService.clear();
+    }
   }
 
   // --- context menu (folder/file) ---
@@ -629,7 +685,7 @@ export class DocumentManagementComponent {
     return !!this.clipboard() && this.canCreateHere;
   }
 
-  private pasteIntoFolder(targetFolderId: string | null) {
+  async pasteIntoFolder(targetFolderId: string | null): Promise<void> {
     const clip = this.clipboard();
     if (!clip || !clip.targets.length) return;
 
@@ -643,54 +699,66 @@ export class DocumentManagementComponent {
     const existingFolderNames = new Set(this.currentFolders.map(f => f.name));
     const existingFileNames = new Set(this.currentFiles.map(f => f.fileName));
 
-    this.isPasting.set(true);
-    const calls = clip.targets.map(target => {
+    // capture each item's server result here since runPerItem's action returns void
+    const results = new Map<string, FolderPayload | DocumentFilePayload>();
+
+    await this.opService.runPerItem(
+      clip.mode === 'cut' ? 'Moving' : 'Copying',
+      clip.targets.map(t => ({ id: t.item.id, label: t.type === 'folder' ? t.item.name : t.item.fileName })),
+      async (id) => {
+        const t = clip.targets.find(x => x.item.id === id)!;
+
+        if (t.type === 'folder') {
+          const newName = isSameDirectoryCopy
+            ? this.resolveCopyName(t.item.name, true, existingFolderNames, existingFileNames)
+            : undefined;
+
+          const result = clip.mode === 'cut'
+            ? await firstValueFrom(this.folderService.moveFolder(t.item.id, targetFolderId))
+            : await firstValueFrom(this.folderService.copyFolder(t.item.id, targetFolderId, newName));
+
+          results.set(id, result);
+        } else {
+          const newName = isSameDirectoryCopy
+            ? this.resolveCopyName(t.item.fileName, false, existingFolderNames, existingFileNames)
+            : undefined;
+
+          const result = clip.mode === 'cut'
+            ? await firstValueFrom(this.folderService.moveFile(t.item.id, targetFolderId!))
+            : await firstValueFrom(this.folderService.copyFile(t.item.id, targetFolderId!, newName));
+
+          results.set(id, result);
+        }
+      },
+    );
+
+    // apply local state updates for every item that succeeded
+    const failedIds = new Set(
+      this.opService.items().filter(i => i.status === 'error').map(i => i.id),
+    );
+
+    const firstError = this.opService.items().find(i => i.status === 'error');
+    if (firstError) this.uploadError.set(firstError.errorMessage ?? 'Could not process item.');
+
+    clip.targets.forEach(target => {
+      if (failedIds.has(target.item.id)) return;
+      const result = results.get(target.item.id);
+      if (!result) return;
+
       if (target.type === 'folder') {
-        const newName = isSameDirectoryCopy
-          ? this.resolveCopyName(target.item.name, true, existingFolderNames, existingFileNames)
-          : undefined;
-
-        const call$ = clip.mode === 'copy'
-          ? this.folderService.copyFolder(target.item.id, targetFolderId, newName)
-          : this.folderService.moveFolder(target.item.id, targetFolderId);
-        return call$.pipe(catchError(err => of({ __error: err?.error?.message ?? 'Could not process folder.' })));
+        if (clip.mode === 'cut') this.folderState.removeFolderLocally(target.item.id);
+        if (this.folderState.activeFolder()?.id === targetFolderId || (!targetFolderId && this.folderState.isAtRoot())) {
+          this.folderState.addFolderLocally(result as FolderPayload);
+        }
       } else {
-        const newName = isSameDirectoryCopy
-          ? this.resolveCopyName(target.item.fileName, false, existingFolderNames, existingFileNames)
-          : undefined;
-
-        const call$ = clip.mode === 'copy'
-          ? this.folderService.copyFile(target.item.id, targetFolderId!, newName)
-          : this.folderService.moveFile(target.item.id, targetFolderId!);
-        return call$.pipe(catchError(err => of({ __error: err?.error?.message ?? 'Could not process file.' })));
+        if (clip.mode === 'cut') this.folderState.removeFileLocally(target.item.id);
+        if (this.folderState.activeFolder()?.id === targetFolderId) {
+          this.folderState.addFileLocally(result as DocumentFilePayload);
+        }
       }
     });
 
-
-    forkJoin(calls).subscribe(results => {
-      this.isPasting.set(false);
-      const firstError = results.find((r: any) => r?.__error);
-      if (firstError) this.uploadError.set((firstError as any).__error);
-
-      results.forEach((result: any, i) => {
-        if (result?.__error) return;
-        const target = clip.targets[i];
-
-        if (target.type === 'folder') {
-          if (clip.mode === 'cut') this.folderState.removeFolderLocally(target.item.id);
-          if (this.folderState.activeFolder()?.id === targetFolderId || (!targetFolderId && this.folderState.isAtRoot())) {
-            this.folderState.addFolderLocally(result as FolderPayload);
-          }
-        } else {
-          if (clip.mode === 'cut') this.folderState.removeFileLocally(target.item.id);
-          if (this.folderState.activeFolder()?.id === targetFolderId) {
-            this.folderState.addFileLocally(result as DocumentFilePayload);
-          }
-        }
-      });
-
-      if (clip.mode === 'cut') this.clipboard.set(null);
-    });
+    if (clip.mode === 'cut') this.clipboard.set(null);
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -902,21 +970,28 @@ export class DocumentManagementComponent {
     this.closeContextMenu();
   }
 
-  menuDelete() {
-    if (this.selectionHasSystemItem) return;
-    const targets = this.getSelectedEntries();
-    if (!targets.length) return;
+  async menuDelete() {
+    const entries = this.getSelectedEntries(); // ContextMenuTarget[]
+    if (!entries.length) return;
 
-    this.folderService.deleteItems(targets).subscribe(results => {
-      const failed = results.filter(r => !r.success);
-      if (failed.length) {
-        console.error('Some items failed to delete:', failed);
-      }
-    });
+    await this.opService.runPerItem(
+      'Deleting',
+      entries.map(e => ({ id: e.item.id, label: e.item.name })),
+      async (id) => {
+        const entry = entries.find(e => e.item.id === id)!;
+        const request$ = entry.type === 'folder'
+          ? this.folderService.deleteFolder(entry.item.id)
+          : this.folderService.deleteFile(entry.item.id);
+        await firstValueFrom(request$);
+      },
+      this.folderState.activeFolder()?.name ?? 'Root',
+      'Recycle Bin',
+    );
 
+    this.selectedKeys.set(new Set());
     this.closeContextMenu();
+    // refresh current folder listing here
   }
-
   private scrollListener = () => {
     this.closeContextMenu();
     this.closeCreateMenu();
@@ -925,6 +1000,8 @@ export class DocumentManagementComponent {
     }
   };
 
+
+  //  EMPTY CONTEXT MENU !! 
 
   emptyContextMenu = signal<{ x: number; y: number } | null>(null);
   currentView = signal<ViewMode>('grid-medium');
@@ -961,8 +1038,6 @@ export class DocumentManagementComponent {
   }
 
   onEmptyRefresh() {
-    // // reload current folder contents
-    // this.folderState.refe?.();
   }
 
   onEmptyPaste() {
@@ -984,6 +1059,75 @@ export class DocumentManagementComponent {
   onEmptySortChange(sort: SortField) {
     this.currentSort.set(sort);
     // apply your existing sort logic here
+  }
+
+
+  // RECYCLE BIN : 
+
+  showRecycleBinContextMenu = false;
+  recycleBinContextMenuPosition = { x: 0, y: 0 };
+
+  onRecycleBinCardRightClick(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.closeContextMenu();
+    this.recycleBinContextMenuPosition = { x: event.clientX, y: event.clientY };
+    this.showRecycleBinContextMenu = true;
+  }
+
+  onRecycleBinOpen() {
+    this.openRecycleBin();
+    this.showRecycleBinContextMenu = false;
+  }
+  onEmptyRecycleBin() {
+    this.showRecycleBinContextMenu = false;
+    this.showEmptyBinConfirm = true;
+  }
+
+  onRecycleBinProperties() {
+    // TODO: show bin-level properties (item count, total size, etc.)
+    this.showRecycleBinContextMenu = false;
+  }
+
+
+  showEmptyBinConfirm = false;
+
+
+
+  async confirmEmptyRecycleBin(): Promise<void> {
+    this.showEmptyBinConfirm = false;
+
+    await this.opService.runSingleCall(
+      'Emptying Recycle Bin',
+      'All items in Recycle Bin',
+      async () => {
+        await firstValueFrom(this.folderService.emptyOutRecycleBin());
+        this.folderState.setBinFiles([]);
+        this.folderState.setBinFolders([]);
+      },
+    );
+  }
+
+  cancelEmptyRecycleBin() {
+    this.showEmptyBinConfirm = false;
+  }
+
+  // --- drive selection (separate from folder/file selection) ---
+
+  selectedDriveId = signal<string | null>(null);
+
+  onDriveClick(event: MouseEvent, drive: DrivePayload, index: number) {
+    event.stopPropagation();
+    this.cancelRename();
+    this.selectedDriveId.set(drive.id);
+  }
+
+  onDriveRightClick(event: MouseEvent, drive: DrivePayload) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.selectedDriveId.set(drive.id);
+    // No custom context menu yet — drives don't support rename/cut/copy/delete
+    // in the service. If/when they do, build a small drive-specific menu here.
   }
 
 }

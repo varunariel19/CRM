@@ -3,40 +3,59 @@ using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.Data;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using ArielCRM.Infrastructure.Interfaces.IService;
-using ArielCRM.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 namespace ArielCRM.Infrastructure.Repositories
 {
-    public class DocumentManagementRepository(AppDbContext context, IAppwriteStorageService storageService) : IDocumentManagemntRepository
+    public class DocumentManagementRepository(AppDbContext context, IAppwriteStorageService storageService, IConfiguration configuration) : IDocumentManagementRepository
     {
         private readonly AppDbContext _context = context;
         private readonly IAppwriteStorageService _storageService = storageService;
 
-        public async Task<List<Folder>> GetRootFoldersAsync()
+        private readonly IConfiguration _configuration = configuration;
+
+        public async Task<List<RootDrive>> GetRootDrivesAsync()
         {
-            return await _context.Folders
-                .Where(f => f.ParentFolderId == null)
-                .Include(f => f.ChildFolders)
-                .OrderBy(f => f.Name)
+            return await _context.RootDrives
+                .Include(f => f.Folders)
+                .OrderBy(f => f.DriveKey)
                 .ToListAsync();
         }
 
-        public async Task<List<Folder>> GetFoldersByParentIdAsync(Guid parentFolderId)
+        public async Task<List<Folder>> GetFoldersByParentIdAsync(Guid parentFolderId, string accessLevelId, string userId)
         {
-            return await _context.Folders
-                .Where(f => f.ParentFolderId == parentFolderId)
+            var isAdmin = _configuration["Seeding:AdminLevel"] == accessLevelId;
+
+            var query = _context.Folders
+                .Where(f => f.ParentFolderId == parentFolderId && !f.IsDeleted);
+
+            if (!isAdmin)
+            {
+                query = query.Where(f => f.AllowedUsersId.Contains(userId) || f.UserId == userId);
+            }
+
+            return await query
                 .Include(f => f.ChildFolders)
                 .Include(f => f.Files)
                 .OrderBy(f => f.Name)
                 .ToListAsync();
         }
 
-        public async Task<List<DocumentFile>> GetFilesByParentIdAsync(Guid parentFolderId)
+        public async Task<List<DocumentFile>> GetFilesByParentIdAsync(Guid parentFolderId, string accessLevelId, string userId)
         {
-            return await _context.DocumentFiles
+            var isAdmin = _configuration["Seeding:AdminLevel"] == accessLevelId;
+
+            var query = _context.DocumentFiles
                 .AsNoTracking()
-                .Where(f => f.FolderId == parentFolderId)
+                .Where(f => f.FolderId == parentFolderId);
+
+            if (!isAdmin)
+            {
+                query = query.Where(f => f.AllowedUsersId.Contains(userId) || f.UserId == userId);
+            }
+
+            return await query
                 .OrderBy(f => f.Name)
                 .ToListAsync();
         }
@@ -308,17 +327,24 @@ namespace ArielCRM.Infrastructure.Repositories
             folder.IsDeletedAsRoot = isDeletedAsRoot;
             folder.DeletedAt = DateTime.UtcNow;
 
-            var childFolders = await _context.Folders
+            var childFolders = await _context.Folders.IgnoreQueryFilters()
                 .Where(f => f.ParentFolderId == folderId && !f.IsDeleted)
                 .ToListAsync();
             foreach (var child in childFolders)
-                await DeleteFolderAsync(child.Id, false);
+            {
+                if (!child.IsDeletedAsRoot)
+                {
+                    await DeleteFolderAsync(child.Id, false);
+                }
+            }
 
             var childFiles = await _context.DocumentFiles
                 .Where(f => f.FolderId == folderId && !f.IsDeleted)
                 .ToListAsync();
             foreach (var file in childFiles)
-                await DeleteFileAsync(file.Id, false);
+            {
+                if (!file.IsDeletedAsRoot) await DeleteFileAsync(file.Id, false);
+            }
 
             await _context.SaveChangesAsync();
             return folder;
@@ -328,7 +354,7 @@ namespace ArielCRM.Infrastructure.Repositories
         {
             return await _context.Folders
             .IgnoreQueryFilters()
-                .Where(f => f.IsDeleted &&
+                .Where(f => f.IsDeletedAsRoot &&
                             (f.UserId == userId || f.AllowedUsersId.Contains(userId)))
                 .OrderByDescending(f => f.DeletedAt)
                 .ToListAsync();
@@ -338,57 +364,62 @@ namespace ArielCRM.Infrastructure.Repositories
         {
             return await _context.DocumentFiles
             .IgnoreQueryFilters()
-                .Where(f => f.IsDeleted == true &&
+                .Where(f => f.IsDeletedAsRoot == true &&
                             (f.UserId == userId || f.AllowedUsersId.Contains(userId)))
                 .OrderByDescending(f => f.DeletedAt)
                 .ToListAsync();
         }
 
-        public async Task<Folder> RestoreFolderAsync(Guid folderId)
+        public async Task<Folder> RestoreFolderAsync(Guid folderId, bool isRoot)
         {
             var folder = await _context.Folders.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == folderId)
                 ?? throw new KeyNotFoundException("Folder not found.");
 
+            // here backtrack the previous parent folder they exists or not if yes just restore them only that folder only 
+            if (isRoot) await RestoreParentFolder(folder.ParentFolderId!);
+
 
             folder.IsDeleted = false;
+            folder.IsDeletedAsRoot = false;
             folder.DeletedAt = null;
 
 
-            var childFolders = await _context.Folders
-               .Where(f => f.ParentFolderId == folderId && !f.IsDeleted)
+            var childFolders = await _context.Folders.IgnoreQueryFilters()
+               .Where(f => f.ParentFolderId == folderId && f.IsDeleted)
                .ToListAsync();
             foreach (var child in childFolders)
             {
-                if (!child.IsDeletedAsRoot) await RestoreFolderAsync(child.Id);
+                if (!child.IsDeletedAsRoot) await RestoreFolderAsync(child.Id, false);
             }
 
-            var childFiles = await _context.DocumentFiles
-                .Where(f => f.FolderId == folderId && !f.IsDeleted)
+            var childFiles = await _context.DocumentFiles.IgnoreQueryFilters()
+                .Where(f => f.FolderId == folderId && f.IsDeleted)
                 .ToListAsync();
             foreach (var file in childFiles)
             {
-                if (!file.IsDeletedAsRoot) await RestoreFileAsync(file.Id);
+                if (!file.IsDeletedAsRoot) await RestoreFileAsync(file.Id, false);
 
             }
+
 
             await _context.SaveChangesAsync();
             return folder;
         }
 
-        public async Task<DocumentFile> RestoreFileAsync(Guid fileId)
+        public async Task<DocumentFile> RestoreFileAsync(Guid fileId, bool isRoot)
         {
-            var file = await _context.DocumentFiles.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == fileId)
+            var file = await _context.DocumentFiles.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(f => f.Id == fileId)
                 ?? throw new KeyNotFoundException("File not found.");
 
-            file.IsDeleted = false;
-            file.DeletedAt = null;
+            if (isRoot) await RestoreParentFolder(file.FolderId);
 
+            file.IsDeleted = false;
+            file.IsDeletedAsRoot = false;
+            file.DeletedAt = null;
             await _context.SaveChangesAsync();
             return file;
         }
-
-
-        //  HANDLE THAT CASE IF THE ROOT FOLDER IS ALREADY DELETED AND WE ARE TRYING  
 
 
         public async Task PermanentlyDeleteFolderAsync(Guid folderId)
@@ -396,22 +427,33 @@ namespace ArielCRM.Infrastructure.Repositories
             var folder = await _context.Folders.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == folderId)
                 ?? throw new KeyNotFoundException("Folder not found.");
 
+            if (!folder.IsDeleted)
+            {
+                await DeleteRestoredFolder(folder.Id, true);
+                return;
+            }
+
             var childFolders = await _context.Folders
+                .IgnoreQueryFilters()
                 .Where(f => f.ParentFolderId == folderId)
                 .ToListAsync();
             foreach (var child in childFolders)
+            {
                 await PermanentlyDeleteFolderAsync(child.Id);
+            }
 
             var childFiles = await _context.DocumentFiles
+                .IgnoreQueryFilters()
                 .Where(f => f.FolderId == folderId)
                 .ToListAsync();
             foreach (var file in childFiles)
+            {
                 await PermanentlyDeleteFileAsync(file.Id);
+            }
 
             _context.Folders.Remove(folder);
             await _context.SaveChangesAsync();
         }
-
         public async Task PermanentlyDeleteFileAsync(Guid fileId)
         {
             var file = await _context.DocumentFiles.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == fileId)
@@ -426,6 +468,111 @@ namespace ArielCRM.Infrastructure.Repositories
             {
                 await _storageService.DeleteFileByUrlAsync(blobUrl);
             }
+        }
+
+
+        public async Task EmptyRecycleBinAsync()
+        {
+            var deletedFolders = await _context.Folders.IgnoreQueryFilters()
+                .Where(f => f.IsDeletedAsRoot && f.IsDeleted)
+                .ToListAsync();
+
+            foreach (var folder in deletedFolders)
+            {
+                var stillExists = await _context.Folders.IgnoreQueryFilters()
+                    .AnyAsync(f => f.Id == folder.Id);
+                if (stillExists)
+                {
+                    await PermanentlyDeleteFolderAsync(folder.Id);
+                }
+            }
+
+            // restored by child
+            var restoreAndDeleted = await _context.Folders.IgnoreQueryFilters()
+                .Where(f => f.IsDeletedAsRoot && !f.IsDeleted)
+                .ToListAsync();
+
+            foreach (var folder in restoreAndDeleted)
+            {
+                var stillExists = await _context.Folders.IgnoreQueryFilters()
+                    .AnyAsync(f => f.Id == folder.Id);
+                if (stillExists)
+                {
+                    await DeleteRestoredFolder(folder.Id, true);
+                }
+            }
+
+            var deletedFiles = await _context.DocumentFiles.IgnoreQueryFilters()
+                .Where(f => f.IsDeletedAsRoot && f.IsDeleted)
+                .ToListAsync();
+
+            foreach (var file in deletedFiles)
+            {
+                var stillExists = await _context.DocumentFiles.IgnoreQueryFilters()
+                    .AnyAsync(f => f.Id == file.Id);
+                if (stillExists)
+                {
+                    await PermanentlyDeleteFileAsync(file.Id);
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task RestoreParentFolder(Guid? parentFolderId)
+        {
+            if (parentFolderId == null) return;
+
+            var folder = await _context.Folders
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(f => f.Id == parentFolderId) ?? throw new InvalidOperationException(
+                    "Cannot restore: the parent folder was permanently deleted.");
+
+            if (folder.IsDeleted)
+            {
+                folder.IsDeleted = false;
+                folder.DeletedAt = null;
+                await RestoreParentFolder(folder.ParentFolderId);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task DeleteRestoredFolder(Guid folderId, bool isRoot)
+        {
+            var folder = await _context.Folders.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == folderId)
+               ?? throw new KeyNotFoundException("Folder not found.");
+
+            if (isRoot)
+            {
+                folder.IsDeletedAsRoot = false;
+                folder.IsDeleted = false;
+                await _context.SaveChangesAsync();
+            }
+
+            var childFolders = await _context.Folders.IgnoreQueryFilters()
+                .Where(f => f.ParentFolderId == folderId)
+                .ToListAsync();
+            foreach (var child in childFolders)
+            {
+                if (child.IsDeleted && !child.IsDeletedAsRoot)
+                {
+                    await PermanentlyDeleteFolderAsync(child.Id);
+                }
+            }
+
+            var childFiles = await _context.DocumentFiles
+                .Where(f => f.FolderId == folderId)
+                .ToListAsync();
+            foreach (var file in childFiles)
+            {
+                if (file.IsDeleted && !file.IsDeletedAsRoot)
+                {
+                    await PermanentlyDeleteFileAsync(file.Id);
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
 
 

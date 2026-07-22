@@ -5,8 +5,7 @@
 
     <div class="toolbar">
 
-
-        <button class="back-btn" (click)="goBack()" [disabled]="currentPath.length === 0" title="Back">
+        <button class="back-btn" (click)="goBack()" [disabled]="folderState.isAtDriveList()" title="Back">
             ←
         </button>
 
@@ -17,12 +16,22 @@
                 Root
             </span>
 
+            @if (folderState.activeDrive(); as drive) {
+            <span class="crumb-separator">/</span>
+            <span class="crumb" [class.active]="currentPath.length === 0"
+                [class.drag-over]="dragOverBreadcrumbIndex() === 0" (click)="goToBreadcrumb(0)"
+                (dragover)="onBreadcrumbDragOver($event, 0)" (dragleave)="onBreadcrumbDragLeave(0)"
+                (drop)="onBreadcrumbDrop($event, 0)">
+                {{ drive.driveName }}
+            </span>
+            }
+
             @for (crumb of currentPath; track crumb.id; let i = $index) {
             <span class="crumb-separator">/</span>
             <span class="crumb" [class.active]="i === currentPath.length - 1"
-                [class.drag-over]="dragOverBreadcrumbIndex() === i" (click)="goToBreadcrumb(i)"
-                (dragover)="onBreadcrumbDragOver($event, i)" (dragleave)="onBreadcrumbDragLeave(i)"
-                (drop)="onBreadcrumbDrop($event, i)">
+                [class.drag-over]="dragOverBreadcrumbIndex() === i + 1" (click)="goToBreadcrumb(i + 1)"
+                (dragover)="onBreadcrumbDragOver($event, i + 1)" (dragleave)="onBreadcrumbDragLeave(i + 1)"
+                (drop)="onBreadcrumbDrop($event, i + 1)">
                 {{ crumb.name }}
             </span>
             }
@@ -37,11 +46,45 @@
     <input type="file" id="file-input" #fileInput multiple hidden (change)="onFileSelected($event)" />
 
 
-    <div #gridEl class="folder-grid" [class.root-grid]="currentPath.length === 0"
+    <div #gridEl class="folder-grid" [class.root-grid]="folderState.isAtDriveList() || folderState.isAtDriveRoot()"
         (contextmenu)="onGridContextMenu($event)">
 
+        @if (folderState.isAtDriveList()) {
+
+
+        @for (drive of folderState.drives(); track drive.id; let i = $index) {
+        <div class="folder-card root-folder drive-card" [class.selected]="selectedDriveId() === drive.id"
+            [class.disabled]="!fileAndFolderPerm.canAccessDrive(drive.driveKey)" [attr.data-key]="'drive:' + drive.id"
+            (click)="fileAndFolderPerm.canAccessDrive(drive.driveKey) && onDriveClick($event, drive, i)"
+            (dblclick)="fileAndFolderPerm.canAccessDrive(drive.driveKey) && openDrive(drive)"
+            (contextmenu)="fileAndFolderPerm.canAccessDrive(drive.driveKey) && onDriveRightClick($event, drive)">
+
+            <img [src]="fileAndFolderPerm.canAccessDrive(drive.driveKey) ? '/drive.png' : '/lock-drive.png'" alt="Drive"
+                draggable="false">
+
+            <h5>{{ drive.driveName }}</h5>
+        </div>
+        }
+
+        @empty {
+        <div class="empty-state">
+            No drives available.
+        </div>
+        }
+
+        <div class="folder-card root-folder recycle-bin-card" (dblclick)="openRecycleBin()"
+            (contextmenu)="onRecycleBinCardRightClick($event)">
+            <img [src]="(folderState.binFiles().length > 0 || folderState.binFolders().length > 0) ? '/trash-bin.png' : '/empty-bin.png'"
+                alt="Recycle Bin">
+            <h5>Recycle Bin</h5>
+        </div>
+
+        } @else {
+
+        <!-- ---------- Inside a drive: folders/files ---------- -->
+
         @for (folder of currentFolders; track folder.id; let i = $index) {
-        <div class="folder-card" [class.root-folder]="currentPath.length === 0"
+        <div class="folder-card" [class.root-folder]="folderState.isAtDriveRoot()"
             [class.selected]="isFolderSelected(folder)" [class.cut]="isCut('folder', folder.id)"
             [class.dragging]="isDragging('folder', folder.id)" [class.drag-over]="dragOverFolderId() === folder.id"
             [attr.data-key]="'folder:' + folder.id" [draggable]="!folder.isSystem"
@@ -49,7 +92,7 @@
             (contextmenu)="onFolderRightClick($event, folder)" (dragstart)="onDragStart($event, 'folder', folder, i)"
             (dragend)="onDragEnd()" (dragover)="onFolderDragOver($event, folder)"
             (dragleave)="onFolderDragLeave(folder)" (drop)="onFolderDrop($event, folder)">
-            <img [src]="currentPath.length > 0 ? '/internal-folder.png' : '/root-folder.png'" alt="Folder"
+            <img [src]="folderState.isAtDriveRoot() ? '/root-folder.png' : '/internal-folder.png'" alt="Folder"
                 draggable="false">
             <h5>{{ folder.name }}</h5>
         </div>
@@ -67,19 +110,13 @@
         }
 
         @empty {
-        @if (currentPath.length > 0 && currentFiles.length === 0 && currentFolders.length == 0) {
+        @if (currentFiles.length === 0 && currentFolders.length === 0) {
         <div class="empty-state">
             This folder is empty.
         </div>
         }
         }
 
-        @if (currentPath.length === 0) {
-        <div class="folder-card root-folder recycle-bin-card" (dblclick)="openRecycleBin()">
-            <img [src]="(folderState.binFiles().length > 0 || folderState.binFolders().length > 0) ? '/trash-bin.png' : '/empty-bin.png'"
-                alt="Recycle Bin">
-            <h5>Recycle Bin</h5>
-        </div>
         }
 
         @if (contextMenu) {
@@ -90,18 +127,24 @@
         </app-document-context-menu>
         }
 
-    </div>
+        @if (showRecycleBinContextMenu) {
+        <app-recycle-bin-context-menu [x]="recycleBinContextMenuPosition.x" [y]="recycleBinContextMenuPosition.y"
+            (open)="onRecycleBinOpen()" (emptyRecycleBin)="onEmptyRecycleBin()" (properties)="onRecycleBinProperties()"
+            (closeMenu)="showRecycleBinContextMenu = false" />
+        }
 
+    </div>
 
 
     @if (emptyContextMenu()) {
     <app-document-empty-context-menu [x]="emptyContextMenu()!.x" [y]="emptyContextMenu()!.y" [canPaste]="canPaste"
-        [canCreate]="canCreateHere && !folderState.isAtRoot()" [currentView]="currentView()"
+        [canCreate]="canCreateHere && !folderState.isAtDriveList()" [currentView]="currentView()"
         [currentSort]="currentSort()" (refresh)="onEmptyRefresh()" (paste)="onEmptyPaste()"
         (newFolder)="onEmptyNewFolder()" (uploadFile)="onEmptyUploadFile()" (viewChange)="onEmptyViewChange($event)"
         (sortChange)="onEmptySortChange($event)" (closeMenu)="closeEmptyContextMenu()">
     </app-document-empty-context-menu>
     }
+
 
     @if (renameTarget() && renamePosition()) {
     <app-rename-popover [label]="renameTarget()?.type ?? ''" [value]="renameValue()" [x]="renamePosition()!.x"
@@ -112,11 +155,14 @@
 
     @if (propertiesFolder || propertiesFile) {
     <app-properties-dialog [icon]="propertiesIcon" [isFolder]="!!propertiesFolder" [name]="propertiesName"
-        [subtitle]="propertiesSubtitle" [secondarySubtitle]="propertiesSecondarySubtitle"
-        [parentPath]="propertiesParentPath" [modified]="propertiesModified" [created]="propertiesCreated"
-        [accessed]="propertiesAccessed" [permissionsLabel]="propertiesPermissionsLabel"
-        [favorite]="propertiesFavorite()" (close)="closeProperties()" (toggleFavorite)="toggleFavorite()"
-        (editIcon)="editFolderIcon()" (openParent)="openParentFolderLocation()" (openPermissions)="openPermissions()">
+        [subtitle]="propertiesSubtitle" [typeLabel]="propertiesTypeLabel" [location]="propertiesLocation"
+        [sizeLabel]="propertiesSizeLabel" [sizeOnDiskLabel]="propertiesSizeOnDiskLabel"
+        [containsLabel]="propertiesContainsLabel" [parentPath]="propertiesParentPath" [modified]="propertiesModified"
+        [created]="propertiesCreated" [accessed]="propertiesAccessed" [permissionsLabel]="propertiesPermissionsLabel"
+        [readOnly]="propertiesReadOnly" [hidden]="propertiesHidden" [favorite]="propertiesFavorite()"
+        (close)="closeProperties()" (toggleFavorite)="toggleFavorite()" (editIcon)="editFolderIcon()"
+        (openParent)="openParentFolderLocation()" (openPermissions)="openPermissions()"
+        >
     </app-properties-dialog>
     }
     } @else {
@@ -140,4 +186,15 @@
 @if (newFolderDialogOpen()) {
 <app-new-folder-dialog defaultName="New folder" [error]="newFolderError()" (create)="confirmNewFolder($event)"
     (cancel)="cancelNewFolder()" />
+}
+
+@if (showEmptyBinConfirm) {
+<app-confirm-dialog title="Empty Recycle Bin"
+    message="Are you sure you want to permanently delete all items in the recycle bin?" confirmLabel="Yes"
+    cancelLabel="No" (confirm)="confirmEmptyRecycleBin()" (cancel)="cancelEmptyRecycleBin()">
+</app-confirm-dialog>
+}
+
+@if (opService.items().length > 0) {
+<app-upload-progress-dialog></app-upload-progress-dialog>
 }
