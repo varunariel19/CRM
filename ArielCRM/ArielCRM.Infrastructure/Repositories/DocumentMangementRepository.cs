@@ -1,9 +1,11 @@
 using System.Text.RegularExpressions;
 using ArielCRM.DataLayer.Entities;
 using ArielCRM.Infrastructure.Data;
+using ArielCRM.Infrastructure.DTOs;
 using ArielCRM.Infrastructure.Interfaces.IRepository;
 using ArielCRM.Infrastructure.Interfaces.IService;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 
 namespace ArielCRM.Infrastructure.Repositories
@@ -25,15 +27,15 @@ namespace ArielCRM.Infrastructure.Repositories
 
         public async Task<List<Folder>> GetFoldersByParentIdAsync(Guid parentFolderId, string accessLevelId, string userId)
         {
-            var isAdmin = _configuration["Seeding:AdminLevel"] == accessLevelId;
+            // var isAdmin = _configuration["Seeding:AdminLevel"] == accessLevelId;
 
             var query = _context.Folders
                 .Where(f => f.ParentFolderId == parentFolderId && !f.IsDeleted);
 
-            if (!isAdmin)
-            {
-                query = query.Where(f => f.AllowedUsersId.Contains(userId) || f.UserId == userId);
-            }
+            // if (!isAdmin)
+            // {
+            //     query = query.Where(f => f.AllowedUsersId.Contains(userId) || f.UserId == userId);
+            // }
 
             return await query
                 .Include(f => f.ChildFolders)
@@ -44,16 +46,16 @@ namespace ArielCRM.Infrastructure.Repositories
 
         public async Task<List<DocumentFile>> GetFilesByParentIdAsync(Guid parentFolderId, string accessLevelId, string userId)
         {
-            var isAdmin = _configuration["Seeding:AdminLevel"] == accessLevelId;
+            // var isAdmin = _configuration["Seeding:AdminLevel"] == accessLevelId;
 
             var query = _context.DocumentFiles
                 .AsNoTracking()
                 .Where(f => f.FolderId == parentFolderId);
 
-            if (!isAdmin)
-            {
-                query = query.Where(f => f.AllowedUsersId.Contains(userId) || f.UserId == userId);
-            }
+            // if (!isAdmin)
+            // {
+            //     query = query.Where(f => f.AllowedUsersId.Contains(userId) || f.UserId == userId);
+            // }
 
             return await query
                 .OrderBy(f => f.Name)
@@ -64,6 +66,12 @@ namespace ArielCRM.Infrastructure.Repositories
         {
             return await _context.Folders
                 .FirstOrDefaultAsync(f => f.Id == folderId);
+        }
+
+        public async Task<RootDrive?> GetRootDriveByIdAsync(Guid driveId)
+        {
+            return await _context.RootDrives
+              .FirstOrDefaultAsync(f => f.Id == driveId);
         }
 
         public async Task<Folder> CreateFolderAsync(Folder folder)
@@ -89,6 +97,20 @@ namespace ArielCRM.Infrastructure.Repositories
         public async Task<DocumentFile?> GetFileByIdAsync(Guid fileId)
         {
             return await _context.DocumentFiles
+                .FirstOrDefaultAsync(f => f.Id == fileId);
+        }
+
+
+        public async Task<Folder?> GetDeletedFolderByIdAsync(Guid folderId)
+        {
+            return await _context.Folders.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(f => f.Id == folderId);
+        }
+
+
+        public async Task<DocumentFile?> GetDeletedFileByIdAsync(Guid fileId)
+        {
+            return await _context.DocumentFiles.IgnoreQueryFilters()
                 .FirstOrDefaultAsync(f => f.Id == fileId);
         }
 
@@ -518,6 +540,106 @@ namespace ArielCRM.Infrastructure.Repositories
 
             await _context.SaveChangesAsync();
         }
+
+
+        public async Task UpdateAsync(Folder folder)
+        {
+            _context.Folders.Update(folder);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateRootDriveAsync(RootDrive rootDrive)
+        {
+            _context.RootDrives.Update(rootDrive);
+            await _context.SaveChangesAsync();
+
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
+        }
+
+
+        public async Task UpdateItemPropertiesAsync(UpdateItemPropertiesDto dto, string requestingUserId)
+        {
+            switch (dto.TypeOf.ToUpper())
+            {
+                case "FOLDER":
+                    {
+                        var folder = await _context.Folders
+                            .FirstOrDefaultAsync(f => f.Id == dto.EntityId)
+                            ?? throw new KeyNotFoundException("Folder not found.");
+
+                        if (!string.Equals(folder.UserId, requestingUserId, StringComparison.Ordinal))
+                            throw new UnauthorizedAccessException("Only the owner can update this folder's properties.");
+
+                        ApplyProperties(
+                            dto,
+                            setHidden: v => folder.IsHidden = v,
+                            setLocked: v => folder.IsLocked = v,
+                            setEveryone: v => folder.IAccessibleByEveryone = v,
+                            setAllowedUsers: v => folder.AllowedUsersId = v);
+
+                        folder.UpdatedAt = DateTime.UtcNow;
+                        break;
+                    }
+
+                case "FILE":
+                    {
+                        var file = await _context.DocumentFiles
+                            .FirstOrDefaultAsync(f => f.Id == dto.EntityId)
+                            ?? throw new KeyNotFoundException("File not found.");
+
+                        if (!string.Equals(file.UserId, requestingUserId, StringComparison.Ordinal))
+                            throw new UnauthorizedAccessException("Only the owner can update this file's properties.");
+
+                        ApplyProperties(
+                            dto,
+                            setHidden: v => file.IsHidden = v,
+                            setLocked: v => file.IsLocked = v,
+                            setEveryone: v => file.IAccessibleByEveryone = v,
+                            setAllowedUsers: v => file.AllowedUsersId = v);
+
+                        file.UpdatedAt = DateTime.UtcNow;
+                        break;
+                    }
+
+                default:
+                    throw new ArgumentException("Invalid entity type.");
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private static void ApplyProperties(
+            UpdateItemPropertiesDto dto,
+            Action<bool> setHidden,
+            Action<bool> setLocked,
+            Action<bool> setEveryone,
+            Action<List<string>> setAllowedUsers)
+        {
+            if (dto.IsHidden.HasValue)
+                setHidden(dto.IsHidden.Value);
+
+            var lockedResult = dto.IsLocked ?? false;
+            if (dto.IsLocked.HasValue)
+                setLocked(dto.IsLocked.Value);
+
+            if (lockedResult)
+            {
+                setEveryone(false);
+                setAllowedUsers([]);
+                return;
+            }
+
+            if (dto.IsAccessibleByEveryone.HasValue)
+                setEveryone(dto.IsAccessibleByEveryone.Value);
+
+            if (dto.AllowedUsersId is not null)
+                setAllowedUsers(dto.IsAccessibleByEveryone == true ? [] : dto.AllowedUsersId);
+        }
+
 
         private async Task RestoreParentFolder(Guid? parentFolderId)
         {

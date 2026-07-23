@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using ArielCRM.DataLayer.Entities;
 using Microsoft.AspNetCore.Http;
 
@@ -12,17 +13,24 @@ namespace ArielCRM.Infrastructure.DTOs
         public List<DocumentFile> Files { get; set; } = [];
     }
 
-        public class FolderDto
+    public class FolderDto
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string FolderKey { get; set; } = string.Empty;
         public Guid? ParentFolderId { get; set; }
+        public Guid? RootDriveId { get; set; }
         public bool IsSystem { get; set; }
         public bool CanCreate { get; set; }
         public bool HasChildren { get; set; }
-
+        public long FolderSize { get; set; }
+        public int FoldersCount { get; set; }
+        public int FileCount { get; set; }
         public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public bool ParentFolderAccessible { get; set; } = false;
+        public string CreatedBy { get; set; } = string.Empty;
+        public List<string> AllowedUsersId { get; set; } = [];
     }
 
 
@@ -30,6 +38,23 @@ namespace ArielCRM.Infrastructure.DTOs
     {
         public string Name { get; set; } = string.Empty;
         public Guid? ParentFolderId { get; set; }
+    }
+
+    public class UpdateItemPropertiesDto
+    {
+        [Required]
+        public string TypeOf { get; set; } = string.Empty;
+
+        [Required]
+        public Guid EntityId { get; set; }
+
+        public bool? IsHidden { get; set; }
+
+        public bool? IsLocked { get; set; }
+
+        public bool? IsAccessibleByEveryone { get; set; }
+
+        public List<string>? AllowedUsersId { get; set; }
     }
 
     public class UploadFileRequest
@@ -51,4 +76,4 @@ namespace ArielCRM.Infrastructure.DTOs
     }
 
 
-    }
+}

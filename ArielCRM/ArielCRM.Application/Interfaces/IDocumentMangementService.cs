@@ -8,8 +8,8 @@ namespace ArielCRM.Application.Interfaces
     {
         Task<List<RootDrive>> GetRootDrivesAsync();
         Task<FolderDto> CreateFolderAsync(CreateFolderRequest request, HttpContext context);
-        Task<List<FileDto>> UploadFilesToFolderAsync(Guid? parentFolderId, List<IFormFile> files, string userId);
-        Task<FolderContentsDto> GetFoldersAndFilesByParentIdAsync(Guid parentFolderId , string UserId);
+        Task<List<DocumentFile>> UploadFilesToFolderAsync(Guid? parentFolderId, List<IFormFile> files, string userId);
+        Task<FolderContentsDto> GetFoldersAndFilesByParentIdAsync(Guid parentFolderId, string UserId);
 
         Task<Folder> RenameFolderAsync(Guid folderId, string newName);
         Task<DocumentFile> RenameFileAsync(Guid fileId, string newName);
@@ -31,9 +31,9 @@ namespace ArielCRM.Application.Interfaces
         Task<DocumentFile> RestoreFileAsync(Guid fileId);
         Task PermanentlyDeleteFolderAsync(Guid folderId);
         Task PermanentlyDeleteFileAsync(Guid fileId);
-
-
+        Task UpdateItemPropertiesAsync(UpdateItemPropertiesDto updateItemPropertiesDto, string requestingUserId);
         Task EmptyRecycleBinAsync();
+
 
     }
 }

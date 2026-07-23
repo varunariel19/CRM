@@ -25,13 +25,17 @@ public class Folder
 
     public bool IsSystem { get; set; }
 
+    public bool IsHidden { get; set; } = false;
+
+    public bool IAccessibleByEveryone { get; set; } = false;
+
+    public bool IsLocked { get; set; } = false;
+
     public long FolderSize { get; set; } = 0;
 
     public int FoldersCount { get; set; } = 0;
     public int FileCount { get; set; } = 0;
-
     public bool CanCreate { get; set; } = true;
-
     public bool IsDeleted { get; set; }
 
     public bool IsDeletedAsRoot { get; set; }

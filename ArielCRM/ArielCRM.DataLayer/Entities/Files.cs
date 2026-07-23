@@ -37,9 +37,13 @@ namespace ArielCRM.DataLayer.Entities
 
         public bool IsHidden { get; set; } = false;
 
+        public bool IAccessibleByEveryone { get; set; } = false;
+
+        public bool IsLocked { get; set; } = false;
+
         public bool IsDeleted { get; set; } = false;
 
-        public bool IsDeletedAsRoot {get; set;} 
+        public bool IsDeletedAsRoot { get; set; }
 
         public DateTime? DeletedAt { get; set; }
 
@@ -56,6 +60,7 @@ namespace ArielCRM.DataLayer.Entities
         [ForeignKey(nameof(UserId))]
         public User UploadedBy { get; set; } = null!;
 
+
         [Required]
         public DateTime UploadedAt { get; set; }
 
@@ -63,6 +68,9 @@ namespace ArielCRM.DataLayer.Entities
 
         [Timestamp]
         public byte[]? RowVersion { get; set; }
+
+
+
 
         public List<string> AllowedUsersId { get; set; } = [];
     }

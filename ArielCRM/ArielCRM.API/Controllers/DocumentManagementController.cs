@@ -68,7 +68,7 @@ namespace ArielCRM.Api.Controllers
         {
             try
             {
-                var folders = await _folderService.GetFoldersAndFilesByParentIdAsync(parentFolderId , UserId);
+                var folders = await _folderService.GetFoldersAndFilesByParentIdAsync(parentFolderId, UserId);
                 return Ok(folders);
             }
             catch (KeyNotFoundException ex)
@@ -292,6 +292,31 @@ namespace ArielCRM.Api.Controllers
             }
         }
 
+
+        [HttpPut("update-properties")]
+        public async Task<IActionResult> UpdateItemProperties(UpdateItemPropertiesDto updateItemPropertiesDto)
+        {
+            try
+            {
+                var requestingUserId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? throw new UnauthorizedAccessException("User is not authenticated.");
+
+                await _folderService.UpdateItemPropertiesAsync(updateItemPropertiesDto, requestingUserId);
+                return NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 
 
